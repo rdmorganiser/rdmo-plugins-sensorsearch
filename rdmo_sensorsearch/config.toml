@@ -1,0 +1,41 @@
+[SensorsProvider]
+min_search_len = 3 
+
+[[SensorsProvider.providers.AWIO2ASearchProvider]]
+
+[[SensorsProvider.providers.SensorManagentSystemProvider]]
+id_prefix = "gfzsms" 
+text_prefix = "GFZ Sensors:" 
+base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/devices"
+
+[[SensorsProvider.providers.SensorManagentSystemProvider]]
+id_prefix = "kitsms"
+text_prefix = "KIT Sensors:"
+base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1/devices"
+
+[[SensorsProvider.providers.SensorManagentSystemProvider]]
+id_prefix = "ufzsms"
+text_prefix = "UFZ Sensors:"
+base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
+
+[[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]
+
+[[SensorsProvider.providers.DoesNotExists]]
+
+#        results = AWIO2ASearchProvider().get_options(project, search, user, site) + \
+#                SensorManagentSystemProvider(
+#                        id_prefix = 'gfzsms', 
+#                        text_prefix = 'GFZ Sensors:', 
+#                        base_url = 'https://sensors.gfz-potsdam.de/backend/api/v1/devices'
+#                ).get_options(project, search, user, site)  + \
+#                SensorManagentSystemProvider(
+#                        id_prefix = 'kitsms',
+#                        text_prefix = 'KIT Sensors:',
+#                        base_url = 'https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1/devices'
+#                ).get_options(project, search, user, site) + \
+#                SensorManagentSystemProvider(
+#                        id_prefix = 'ufzsms',
+#                        text_prefix = 'UFZ Sensors:',
+#                        base_url = 'https://web.app.ufz.de/sms/backend/api/v1/devices'
+#                ).get_options(project, search, user, site) + \
+#                GeophysicalInstrumentPoolPotsdamProvider().get_options(project, search, user, site) 
