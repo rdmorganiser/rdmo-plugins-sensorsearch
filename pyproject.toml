@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rdmo-plugins-sensorsearch"
+authors = [
+    {name = "Hannes Fuchs", email = "hannes.fuchs@gfz-potsdam.de"},
+]
+maintainers = [
+    {name = "Hannes Fuchs", email = "hannes.fuchs@gfz-potsdam.de"},
+]
+description = "Option set plugin to search through various sensor management systems"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+dependencies = [
+    "requests>=2.31",
+	"tomli>=2.0.1;python_version<'3.11'"
+]
+dynamic = ["version"]
+
+[project.urls]
+repository = "https://github.com/rdmorganiser/rdmo-plugins-sensorsearch"
+
+[tool.setuptools]
+packages = ["rdmo_sensorsearch"]
+
+[tool.setuptools.dynamic]
+version = {attr = "rdmo_sensorsearch.__version__"}
+
+[tool.ruff]
+target-version = "py38"
+line-length = 120
+select = [
+  "B",    # flake8-bugbear
+  "C4",   # flake8-comprehensions
+  "E",    # pycodestyle
+  "F",    # pyflakes
+  "I",    # isort
+  "PGH",  # pygrep-hooks
+  "RUF",  # ruff
+  "UP",   # pyupgrade
+  "W",    # pycodestyle
+  "YTT",  # flake8-2020
+]
+ignore = [
+  "B006",   # mutable-argument-default
+  "B007",   # unused-loop-control-variable
+  "B018",   # useless-expression
+  "RUF012", # mutable-class-default
+]
+
+[tool.ruff.isort]
+section-order = [
+  "future",
+  "standard-library",
+  "pytest",
+  "django",
+  "rest_framework",
+  "third-party",
+  "rdmo",
+  "first-party",
+  "local-folder"
+]
+
+[tool.ruff.isort.sections]
+pytest = ["pytest"]
+django = ["django"]
+rest_framework = ["rest_framework"]
+rdmo = ["rdmo"]
