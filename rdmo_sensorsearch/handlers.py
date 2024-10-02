@@ -114,7 +114,10 @@ def handle_sms(id_, inst):
     parameters_names = []
     parameters_units = []
     for attribute in json_data_response.get('included', []):
-        parameters_names.append(attribute.get('attributes').get('property_name'))
+        parameter_name = attribute.get('attributes').get('property_name')
+        if attribute.get('attributes').get('label'):
+            parameter_name = '{} ({})'.format(parameter_name, attribute.get('attributes').get('label'))
+        parameters_names.append(parameter_name)
         parameters_units.append(attribute.get('attributes').get('unit_name'))
 
     json_data.update({
