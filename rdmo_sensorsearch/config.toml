@@ -1,7 +1,7 @@
 [SensorsProvider]
 min_search_len = 3 
 
-[[SensorsProvider.providers.AWIO2ASearchProvider]]
+[[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
 [[SensorsProvider.providers.SensorManagentSystemProvider]]
 id_prefix = "gfzsms" 
@@ -22,7 +22,7 @@ base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
 [[SensorsProvider.providers.DoesNotExists]]
 
-#        results = AWIO2ASearchProvider().get_options(project, search, user, site) + \
+#        results = O2ARegistrySearchProvider().get_options(project, search, user, site) + \
 #                SensorManagentSystemProvider(
 #                        id_prefix = 'gfzsms', 
 #                        text_prefix = 'GFZ Sensors:', 

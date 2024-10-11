@@ -47,7 +47,7 @@ def get_config_by_catalog_uri(catalog_uri):
             return item
     return None
 
-def handle_awio2a(id_):
+def handle_o2aregistry(id_):
     base_url = f'https://registry.o2a-data.de/rest/v2/items/{id_}'
     # TODO error handling
     response = requests.get(base_url)
@@ -182,8 +182,8 @@ def post_save_project_values(sender, **kwargs):
             id_ = None
             if len(instance.external_id.split(':')) == 2:
                 handler, id_ = instance.external_id.split(':')
-            if handler == 'awio2a':
-                json_data = handle_awio2a(id_)
+            if handler == 'o2aregistry':
+                json_data = handle_o2aregistry(id_)
             elif handler.endswith('sms'):
                 json_data = handle_sms(id_, handler)
             elif handler == 'gfzgipp':

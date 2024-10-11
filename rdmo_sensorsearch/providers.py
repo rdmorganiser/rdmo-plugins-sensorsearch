@@ -12,11 +12,11 @@ from .config import load_config
 logger = logging.getLogger(__name__)
 
 
-class AWIO2ASearchProvider(Provider):
+class O2ARegistrySearchProvider(Provider):
     def __init__(
         self,
-        id_prefix="awio2a",
-        text_prefix="AWI O2A:",
+        id_prefix="o2aregistry",
+        text_prefix="O2A REGISTRY:",
         max_hits=10,
         base_url="https://registry.o2a-data.de/index/rest/search/sensor-v2",
         **kwargs,
