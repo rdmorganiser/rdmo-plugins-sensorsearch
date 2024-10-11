@@ -106,6 +106,7 @@ def handle_sms(id_, inst):
                 'longName': json_data.get('attributes', {}).get('long_name'),
                 'shortName': json_data.get('attributes', {}).get('short_name'),
                 'manufacturer': json_data.get('attributes', {}).get('manufacturer_name'),
+                'deviceType': json_data.get('attributes', {}).get('device_type_name'),
                 'model': json_data.get('attributes', {}).get('model'),
                 'serialNumber': json_data.get('attributes', {}).get('serial_number'),
                 'citation': json_data.get('attributes', {}).get('persistent_identifier'),
