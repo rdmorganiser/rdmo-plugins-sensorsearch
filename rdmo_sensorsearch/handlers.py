@@ -1,3 +1,4 @@
+import jmespath
 import logging
 import requests
 
@@ -8,227 +9,217 @@ from django.db.models.signals import post_save
 from rdmo.projects.models import Value
 from rdmo.domain.models import Attribute
 
-# https://registry.o2a-data.de/rest/v2/items/4835?with=collections
-BASE_URL = 'https://registry.o2a-data.de/rest/v2/items/{id_}?with=collections'
-
-SIMPLE_CONFIG = [
-        {
-            'catalog_uri': 'http://rdmo-dev.local/terms/questions/sensor-awi-test',
-            'auto_complete_field_attribute_uri': 'http://rdmo-dev.local/terms/domain/sensor/awi/search',
-            'attribute_mapping': {
-                'http://rdmo-dev.local/terms/domain/sensor/awi/type-name': 'longName',
-                'http://rdmo-dev.local/terms/domain/sensor/awi/name': 'shortName',
-                'http://rdmo-dev.local/terms/domain/sensor/awi/serial': 'serialNumber',
-            }
-        },
-        {
-            'catalog_uri': 'https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses',
-            'auto_complete_field_attribute_uri': 'http://rdmo.nfdi.de/terms/domain/dataset/instrument/uri',
-            'attribute_mapping': {
-                'http://rdmo.nfdi.de/terms/domain/dataset/instrument/name': 'longName',
-                'http://rdmo.nfdi.de/terms/domain/dataset/instrument/type': 'deviceType',
-                'http://rdmo.nfdi.de/terms/domain/dataset/instrument/manufacturer': 'manufacturer',
-                'http://rdmo.nfdi.de/terms/domain/dataset/instrument/type/name': 'model',
-                'http://rdmo.nfdi.de/terms/domain/dataset/instrument/type/serial_number': 'serialNumber',
-                'http://rdmo.nfdi.de/terms/domain/dataset/instrument/type/pid': 'citation',
-                # TODO: URN
-                'http://rdmo.nfdi.de/terms/domain/dataset/instrument/parameters/name': 'parametersName',
-                'http://rdmo.nfdi.de/terms/domain/dataset/instrument/parameters/unit': 'parametersUnit'
-            }
-        }
-]
+from .config import load_config
 
 
 logger = logging.getLogger(__name__)
 
-def get_config_by_catalog_uri(catalog_uri):
-    for item in SIMPLE_CONFIG:
-        if item.get('catalog_uri') == catalog_uri:
-            return item
-    return None
+class GenericSearchHandler():
+    def __init__(
+        self,
+        base_url=None,
+        attribute_mapping={},
+        **kwargs,
+    ):
+        self.base_url = base_url
+        self.attribute_mapping = attribute_mapping
+        self.mapped_values = {}
 
-def handle_o2aregistry(id_):
-    base_url = f'https://registry.o2a-data.de/rest/v2/items/{id_}'
-    # TODO error handling
-    response = requests.get(base_url)
-    json_data = response.json()
-    json_data.update(
-            {
-                'deviceType': json_data.get('type', {}).get('generalName'),
-                }
-            )
-    # get parameters
-    response = requests.get(base_url + '/parameters')
-    parameters_data = response.json()
-    parameters_names = []
-    parameters_units = []
-    units = requests.get('https://registry.o2a-data.de/rest/v2/units').json()
-    for parameter in parameters_data.get('records', []):
-        parameters_names.append(parameter.get('name'))
-        unit = parameter.get('unit')
-        if unit and isinstance(unit, dict):
-            parameters_units.append(unit.get('code'))
-        else:
-            for u in units.get('records', []):
-                if u.get('@uuid') and u.get('@uuid') == unit:
-                    parameters_units.append(u.get('code'))
-                    
+    def get_default_id_prefix(self):
+        raise NotImplementedError
 
+    def _get(self, url):
+        try:
+            # TODO: request with UA
+            return requests.get(url).json()
+        except requests.exceptions.RequestException as e:
+            logger.error("Request failed: %s", e)
         
-    json_data.update({
-        'parametersName': parameters_names,
-        'parametersUnit': parameters_units,
-    }
-    )
-    #     parameters_text.append(parameter.get('name'))
-    # json_data.update(
-    #         {
-    #             'parameters_text': parameters_text,
-    #             }
-    #         )
-    return json_data
-
-def handle_sms(id_, inst):
-    if inst == 'gfzsms':
-        base_url = 'https://sensors.gfz-potsdam.de/backend/api/v1'
-    elif inst == 'kitsms':
-        base_url = 'https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1'
-    elif inst == 'ufzsms':
-        base_url = 'https://web.app.ufz.de/sms/backend/api/v1'
-    else:
         return {}
 
-    response = requests.get(base_url + f'/devices/{id_}?include=device_properties')
-    json_data_response = response.json()
-    json_data = json_data_response.get('data', {})
-    json_data.update(
-            {
-                'longName': json_data.get('attributes', {}).get('long_name'),
-                'shortName': json_data.get('attributes', {}).get('short_name'),
-                'manufacturer': json_data.get('attributes', {}).get('manufacturer_name'),
-                'deviceType': json_data.get('attributes', {}).get('device_type_name'),
-                'model': json_data.get('attributes', {}).get('model'),
-                'serialNumber': json_data.get('attributes', {}).get('serial_number'),
-                'citation': json_data.get('attributes', {}).get('persistent_identifier'),
-            }
-    )
-    parameters_names = []
-    parameters_units = []
-    for attribute in json_data_response.get('included', []):
-        parameter_name = attribute.get('attributes').get('property_name')
-        if attribute.get('attributes').get('label'):
-            parameter_name = '{} ({})'.format(parameter_name, attribute.get('attributes').get('label'))
-        parameters_names.append(parameter_name)
-        parameters_units.append(attribute.get('attributes').get('unit_name'))
+    def _map_jamespath_to_attribute_uri(self, data):
+        mapped_values = {}
+        for path, attribute_uri in self.attribute_mapping.items():
+            mapped_values.update({f'{attribute_uri}': jmespath.search(path, data)})
+        logger.debug('mapped_values %s', mapped_values)
+        return mapped_values
 
-    json_data.update({
-        'parametersName': parameters_names,
-        'parametersUnit': parameters_units,
-    })
 
-    return json_data
 
-def handle_gipp(id_):
-    request_url = f'https://gipp.gfz-potsdam.de/instruments/rest/{id_}.json'
-    response = requests.get(request_url)
-    json_data = response.json()
-    json_data.update(
-            {
-                'longName': json_data.get('Instrument', {}).get('code'),
-                'shortName': json_data.get('Instrumentcategory', {}).get('name'),
-                'manufacturer': json_data.get('Instrumentcategory', {}).get('manufacturer'),
-                'model': '',
-                'serialNumber': json_data.get('Instrument', {}).get('serialNo'),
-            }
-    )
-    return json_data
+
+class O2ARegistrySearchHandler(GenericSearchHandler):
+    def __init__(
+        self,
+        base_url='https://registry.o2a-data.de/rest/v2',
+        attribute_mapping={},
+        **kwargs,
+    ):
+        super().__init__(base_url=base_url, attribute_mapping=attribute_mapping, **kwargs)
+
+    def get_default_id_prefix(self):
+        return 'o2aregistry'
+
+    def handle(self, id_):
+        # basic date
+        basic_data = self._get(f'{self.base_url}/items/{id_}')
+
+        # parameters
+        parameters_data = self._get(f'{self.base_url}/items/{id_}/parameters')
+
+        # units
+        units_data = self._get(f'{self.base_url}/units')
+
+        # extend basic data with parameters
+        data = basic_data
+        data.update({'parameters': []})
+
+        for parameter in parameters_data.get('records', []):
+            parameter_name = parameter.get('name')
+            parameter_unit = ''
+            # get the unit, maybe lookup from units
+            unit_data = parameter.get('unit')
+            if unit_data and isinstance(unit_data, dict):
+                parameter_unit = unit_data.get('code')
+            else:
+                for u in units_data.get('records', []):
+                    if u.get('@uuid') and u.get('@uuid') == unit_data:
+                        parameter_unit = u.get('code')
+            data.update({'parameters': data.get('parameters', []) + [{'name': parameter_name, 'unit': parameter_unit }]})
+
+        logger.debug('data: %s', data)
+
+        return self._map_jamespath_to_attribute_uri(data)
+
+
+class SensorManagentSystemHandler(GenericSearchHandler):
+
+    def get_default_id_prefix(self):
+        return 'sms'
+
+    def handle(self, id_):
+        data = self._get(f'{self.base_url}/devices/{id_}?include=device_properties')
+
+        logger.debug('data: %s', data)
+
+        return self._map_jamespath_to_attribute_uri(data)
+
+class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
+    def __init__(
+        self,
+        base_url='https://gipp.gfz-potsdam.de/instruments/rest',
+        attribute_mapping={},
+        **kwargs,
+    ):
+        super().__init__(base_url=base_url, attribute_mapping=attribute_mapping, **kwargs)
+
+    def get_default_id_prefix(self):
+        return 'gfzgipp'
+
+    def handle(self, id_):
+        data = self._get(f'{self.base_url}/{id_}.json')
+
+        logger.debug('data: %s', data)
+
+        return self._map_jamespath_to_attribute_uri(data)
 
 
 @receiver(post_save, sender=Value)
 def post_save_project_values(sender, **kwargs):
     logger.debug('Call of post_save_project_values')
-    # print('Call of post_save_project_values')
     instance = kwargs.get("instance", None)
     logger.debug(f'Instance: {instance}')
-    #if instance:
-    #    logger.debug('--- START: Instance attributes ---')
-    #    for attr in dir(instance):
-    #        try:
-    #            if not attr.startswith('__'):
-    #                value = getattr(instance, attr)
-    #                if isinstance(value, (list, tuple)):
-    #                    print(f"{attr}: {value} ({type(value).__name__})")
-    #                else:
-    #                    print(f"{attr}: {value}")
-    #        except AttributeError:
-    #            # Ignore attributes that can't be accessed due to some internal Python mechanism
-    #            pass
-    #    logger.debug('--- END: Instance attributes ---')
     logger.debug(f'Catalog URI: {instance.project.catalog.uri}')
-    if instance:
-        config = get_config_by_catalog_uri(instance.project.catalog.uri)
-    else:
-        config = None
-    logger.debug(f'Config: {config}')
-    #if instance and instance.attribute.uri == 'http://rdmo-dev.local/terms/domain/sensor/awi/search':
-    if instance and config and config.get('auto_complete_field_attribute_uri') == instance.attribute.uri:
-        # TODO: check if in a set/collection
-        logger.debug(f'Attribute of instance: {instance.attribute.uri}')
-        logger.debug(f'Attribute of type: {type(instance.attribute)}')
-        logger.debug(f'External ID: {instance.external_id}')
-        if instance.external_id:
-            logger.debug(instance.external_id)
-            handler = None
-            id_ = None
-            if len(instance.external_id.split(':')) == 2:
-                handler, id_ = instance.external_id.split(':')
-            if handler == 'o2aregistry':
-                json_data = handle_o2aregistry(id_)
-            elif handler.endswith('sms'):
-                json_data = handle_sms(id_, handler)
-            elif handler == 'gfzgipp':
-                json_data = handle_gipp(id_)
-            else:
-                return
-            #request_url = BASE_URL.format(id_=instance.external_id)
-            ## print(f'Request URL {request_url}')
-            ## TODO: proper error handling
-            #response = requests.get(request_url)
-            #json_data = response.json()
-            logger.debug(f'response: {json_data}')
-            # go through attributes (hopefully predefined in questions)
-            for attribute, source_attribute in config.get('attribute_mapping', {}).items():
-                # print(f'attribute {attribute}, source_attribute {source_attribute}')
-                # check for key error
-                #attribute_value = json_data['records'][0]['metadata'][source_attribute]
-                attribute_value = json_data.get(source_attribute)
-                if attribute_value:
-                    attribute_object = Attribute.objects.get(uri=attribute)
-                    if isinstance(attribute_value, list):
-                        for i, value in enumerate(attribute_value):
-                            obj, created = Value.objects.update_or_create(
-                                project=instance.project,
-                                attribute=attribute_object,
-                                set_prefix=instance.set_index,
-                                set_collection=True,
-                                set_index=i,
-                                defaults={
-                                    'project': instance.project,
-                                    'attribute': attribute_object,
-                                    'text': value,
-                                }
-                            )
-                    else:
+    
+    # Noting to do without instance or an instance without an external id
+    if instance is None or instance.external_id is None:
+        return
+
+    configuration = load_config()
+
+    # Without configuration we have no mapping and can not do anything
+    if configuration is None:
+        return
+
+    logger.debug(f'Config: %s', configuration)
+    id_prefix = None
+    external_id = None
+    if len(instance.external_id.split(':')) == 2:
+        id_prefix, external_id = instance.external_id.split(':')
+
+    if id_prefix is None or external_id is None:
+        return
+    
+    handlers_configuration = configuration.get('handlers', {})
+    for handler, config in handlers_configuration.items():
+        catalog_configs = config.get('catalogs')
+        backends = config.get('backends')
+        
+        try:
+            # get handler class by name
+            HandlerClass = globals()[handler]
+            logger.debug('Current handler class: %s (%s)', handler, HandlerClass)
+        except KeyError:
+            logger.error('The handler %s does not exist. Check yor configuration.', handler)
+            continue
+
+        if catalog_configs is None:
+            logger.error('No catalog mappings configured for handler %s. Add mappings to use this handler.', handler)
+            continue
+
+        # this should return only one
+        matching_catalog_configs = [cc for cc in catalog_configs if cc['catalog_uri'] == instance.project.catalog.uri and cc['auto_complete_field_uri'] == instance.attribute.uri]
+        
+        if not matching_catalog_configs:
+            logger.info('not matching catalog config found')
+            return
+
+        if matching_catalog_configs:
+            logger.debug('found mapping for %s: %s', handler, matching_catalog_configs)
+        
+        handler_object = None
+        # use default configuration 
+        if backends is None and id_prefix == HandlerClass().get_default_id_prefix():
+            logger.info('Using defaults for handler %s', handler)
+            handler_object = HandlerClass(attribute_mapping=matching_catalog_configs[0].get('attribute_mapping'))
+        elif backends:
+            # find matching backend
+            matching_backends = [b for b in backends if b['id_prefix'] == id_prefix]
+            logger.debug('Matching backends: %s', matching_backends)
+            if matching_backends and matching_backends[0].get('base_url'):
+                handler_object = HandlerClass(base_url=matching_backends[0].get('base_url'), attribute_mapping=matching_catalog_configs[0].get('attribute_mapping'))
+            elif matching_backends:
+                handler_object = HandlerClass(attribute_mapping=matching_catalog_configs[0].get('attribute_mapping'))
+
+        if handler_object is None:
+            logger.info('No matching handler configured')
+            continue
+
+        for attribute_uri, attribute_value in handler_object.handle(id_=external_id).items():
+            if attribute_value is not None:
+                attribute_object = Attribute.objects.get(uri=attribute_uri)
+                if isinstance(attribute_value, list):
+                    for i, value in enumerate(attribute_value):
+                        # TODO: check if attribute is collection
                         obj, created = Value.objects.update_or_create(
                             project=instance.project,
                             attribute=attribute_object,
-                            set_index=instance.set_index,
+                            set_prefix=instance.set_index,
+                            set_collection=True,
+                            set_index=i,
                             defaults={
                                 'project': instance.project,
                                 'attribute': attribute_object,
-                                'text': attribute_value,
+                                'text': value,
                             }
                         )
-                # print(f'created: {created}, object: {obj}')
-
-
+                else:
+                    obj, created = Value.objects.update_or_create(
+                        project=instance.project,
+                        attribute=attribute_object,
+                        set_index=instance.set_index,
+                        defaults={
+                            'project': instance.project,
+                            'attribute': attribute_object,
+                            'text': attribute_value,
+                        }
+                    )
