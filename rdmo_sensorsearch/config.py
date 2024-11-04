@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from django.conf import settings
+from rdmo import __version__
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -12,6 +13,26 @@ else:
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_user_agent():
+    """
+    Constructs a user agent string for HTTP requests.
+
+    This function generates a user agent string that identifies the RDMO
+    SensorSearch plugin along with the RDMO version and optionally the email
+    address configured in settings.
+
+    Returns:
+        str: A formatted user agent string.
+    """
+    user_agent = f"rdmo/{__version__} SensorSearch Plugin https://github.com/rdmorganiser/rdmo-plugins-sensorsearch"
+    try:
+        if settings.DEFAULT_FROM_EMAIL:
+            user_agent += f"{user_agent} ({settings.DEFAULT_FROM_EMAIL})"
+    except AttributeError:
+        pass
+    return user_agent
 
 
 def load_config():

@@ -7,7 +7,7 @@ import requests
 # from cachetools import cached, TTLCache
 from rdmo.options.providers import Provider
 
-from .config import load_config
+from .config import load_config, get_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class O2ARegistrySearchProvider(Provider):
                 f"(title:({search}*)^2 OR id:(/{search}/)^20 OR "
                 f"({search}*)^0) AND (states.itemState:(public devicestore)^0)"
             )
-            response = requests.get(self.base_url + f"?hits={self.max_hits}" + "&q=" + quote(query))
+            response = requests.get(self.base_url + f"?hits={self.max_hits}" + "&q=" + quote(query), headers={"User-Agent": get_user_agent()})
             logger.debug("Response: %s", response)
             json_data = response.json()
             for data_set in json_data.get("records", []):
@@ -71,7 +71,7 @@ class SensorManagentSystemProvider(Provider):
         try:
             query = f"{search}"
             url = self.base_url + "?" + "q=" + quote(query)
-            response = requests.get(url)
+            response = requests.get(url, headers={"User-Agent": get_user_agent()})
             logger.debug("Response: %s", response)
             json_data = response.json()
             logger.debug("json_data: %s", json_data)
@@ -108,7 +108,7 @@ class GeophysicalInstrumentPoolPotsdamProvider(Provider):
     # @cached(cache=TTLCache(maxsize=1024, ttl=600))
     def get_all_instruments(self):
         try:
-            response = requests.get(self.base_url + "/index.json?limit=10000&program=MOSES")
+            response = requests.get(self.base_url + "/index.json?limit=10000&program=MOSES", headers={"User-Agent": get_user_agent()})
             logger.debug("Response: %s", response)
             json_data = response.json()
             logger.debug("json_data: %s", json_data)

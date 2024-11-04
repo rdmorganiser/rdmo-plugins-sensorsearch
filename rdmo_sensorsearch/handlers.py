@@ -9,7 +9,7 @@ from django.db.models.signals import post_save
 from rdmo.projects.models import Value
 from rdmo.domain.models import Attribute
 
-from .config import load_config
+from .config import load_config, get_user_agent
 
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,7 @@ class GenericSearchHandler():
 
     def _get(self, url):
         try:
-            # TODO: request with UA
-            return requests.get(url).json()
+            return requests.get(url, headers={"User-Agent": get_user_agent()}).json()
         except requests.exceptions.RequestException as e:
             logger.error("Request failed: %s", e)
         
