@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from functools import cache
 from pathlib import Path
 
 from django.conf import settings
@@ -15,6 +16,7 @@ else:
 logger = logging.getLogger(__name__)
 
 
+@cache
 def get_user_agent():
     """
     Constructs a user agent string for HTTP requests.
@@ -35,6 +37,7 @@ def get_user_agent():
     return user_agent
 
 
+@cache
 def load_config():
     # load settings
     try:
