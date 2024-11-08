@@ -39,6 +39,27 @@ def get_user_agent():
 
 @cache
 def load_config():
+    """
+    Loads the sensor search provider configuration from a TOML file.
+
+    This function attempts to load the sensor provider configuration from a
+    TOML file. It first tries to retrieve the configuration file name and path
+    from settings variables. If those are not defined, it uses default values.
+    The function then checks for environment variables that might override the
+    file name or path. Finally, it opens the configuration file using `tomllib`
+    and returns the parsed configuration as a dictionary.
+
+    Returns:
+        dict: A dictionary containing the loaded configuration settings.
+
+    Raises:
+        FileNotFoundError:          If the configuration file is not found.
+        PermissionError:            If there are permission issues accessing
+                                    the configuration file.
+        tomllib.TOMLDecodeError:    If the configuration file cannot be
+                                    decoded as valid TOML.
+
+    """
     # load settings
     try:
         CONFIG_FILE_NAME = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME
