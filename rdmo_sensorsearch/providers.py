@@ -6,7 +6,7 @@ import requests
 
 from rdmo.options.providers import Provider
 
-from .config import load_config, get_user_agent
+from .config import get_user_agent, load_config
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,7 @@ class O2ARegistrySearchProvider(Provider):
         base_url (str):     Base URL for the O2A Registry API endpoint.
                             Defaults to "https://registry.o2a-data.de/index/rest/search/sensor-v2".count
     """
+
     def __init__(
         self,
         id_prefix="o2aregistry",
@@ -69,7 +70,10 @@ class O2ARegistrySearchProvider(Provider):
                 f"(title:({search}*)^2 OR id:(/{search}/)^20 OR "
                 f"({search}*)^0) AND (states.itemState:(public devicestore)^0)"
             )
-            response = requests.get(self.base_url + f"?hits={self.max_hits}" + "&q=" + quote(query), headers={"User-Agent": get_user_agent()})
+            response = requests.get(
+                self.base_url + f"?hits={self.max_hits}" + "&q=" + quote(query),
+                headers={"User-Agent": get_user_agent()},
+            )
             logger.debug("Response: %s", response)
             json_data = response.json()
             # assemble list of options with id and display text
@@ -107,6 +111,7 @@ class SensorManagentSystemProvider(Provider):
         base_url (str):     Base URL for the SMS API endpoint. Must be set
                             before calling get_options().
     """
+
     def __init__(self, id_prefix="sms", text_prefix="SMS:", max_hits=10, base_url=None, **kwargs):
         self.id_prefix = id_prefix
         self.text_prefix = text_prefix
@@ -181,6 +186,7 @@ class GeophysicalInstrumentPoolPotsdamProvider(Provider):
         base_url (str):     Base URL for the GIPP API endpoint. Defaults to
                             "https://gipp.gfz-potsdam.de/instruments".
     """
+
     def __init__(
         self,
         id_prefix="gfzgipp",
@@ -204,7 +210,9 @@ class GeophysicalInstrumentPoolPotsdamProvider(Provider):
             GIPP API, or an empty list if the request fails.
         """
         try:
-            response = requests.get(self.base_url + "/index.json?limit=10000&program=MOSES", headers={"User-Agent": get_user_agent()})
+            response = requests.get(
+                self.base_url + "/index.json?limit=10000&program=MOSES", headers={"User-Agent": get_user_agent()}
+            )
             logger.debug("Response: %s", response)
             json_data = response.json()
             return json_data
@@ -254,6 +262,7 @@ class SensorsProvider(Provider):
     use and their respective parameters. The `get_options` method aggregates
     search results from all configured providers.
     """
+
     search = True
 
     refresh = True
