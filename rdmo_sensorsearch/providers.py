@@ -79,7 +79,7 @@ class O2ARegistrySearchProvider(Provider):
             # assemble list of options with id and display text
             for data_set in json_data.get("records", []):
                 text = f"{self.text_prefix} {data_set['title']}"
-                if data_set["metadata"]["serial"]:
+                if data_set.get("metadata", {}).get("serial"):
                     text += f" (s/n: {data_set['metadata']['serial']}, id: {data_set['id']})"
                 else:
                     text += f" (id: {data_set['id']})"
