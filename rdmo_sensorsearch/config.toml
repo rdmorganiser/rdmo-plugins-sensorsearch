@@ -2,15 +2,19 @@
 min_search_len = 3 
 
 [handlers.O2ARegistrySearchHandler]
+# Use defaults
 #[[handlers.O2ARegistrySearchHandler.backends]]
 #id_prefix = "o2aregistry"
+# Example Catalog
 [[handlers.O2ARegistrySearchHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
-auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
+catalog_uri = "http://example.com/terms/questions/sensorsearch"
+auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
 [handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
-"longName" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
-"shortName" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
-"serialNumber" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
+"longName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+"shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
+"serialNumber" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+"parameters[].name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
+"parameters[].unit" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
 
 
 [handlers.SensorManagentSystemHandler]
@@ -23,46 +27,27 @@ base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1"
 [[handlers.SensorManagentSystemHandler.backends]]
 id_prefix = "ufzsms"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1"
+# Example Catalog
 [[handlers.SensorManagentSystemHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
-auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
+catalog_uri = "http://example.com/terms/questions/sensorsearch"
+auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
 [handlers.SensorManagentSystemHandler.catalogs.attribute_mapping]
-"data.attributes.long_name" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
-"data.attributes.short_name" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
-"data.attributes.serial_number" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
+"data.attributes.long_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+"data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
+"data.attributes.serial_number" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+# Advanced usage of JMESPath
+"included[].attributes.label && included[].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
+"included[].attributes.unit_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
 
 [handlers.GeophysicalInstrumentPoolPotsdamHandler]
+# Example Catalog
 [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
-auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
+catalog_uri = "http://example.com/terms/questions/sensorsearch"
+auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
 [handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
-"Instrument.code" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
-"Instrumentcategory.name" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
-"Instrument.serialNo" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
-
-#[[backends.O2ARegistrySearchHandler]]
-#id_prefix = o2aregistry
-#base_url = …
-
-#[[catalog_mappings.O2ARegistrySearchHandler]]
-#catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
-#auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
-#[catalog_mappings.O2ARegistrySearchHandler.attribute_mapping]
-#"$.longName" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
-#"$.shortName" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
-#"$.serialNumber" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
-#
-#[[catalog_mappings.O2ARegistrySearchHandler]]
-#catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
-#auto_complete_field_uri = "http://rdmo.nfdi.de/terms/domain/dataset/instrument/uri"
-#[catalog_mappings.O2ARegistrySearchHandler.attribute_mapping]
-#"$.longName" = "http://rdmo.nfdi.de/terms/domain/dataset/instrument/name"
-#"$.type.generalName" = "http://rdmo.nfdi.de/terms/domain/dataset/instrument/type"
-#"$.manufacturer" = "http://rdmo.nfdi.de/terms/domain/dataset/instrument/manufacturer"
-#"$.model" = "http://rdmo.nfdi.de/terms/domain/dataset/instrument/type/name"
-#"$.serialNumber" = "http://rdmo.nfdi.de/terms/domain/dataset/instrument/type/serial_number"
-#"$.citation" = "http://rdmo.nfdi.de/terms/domain/dataset/instrument/type/pid"
-
+"Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+"Instrumentcategory.name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+"Instrument.serialNo" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
@@ -82,23 +67,3 @@ text_prefix = "UFZ Sensors:"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
 [[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]
-#
-#[[SensorsProvider.providers.DoesNotExists]]
-
-#        results = O2ARegistrySearchProvider().get_options(project, search, user, site) + \
-#                SensorManagentSystemProvider(
-#                        id_prefix = 'gfzsms', 
-#                        text_prefix = 'GFZ Sensors:', 
-#                        base_url = 'https://sensors.gfz-potsdam.de/backend/api/v1/devices'
-#                ).get_options(project, search, user, site)  + \
-#                SensorManagentSystemProvider(
-#                        id_prefix = 'kitsms',
-#                        text_prefix = 'KIT Sensors:',
-#                        base_url = 'https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1/devices'
-#                ).get_options(project, search, user, site) + \
-#                SensorManagentSystemProvider(
-#                        id_prefix = 'ufzsms',
-#                        text_prefix = 'UFZ Sensors:',
-#                        base_url = 'https://web.app.ufz.de/sms/backend/api/v1/devices'
-#                ).get_options(project, search, user, site) + \
-#                GeophysicalInstrumentPoolPotsdamProvider().get_options(project, search, user, site) 

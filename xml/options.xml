@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2023-08-11T14:24:25.295548+02:00">
-	<optionset dc:uri="http://rdmo-dev.local/terms/options/awi-sensors">
-		<uri_prefix>http://rdmo-dev.local/terms</uri_prefix>
-		<key>awi-sensors</key>
+<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2024-11-15T16:41:44.370868+01:00" version="2.2.0+b1963de">
+	<optionset dc:uri="http://example.com/terms/options/sensorsearch/optionset">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/optionset</uri_path>
 		<dc:comment/>
-		<order>0</order>
-		<provider_key>awisensors</provider_key>
+		<provider_key>sensorssearch</provider_key>
+		<options/>
 		<conditions/>
 	</optionset>
 </rdmo>

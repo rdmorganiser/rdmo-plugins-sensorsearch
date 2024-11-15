@@ -1,65 +1,143 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2023-08-11T14:26:40.653929+02:00">
-	<catalog dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test">
-		<uri_prefix>http://rdmo-dev.local/terms</uri_prefix>
-		<key>sensor-awi-test</key>
-		<dc:comment>Example Catalog to use the Sensor AWI Optionset Plugin</dc:comment>
+<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2024-11-15T16:40:46.555857+01:00" version="2.2.0+b1963de">
+	<catalog dc:uri="http://example.com/terms/questions/sensorsearch">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch</uri_path>
+		<dc:comment>Example catalog for the Sensor Search option set plugin</dc:comment>
 		<order>0</order>
-		<title lang="en">Sensor AWI Test</title>
-		<help lang="en"/>
-		<title lang="de">Sensor AWI Test</title>
-		<help lang="de"/>
+		<title lang="en">Sensor Search Example Catalog</title>
+		<help lang="en">Demonstration of the Sensor Search option set plugin.</help>
+		<title lang="de">Sensor Suche Beispiel Katalog</title>
+		<help lang="de">Demonstration des Sensor Search option set plugin.</help>
+		<sections>
+			<section dc:uri="http://example.com/terms/questions/sensorsearch/sensor" order="1"/>
+		</sections>
 	</catalog>
-	<section dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument">
-		<uri_prefix>http://rdmo-dev.local/terms</uri_prefix>
-		<key>instrument</key>
-		<path>sensor-awi-test/instrument</path>
+	<section dc:uri="http://example.com/terms/questions/sensorsearch/sensor">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/sensor</uri_path>
 		<dc:comment/>
-		<catalog dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test"/>
-		<order>0</order>
-		<title lang="en">Instrument</title>
-		<title lang="de">Instrument</title>
+		<title lang="en">Sensor</title>
+		<short_title lang="en"/>
+		<title lang="de">Sensor</title>
+		<short_title lang="de"/>
+		<pages>
+			<page dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor" order="1"/>
+		</pages>
 	</section>
-	<questionset dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument/instrument">
-		<uri_prefix>http://rdmo-dev.local/terms</uri_prefix>
-		<key>instrument</key>
-		<path>sensor-awi-test/instrument/instrument</path>
+	<page dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/sensor/sensor</uri_path>
 		<dc:comment/>
 		<attribute/>
-		<section dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument"/>
-		<questionset/>
 		<is_collection>False</is_collection>
-		<order>0</order>
-		<title lang="en">Instrument</title>
+		<title lang="en">Sensor</title>
+		<short_title lang="en"/>
 		<help lang="en"/>
 		<verbose_name lang="en"/>
-		<verbose_name_plural lang="en"/>
-		<title lang="de">Intrument</title>
+		<title lang="de">Sensor</title>
+		<short_title lang="de"/>
 		<help lang="de"/>
 		<verbose_name lang="de"/>
-		<verbose_name_plural lang="de"/>
+		<questionsets>
+			<questionset dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/parameters" order="4"/>
+		</questionsets>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/search-optionset" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/type" order="1"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/name" order="2"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/serial" order="3"/>
+		</questions>
+		<conditions/>
+	</page>
+	<questionset dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/parameters">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/sensor/sensor/parameters</uri_path>
+		<dc:comment/>
+		<attribute/>
+		<is_collection>True</is_collection>
+		<title lang="en">Parameters</title>
+		<help lang="en"/>
+		<verbose_name lang="en"/>
+		<title lang="de">Parameter</title>
+		<help lang="de"/>
+		<verbose_name lang="de"/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/parameters/variable" order="1"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/parameters/unit" order="2"/>
+		</questions>
 		<conditions/>
 	</questionset>
-	<question dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument/instrument/sensor-search">
-		<uri_prefix>http://rdmo-dev.local/terms</uri_prefix>
-		<key>sensor-search</key>
-		<path>sensor-awi-test/instrument/instrument/sensor-search</path>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/parameters/variable">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/sensor/sensor/parameters/variable</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://rdmo-dev.local/terms/domain/sensor/awi/search"/>
-		<questionset dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument/instrument"/>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<order>0</order>
 		<help lang="en"/>
+		<text lang="en">Parameter</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Parameter</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/parameters/unit">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/sensor/sensor/parameters/unit</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Unit</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Einheit</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/search-optionset">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/sensor/sensor/search-optionset</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/title"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en">It may take some seconds to show the results.</help>
 		<text lang="en">Type to search for sensor</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<verbose_name_plural lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Tippen um nach Sensoren zu Suchen</text>
+		<help lang="de">Es kann ein paar Sekunden dauern, bis die Ergebnisse angezeigt werden.</help>
+		<text lang="de">Tippe um Sensor zu suchen</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
-		<verbose_name_plural lang="de"/>
 		<default_option/>
 		<default_external_id/>
 		<widget_type>autocomplete</widget_type>
@@ -70,30 +148,25 @@
 		<unit/>
 		<width/>
 		<optionsets>
-			<optionset dc:uri="http://rdmo-dev.local/terms/options/awi-sensors"/>
+			<optionset dc:uri="http://example.com/terms/options/sensorsearch/optionset"/>
 		</optionsets>
 		<conditions/>
 	</question>
-	<question dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument/instrument/type-name">
-		<uri_prefix>http://rdmo-dev.local/terms</uri_prefix>
-		<key>type-name</key>
-		<path>sensor-awi-test/instrument/instrument/type-name</path>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/type">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/sensor/sensor/type</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://rdmo-dev.local/terms/domain/sensor/awi/type-name"/>
-		<questionset dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument/instrument"/>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/description"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<order>0</order>
 		<help lang="en"/>
 		<text lang="en">Type Name</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<verbose_name_plural lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Typ Name</text>
+		<text lang="de">Type Name</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
-		<verbose_name_plural lang="de"/>
 		<default_option/>
 		<default_external_id/>
 		<widget_type>text</widget_type>
@@ -106,26 +179,21 @@
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument/instrument/name">
-		<uri_prefix>http://rdmo-dev.local/terms</uri_prefix>
-		<key>name</key>
-		<path>sensor-awi-test/instrument/instrument/name</path>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/name">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/sensor/sensor/name</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://rdmo-dev.local/terms/domain/sensor/awi/name"/>
-		<questionset dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument/instrument"/>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<order>0</order>
 		<help lang="en"/>
 		<text lang="en">Name</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<verbose_name_plural lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Name</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
-		<verbose_name_plural lang="de"/>
 		<default_option/>
 		<default_external_id/>
 		<widget_type>text</widget_type>
@@ -138,26 +206,21 @@
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument/instrument/serial">
-		<uri_prefix>http://rdmo-dev.local/terms</uri_prefix>
-		<key>serial</key>
-		<path>sensor-awi-test/instrument/instrument/serial</path>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/sensor/sensor/serial">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/sensor/sensor/serial</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://rdmo-dev.local/terms/domain/sensor/awi/serial"/>
-		<questionset dc:uri="http://rdmo-dev.local/terms/questions/sensor-awi-test/instrument/instrument"/>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/id"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<order>0</order>
 		<help lang="en"/>
 		<text lang="en">Serial</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<verbose_name_plural lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Seriennummer</text>
+		<text lang="de">Serial</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
-		<verbose_name_plural lang="de"/>
 		<default_option/>
 		<default_external_id/>
 		<widget_type>text</widget_type>
