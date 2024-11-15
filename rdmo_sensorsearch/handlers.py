@@ -19,7 +19,7 @@ class GenericSearchHandler:
     Base class for handling post_saves.
 
     Derived classes are used to gather additional information from the
-    implemented API porvider and map them to attributes in a catalog using
+    implemented API provider and map them to attributes in a catalog using
     JMESPath.
     """
 
@@ -139,7 +139,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         Handles post_save for a specific ID.
 
         Args:
-            id_ (str): The (sensor) ID to to get additinal information for.
+            id_ (str): The (sensor) ID to to get additional information for.
 
         Returns:
             dict: A dictionary containing the mapped values from the O2A
@@ -273,7 +273,7 @@ def post_save_project_values(sender, **kwargs):
     additional Value objects associated with the same Project.
 
     At first it checks if there is an instance with an external_id. The
-    external_id can be set by an optionset provider. Only then the
+    external_id can be set by an option set provider. Only then the
     configuration is loaded. Only when the configuration contains a mapping for
     the catalog where the Value belongs to, the resource intensive API calls
     are made.
