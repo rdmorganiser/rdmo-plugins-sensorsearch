@@ -54,16 +54,16 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 [[SensorsProvider.providers.SensorManagentSystemProvider]]
 id_prefix = "gfzsms" 
 text_prefix = "GFZ Sensors:" 
-base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/devices"
+base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
 
 [[SensorsProvider.providers.SensorManagentSystemProvider]]
 id_prefix = "kitsms"
 text_prefix = "KIT Sensors:"
-base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1/devices"
+base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1"
 
 [[SensorsProvider.providers.SensorManagentSystemProvider]]
 id_prefix = "ufzsms"
 text_prefix = "UFZ Sensors:"
-base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
+base_url = "https://web.app.ufz.de/sms/backend/api/v1"
 
 [[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]

@@ -144,7 +144,7 @@ class SensorManagentSystemProvider(Provider):
 
         try:
             query = f"{search}"
-            url = self.base_url + "?" + "q=" + quote(query)
+            url = self.base_url + "/devices?q=" + quote(query)
             response = requests.get(url, headers={"User-Agent": get_user_agent()})
             logger.debug("Response: %s", response)
             json_data = response.json()
