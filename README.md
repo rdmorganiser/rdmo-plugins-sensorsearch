@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2023 - 2024 Hannes Fuchs (GFZ) <hfuchs@gfz-potsdam.de>
+SPDX-FileCopyrightText: 2023 - 2024 Helmholtz Centre Potsdam - GFZ German Research Centre for Geosciences
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # RDMO Sensor Search option set plugin
 
 This option set plugin allows you to query several sensor registries at the

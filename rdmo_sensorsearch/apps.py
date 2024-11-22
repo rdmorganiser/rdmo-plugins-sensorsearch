@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2023 Hannes Fuchs (GFZ) <hannes.fuchs@gfz-potsdam.de>
+# SPDX-FileCopyrightText: 2023 Helmholtz Centre Potsdam - GFZ German Research Centre for Geosciences
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from django.apps import AppConfig
 
 

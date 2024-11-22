@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2023 - 2024 Hannes Fuchs (GFZ) <hannes.fuchs@gfz-potsdam.de>
+SPDX-FileCopyrightText: 2023 - 2024 Helmholtz Centre Potsdam - GFZ German Research Centre for Geosciences
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2024-11-15T16:40:46.555857+01:00" version="2.2.0+b1963de">
 	<catalog dc:uri="http://example.com/terms/questions/sensorsearch">
 		<uri_prefix>http://example.com/terms</uri_prefix>
