@@ -78,7 +78,7 @@ class GenericSearchHandler:
         try:
             return requests.get(url, headers={"User-Agent": get_user_agent()}).json()
         except requests.exceptions.RequestException as e:
-            logger.error("Request failed: %s", e)
+            logger.error("Request failed: %s, %s", e, url)
 
         return {}
 

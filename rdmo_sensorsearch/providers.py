@@ -90,7 +90,7 @@ class O2ARegistrySearchProvider(Provider):
                     text += f" (id: {data_set['id']})"
                 self.results.append({"id": self.id_prefix + ":" + data_set["uniqueId"], "text": text})
         except requests.exceptions.RequestException as e:
-            logger.error("Request failed: %s", e)
+            logger.error("Request failed: %s, search=%s, user=%s, site=%s", e, search, user, site)
 
         return self.results
 
@@ -164,7 +164,7 @@ class SensorManagentSystemProvider(Provider):
                     text += " (s/n: " + data_set["attributes"]["serial_number"] + ")"
                 self.results.append({"id": self.id_prefix + ":" + data_set["id"], "text": text})
         except requests.exceptions.RequestException as e:
-            logger.error("Request failed: %s", e)
+            logger.error("Request failed: %s, search=%s, user=%s, site=%s", e, search, user, site)
 
         return self.results[: self.max_hits]
 
