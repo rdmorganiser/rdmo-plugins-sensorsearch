@@ -13,6 +13,7 @@ import requests
 
 from rdmo.domain.models import Attribute
 from rdmo.projects.models import Value
+from rdmo.questions.models import Question, QuestionSet
 
 from .config import get_user_agent, load_config
 
@@ -394,19 +395,58 @@ def post_save_project_values(sender, **kwargs):
             if attribute_value is not None:
                 attribute_object = Attribute.objects.get(uri=attribute_uri)
                 if isinstance(attribute_value, list):
-                    for i, value in enumerate(attribute_value):
-                        # TODO: check if attribute is collection
-                        obj, created = Value.objects.update_or_create(
-                            project=instance.project,
-                            attribute=attribute_object,
-                            set_prefix=instance.set_index,
-                            set_collection=True,
-                            set_index=i,
-                            defaults={
-                                "project": instance.project,
-                                "attribute": attribute_object,
-                                "text": value,
-                            },
+                    # get question count, which are collection and match our
+                    # attribute and catalog
+                    question_match_count = Question.objects.filter(
+                        is_collection=True,
+                        attribute=attribute_object,
+                        pages__sections__catalogs__id__exact=instance.project.catalog.id,
+                    ).count()
+                    # get questionset count, which are collection and match our
+                    # attribute and catalog
+                    question_set_match_count = QuestionSet.objects.filter(
+                        is_collection=True,
+                        pages__sections__catalogs__id__exact=instance.project.catalog.id,
+                        questions__attribute__in=[attribute_object],
+                    ).count()
+
+                    # matches a question which is a collection
+                    if question_match_count == 1 and question_set_match_count == 0:
+                        for i, value in enumerate(attribute_value):
+                            _, _ = Value.objects.update_or_create(
+                                project=instance.project,
+                                attribute=attribute_object,
+                                set_collection=True,
+                                set_index=instance.set_index,
+                                collection_index=i,
+                                defaults={
+                                    "project": instance.project,
+                                    "attribute": attribute_object,
+                                    "text": value,
+                                },
+                            )
+                    # nested question in questionset
+                    elif question_match_count == 0 and question_set_match_count > 0:
+                        for i, value in enumerate(attribute_value):
+                            _, _ = Value.objects.update_or_create(
+                                project=instance.project,
+                                attribute=attribute_object,
+                                set_prefix=instance.set_index,
+                                set_collection=True,
+                                set_index=i,
+                                defaults={
+                                    "project": instance.project,
+                                    "attribute": attribute_object,
+                                    "text": value,
+                                },
+                            )
+                    else:
+                        logger.warning(
+                            "Got a list of values, but no matching Question or QuestionSet with is_collection flag. "
+                            "Questions: %s, QuestionSets: %s, Attribute: %s",
+                            question_match_count,
+                            question_set_match_count,
+                            attribute_object,
                         )
                 else:
                     obj, created = Value.objects.update_or_create(
