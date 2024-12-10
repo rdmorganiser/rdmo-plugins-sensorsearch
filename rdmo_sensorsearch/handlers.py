@@ -155,14 +155,29 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         # basic date
         basic_data = self._get(f"{self.base_url}/items/{id_}")
 
+        # contacts
+        contacts_data = self._get(f"{self.base_url}/items/{id_}/contacts")
+
         # parameters
         parameters_data = self._get(f"{self.base_url}/items/{id_}/parameters")
 
         # units
         units_data = self._get(f"{self.base_url}/units")
 
-        # extend basic data with parameters
+        # extend basic data with contacts
         data = basic_data
+        data.update({"contacts": []})
+        for contact in contacts_data.get("records", []):
+            contact_data = contact.get("contact")
+            # only add data if it is not a reference
+            if contact_data and isinstance(contact_data, dict):
+                tmp_contact_dict = {}
+                for key in ["firstName", "lastName", "email"]:
+                    if key in contact_data:
+                        tmp_contact_dict.update({key: contact_data.get(key)})
+                data.update({"contacts": [*data.get("contacts", []), tmp_contact_dict]})
+
+        # extend basic data with parameters
         data.update({"parameters": []})
 
         # That's a bit special in the case of O2A. It is not guaranteed that
@@ -211,6 +226,11 @@ class SensorManagentSystemHandler(GenericSearchHandler):
                   response.
         """
         data = self._get(f"{self.base_url}/devices/{id_}?include=device_properties")
+
+        # contacts can not be included in the first request with the include parameter
+        contact_data = self._get(f"{self.base_url}/devices/{id_}/device-contact-roles?include=contact")
+        # add the included contact data to the data
+        data.update({"included": [*data.get("included", []), *contact_data.get("included", [])]})
 
         logger.debug("data: %s", data)
 

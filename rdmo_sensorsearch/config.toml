@@ -41,7 +41,7 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 "data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
 "data.attributes.serial_number" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
 # Advanced usage of JMESPath
-"included[].attributes.label && included[].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
+"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
 "included[].attributes.unit_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
 
 [handlers.GeophysicalInstrumentPoolPotsdamHandler]
