@@ -20,6 +20,20 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 "serialNumber" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
 "parameters[].name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
 "parameters[].unit" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
+# MOSES Catalog mapping
+[[handlers.O2ARegistrySearchHandler.catalogs]]
+catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+[handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
+"longName || shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+"type.generalName" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
+"manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+"model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
+"serialNumber" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+"citation" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+"parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+"contacts[].join(', ', [lastName, firstName])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 
 [handlers.SensorManagementSystemHandler]
@@ -43,6 +57,20 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 # Advanced usage of JMESPath
 "included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
 "included[].attributes.unit_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
+# MOSES Catalog mapping
+[[handlers.SensorManagementSystemHandler.catalogs]]
+catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+"data.attributes.long_name || data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+"data.attributes.device_type_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
+"data.attributes.manufacturer_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+"data.attributes.model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
+"data.attributes.serial_number" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+"data.attributes.persistent_identifier" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+"included[?type==`device_property`].attributes.unit_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+"included[?type==`contact`].attributes.join(', ', [family_name, given_name])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 [handlers.GeophysicalInstrumentPoolPotsdamHandler]
 # Example Catalog
@@ -53,6 +81,16 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 "Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
 "Instrumentcategory.name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
 "Instrument.serialNo" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+# MOSES Catalog mapping
+[[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
+"Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+"Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+"Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+"Instrument.pid" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"Person.[surname, givenname].join(', ', @)" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
