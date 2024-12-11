@@ -71,6 +71,8 @@ class O2ARegistrySearchProvider(Provider):
             return self.results
 
         try:
+            # just leave characters to search
+            search = re.sub(r"[^A-Za-z0-9\s]", "", search)
             query = (
                 f"(title:({search}*)^2 OR id:(/{search}/)^20 OR "
                 f"({search}*)^0) AND (states.itemState:(public devicestore)^0)"
