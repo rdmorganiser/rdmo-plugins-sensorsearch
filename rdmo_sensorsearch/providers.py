@@ -299,6 +299,14 @@ class SensorsProvider(Provider):
             list: A list of dictionaries representing sensor options. Each
             dictionary contains "id" and "text" keys.
         """
+
+        # dict of known provider classes
+        PROVIDER_REGISTRY = {
+            "O2ARegistrySearchProvider": O2ARegistrySearchProvider,
+            "SensorManagementSystemProvider": SensorManagementSystemProvider,
+            "GeophysicalInstrumentPoolPotsdamProvider": GeophysicalInstrumentPoolPotsdamProvider,
+        }
+
         # load configuration
         configuration = load_config()
 
@@ -318,7 +326,7 @@ class SensorsProvider(Provider):
                 continue
             for config in configs:
                 try:
-                    provider_instances.append(globals()[provider](**config))
+                    provider_instances.append(PROVIDER_REGISTRY[provider](**config))
                 except KeyError:
                     logger.error("The provider %s does not exist. Check yor configuration.", provider)
 
