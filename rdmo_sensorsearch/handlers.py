@@ -322,6 +322,13 @@ def post_save_project_values(sender, **kwargs):
         None
     """
 
+    # dict of known handler classes
+    HANDLER_REGISTRY = {
+        "O2ARegistrySearchHandler": O2ARegistrySearchHandler,
+        "SensorManagementSystemHandler": SensorManagementSystemHandler,
+        "GeophysicalInstrumentPoolPotsdamHandler": GeophysicalInstrumentPoolPotsdamHandler,
+    }
+
     logger.debug("Call of post_save_project_values")
     instance = kwargs.get("instance", None)
     logger.debug(f"Instance: {instance}")
@@ -358,7 +365,7 @@ def post_save_project_values(sender, **kwargs):
 
         try:
             # get handler class by name
-            HandlerClass = globals()[handler]
+            HandlerClass = HANDLER_REGISTRY[handler]
             logger.debug("Current handler class: %s (%s)", handler, HandlerClass)
         except KeyError:
             logger.error("The handler %s does not exist. Check yor configuration.", handler)
