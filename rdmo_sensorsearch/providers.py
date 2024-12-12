@@ -97,7 +97,7 @@ class O2ARegistrySearchProvider(Provider):
         return self.results
 
 
-class SensorManagentSystemProvider(Provider):
+class SensorManagementSystemProvider(Provider):
     """
     Searches a Sensor Management System (SMS) API for sensor data and returns
     options for selection.

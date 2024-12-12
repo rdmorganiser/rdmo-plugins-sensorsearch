@@ -80,17 +80,17 @@ min_search_len = 3
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
-[[SensorsProvider.providers.SensorManagentSystemProvider]]
+[[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "gfzsms" 
 text_prefix = "GFZ Sensors:" 
 base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/devices"
 
-[[SensorsProvider.providers.SensorManagentSystemProvider]]
+[[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "kitsms"
 text_prefix = "KIT Sensors:"
 base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1/devices"
 
-[[SensorsProvider.providers.SensorManagentSystemProvider]]
+[[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "ufzsms"
 text_prefix = "UFZ Sensors:"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
@@ -106,7 +106,7 @@ The `O2ARegistrySearchProvider` and `GeophysicalInstrumentPoolPotsdamProvider`
 uses their default values for `id_prefix`, `text_prefix`, `base_url` and
 `max_hits`.
 
-There is no default `base_url` for `SensorManagentSystemProvider` defined,
+There is no default `base_url` for `SensorManagementSystemProvider` defined,
 therefore the `base_url` for every instance must be set. In addition the
 `text_prefix` and `id_prefix` is configured. The `text_prefix` is displayed
 before the result, so that the user can identify the correct registry and
@@ -121,7 +121,7 @@ In conclusion, every provider has the following options:
   registry
 - `max_hits` defaults to `10` and limits the results to display
 - `base_url` the API URL of the used instance, must be set for the
-  `SensorManagentSystemProvider`
+  `SensorManagementSystemProvider`
 
 ### Configuration: Handlers
 
@@ -144,20 +144,20 @@ auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
 "shortName" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
 "serialNumber" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
-[handlers.SensorManagentSystemHandler]
-[[handlers.SensorManagentSystemHandler.backends]]
+[handlers.SensorManagementSystemHandler]
+[[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "gfzsms" 
 base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
-[[handlers.SensorManagentSystemHandler.backends]]
+[[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "kitsms"
 base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1"
-[[handlers.SensorManagentSystemHandler.backends]]
+[[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "ufzsms"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1"
-[[handlers.SensorManagentSystemHandler.catalogs]]
+[[handlers.SensorManagementSystemHandler.catalogs]]
 catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
 auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
-[handlers.SensorManagentSystemHandler.catalogs.attribute_mapping]
+[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
 "data.attributes.long_name" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
 "data.attributes.short_name" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
 "data.attributes.serial_number" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
@@ -173,7 +173,7 @@ auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
 ```
 
 A `backends` configuration must be defined in the case of
-`SensorManagentSystemHandler` or if more than one instance of one provider is
+`SensorManagementSystemHandler` or if more than one instance of one provider is
 used. Here the `id_prefix` and the `base_url` is critical and must be the same
 as in the `providers` configuration, so that additional requests can be made
 to the correct endpoint.

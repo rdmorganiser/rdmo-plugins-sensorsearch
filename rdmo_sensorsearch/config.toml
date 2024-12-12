@@ -22,21 +22,21 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 "parameters[].unit" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
 
 
-[handlers.SensorManagentSystemHandler]
-[[handlers.SensorManagentSystemHandler.backends]]
+[handlers.SensorManagementSystemHandler]
+[[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "gfzsms" 
 base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
-[[handlers.SensorManagentSystemHandler.backends]]
+[[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "kitsms"
 base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1"
-[[handlers.SensorManagentSystemHandler.backends]]
+[[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "ufzsms"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1"
 # Example Catalog
-[[handlers.SensorManagentSystemHandler.catalogs]]
+[[handlers.SensorManagementSystemHandler.catalogs]]
 catalog_uri = "http://example.com/terms/questions/sensorsearch"
 auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
-[handlers.SensorManagentSystemHandler.catalogs.attribute_mapping]
+[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
 "data.attributes.long_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
 "data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
 "data.attributes.serial_number" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
@@ -56,17 +56,17 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
-[[SensorsProvider.providers.SensorManagentSystemProvider]]
+[[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "gfzsms" 
 text_prefix = "GFZ Sensors:" 
 base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
 
-[[SensorsProvider.providers.SensorManagentSystemProvider]]
+[[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "kitsms"
 text_prefix = "KIT Sensors:"
 base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1"
 
-[[SensorsProvider.providers.SensorManagentSystemProvider]]
+[[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "ufzsms"
 text_prefix = "UFZ Sensors:"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1"

@@ -202,7 +202,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         return self._map_jamespath_to_attribute_uri(data)
 
 
-class SensorManagentSystemHandler(GenericSearchHandler):
+class SensorManagementSystemHandler(GenericSearchHandler):
     """
     Handles the Sensor Management System (SMS) to gather sensor information.
 
