@@ -31,8 +31,8 @@ class SensorManagementSystemProvider(BaseSensorProvider):
 
     id_prefix = "sms"
     text_prefix = "SMS:"
+    # base_url is set by config
     max_hits = 10
-    base_url = None  # must be set in config
 
     def get_query_url(self, search: str):
         query = quote(search)

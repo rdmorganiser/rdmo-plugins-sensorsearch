@@ -32,9 +32,9 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
 
     id_prefix = "gfzgipp"
     text_prefix = "GIPP:"
-    max_hits = 10
     base_url = "https://gipp.gfz-potsdam.de/instruments"
     instruments_path = "/index.json?limit=10000&program=MOSES"
+    max_hits = 10
 
     @property
     def instrument_url(self):

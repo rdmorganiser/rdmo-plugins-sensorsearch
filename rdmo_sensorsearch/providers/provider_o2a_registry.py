@@ -31,8 +31,8 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
 
     id_prefix = "o2aregistry"
     text_prefix = "O2A REGISTRY:"
-    max_hits = 10
     base_url = "https://registry.o2a-data.de/index/rest/search/sensor-v2"
+    max_hits = 10
 
     def get_options(self, project, search=None, user=None, site=None):
         """
