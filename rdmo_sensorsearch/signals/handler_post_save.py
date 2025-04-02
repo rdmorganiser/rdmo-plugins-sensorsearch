@@ -14,22 +14,28 @@ def handle_post_save(instance):
     id_prefix, external_id = parse_external_id(instance.external_id)
     if not id_prefix or not external_id:
         return
-    breakpoint()
 
-    for handler_name, handler_config in config.get("handlers", {}).items():
-        if not handler_config.get("catalogs"):
+    handlers_config = config.get("handlers", {})
+    if not handlers_config:
+        logger.debug("No handlers in config")
+
+    for handler_name, handler_config in handlers_config.items():
+
+        handler_config_catalogs = handler_config.get("catalogs", [])
+        if not handler_config_catalogs:
             logger.error("No catalog mappings for handler %s", handler_name)
             continue
 
         catalog_matches = [
-            cc for cc in handler_config["catalogs"]
+            cc for cc in handler_config_catalogs
             if cc["catalog_uri"] == instance.project.catalog.uri
                and cc["auto_complete_field_uri"] == instance.attribute.uri
         ]
 
         if not catalog_matches:
+            logger.debug("No catalog matches for handler %s", handler_name)
             continue
-        breakpoint()
+
         handler = create_handler_from_config(handler_name, handler_config, id_prefix, catalog_matches[0])
         if handler is None:
             continue
