@@ -2,7 +2,7 @@ import logging
 from urllib.parse import quote
 
 from rdmo_sensorsearch.providers.base import BaseSensorProvider
-from rdmo_sensorsearch.config import get_user_agent
+from rdmo_sensorsearch.client import get_user_agent, fetch_json
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,10 @@ class SensorManagementSystemProvider(BaseSensorProvider):
     max_hits = 10
     base_url = None  # must be set in config
 
+    def get_query_url(self, search: str):
+        query = quote(search)
+        return f"{self.base_url}?q={query}"
+
     def get_options(self, project, search=None, user=None, site=None):
         """
         Retrieves options based on the provided search term from the SMS.
@@ -54,19 +58,25 @@ class SensorManagementSystemProvider(BaseSensorProvider):
         if search is None:
             return []
 
-        query = quote(search)
-        url = f"{self.base_url}/devices?q={query}"
-        json_data = self.fetch_json(url)
+        optionset = []
 
-        for data_set in json_data.get("data", []):
+        query_url = self.get_query_url(search)
+        json_fetched = fetch_json(query_url)
+        json_data = json_fetched.get("data", [])
+        if not json_data:
+            logger.debug(f"Empty response from SMS API for {query_url}")
+            return []
+
+
+        for data_set in json_data:
             attrs = data_set["attributes"]
             text = f"{self.text_prefix} {attrs.get('long_name') or attrs['short_name']}"
             if attrs.get("serial_number"):
                 text += f" (s/n: {attrs['serial_number']})"
 
-            self.results.append({
+            optionset.append({
                 "id": f"{self.id_prefix}:{data_set['id']}",
                 "text": text
             })
 
-        return self.results[: self.max_hits]
+        return optionset[: self.max_hits]

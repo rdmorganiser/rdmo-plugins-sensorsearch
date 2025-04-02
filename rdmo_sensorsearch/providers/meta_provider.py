@@ -4,18 +4,9 @@ import logging
 from rdmo.options.providers import Provider
 
 from rdmo_sensorsearch.config import load_config
-from rdmo_sensorsearch.providers.geophysical_instruments import GeophysicalInstrumentPoolPotsdamProvider
-from rdmo_sensorsearch.providers.o2a_registry import O2ARegistrySearchProvider
-from rdmo_sensorsearch.providers.sensor_management import SensorManagementSystemProvider
+from rdmo_sensorsearch.providers.registry import PROVIDER_REGISTRY
 
 logger = logging.getLogger(__name__)
-
-# dict of known sensor data provider
-PROVIDER_REGISTRY = {
-            "O2ARegistrySearchProvider": O2ARegistrySearchProvider,
-            "SensorManagementSystemProvider": SensorManagementSystemProvider,
-            "GeophysicalInstrumentPoolPotsdamProvider": GeophysicalInstrumentPoolPotsdamProvider,
-        }
 
 
 class SensorsProvider(Provider):

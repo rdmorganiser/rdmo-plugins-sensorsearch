@@ -1,5 +1,7 @@
 import logging
 import re
+
+from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.providers.base import BaseSensorProvider
 
 logger = logging.getLogger(__name__)
@@ -32,8 +34,13 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
     text_prefix = "GIPP:"
     max_hits = 10
     base_url = "https://gipp.gfz-potsdam.de/instruments"
+    instruments_path = "/index.json?limit=10000&program=MOSES"
 
-    def get_all_instruments(self) -> dict:
+    @property
+    def instrument_url(self):
+        return self.base_url + self.instruments_path
+
+    def get_all_instruments(self) -> list | dict:
         """
         Retrieves a list of all instruments from the GIPP API.
 
@@ -41,8 +48,7 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
             The JSON response containing instrument data as retrieved from the
             GIPP API, or an empty list if the request fails.
         """
-        url = self.base_url + "/index.json?limit=10000&program=MOSES"
-        return self.fetch_json(url)
+        return fetch_json(self.instrument_url)
 
     def get_options(self, project, search=None, user=None, site=None):
         """
@@ -64,11 +70,21 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
         Returns:
             list: A list of option dictionaries containing "id" and "text".
         """
-        optionset = []
         if search is None:
-            return optionset
+            return []
 
-        for _n, instrument in self.get_all_instruments().items():
+        instruments = self.get_all_instruments()
+        if not instruments:
+            logger.debug(f"No instruments could be found from {search} on {self.instrument_url} ")
+            return []
+
+        optionset = []
+        
+        for _n, instrument in instruments:
+            # Ensure the item is a dict with expected keys
+            if not isinstance(instrument, dict) or "Instrument" not in instrument:
+                continue
+
             for key, value in instrument["Instrument"].items():
                 if re.search(search, value, flags=re.IGNORECASE):
                     optionset.append(

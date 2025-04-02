@@ -2,8 +2,8 @@ import logging
 import re
 from urllib.parse import quote
 
+from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.providers.base import BaseSensorProvider
-from rdmo_sensorsearch.config import get_user_agent
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
             f"({search}*)^0) AND (states.itemState:(public devicestore)^0)"
         )
         url = f"{self.base_url}?hits={self.max_hits}&q={quote(query)}"
-        json_data = self.fetch_json(url)
+        json_data = fetch_json(url)
 
         for data_set in json_data.get("records", []):
             text = f"{self.text_prefix} {data_set['title']}"
