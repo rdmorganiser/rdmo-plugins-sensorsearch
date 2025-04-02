@@ -19,7 +19,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
                                                 to the O2A Registry. Defaults
                                                 to 'https://registry.o2a-data.de/rest/v2'.
     """
-    default_id_prefix = "o2aregistry"
+    id_prefix = "o2aregistry"
     base_url = "https://registry.o2a-data.de/rest/v2"
 
     def __init__(self, attribute_mapping=None, id_prefix=None, base_url=None):

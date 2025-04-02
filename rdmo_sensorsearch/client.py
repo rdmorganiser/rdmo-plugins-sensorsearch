@@ -1,19 +1,17 @@
-from functools import cache
-
-import requests
 import logging
 import sys
 from functools import cache
-from pathlib import Path
 
 from django.conf import settings
+
+import requests
 
 from rdmo import __version__
 
 if sys.version_info >= (3, 11):
-    import tomllib
+    pass
 else:
-    import tomli as tomllib
+    pass
 
 
 logger = logging.getLogger(__name__)

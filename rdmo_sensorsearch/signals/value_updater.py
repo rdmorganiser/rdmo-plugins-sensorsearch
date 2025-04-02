@@ -1,4 +1,5 @@
 import logging
+
 from rdmo.domain.models import Attribute
 from rdmo.projects.models import Value
 from rdmo.questions.models import Question, QuestionSet

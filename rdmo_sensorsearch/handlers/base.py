@@ -17,9 +17,6 @@ class GenericSearchHandler:
     JMESPath.
     """
 
-    default_id_prefix: str = None # Must be set by subclass
-    base_url: str = None          # can be set by subclass
-
     def __init__(self, attribute_mapping=None, id_prefix=None, base_url=None):
         """
         Initializes the GenericSearchHandler.
@@ -32,8 +29,8 @@ class GenericSearchHandler:
             **kwargs:                           Additional keyword arguments.
 
         """
-        self._id_prefix = id_prefix or self.default_id_prefix
-        self._base_url = base_url or getattr(self.__class__, "base_url", None)
+        self._id_prefix = id_prefix
+        self._base_url = base_url
 
         if attribute_mapping is not None:
             self.attribute_mapping = attribute_mapping  # must be set via the setter
@@ -42,39 +39,26 @@ class GenericSearchHandler:
 
     @property
     def id_prefix(self) -> str:
-        return self._id_prefix
-
-
-    @property
-    def default_id_prefix(self) -> str:
         """
-        Return the default id_prefix of the handler.
+          Return the default id_prefix of the handler.
 
-        This should be the same as defined as default in the provider classes
-        and can be set to use more than one instance of a provider.
+          This should be the same as defined as default in the provider classes
+          and can be set to use more than one instance of a provider.
 
-        Raises:
-            NotImplementedError: If not set in subclass.
-        """
-        value = getattr(self.__class__, "default_id_prefix", None)
+          Raises:
+              NotImplementedError: If not set in subclass.
+          """
+        value = self._id_prefix or getattr(type(self), "id_prefix", None)
         if value is None:
-            raise NotImplementedError(
-                f"{self.__class__.__name__} must define `default_id_prefix` as a class attribute"
-            )
+            raise NotImplementedError(f"{type(self).__name__} must define `id_prefix`")
         return value
 
     @property
     def base_url(self) -> str:
-        """
-        Returns:
-            base_url (str, optional):           The base URL for API requests.
-                                                Defaults to None.
-        """
-        if self._base_url is None:
-            raise NotImplementedError(
-                f"{self.__class__.__name__} must define `base_url` either in __init__ or as class attribute"
-            )
-        return self._base_url
+        value = self._base_url or getattr(type(self), "base_url", None)
+        if value is None:
+            raise NotImplementedError(f"{type(self).__name__} must define `base_url`")
+        return value
 
     @property
     def attribute_mapping(self) -> dict:

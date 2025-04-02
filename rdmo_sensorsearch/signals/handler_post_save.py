@@ -1,4 +1,5 @@
 import logging
+
 from rdmo_sensorsearch.config import load_config
 from rdmo_sensorsearch.handlers.factory import create_handler_from_config
 from rdmo_sensorsearch.signals.value_updater import update_values_from_response

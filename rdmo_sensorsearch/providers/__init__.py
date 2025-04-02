@@ -1,2 +1,2 @@
 
-from .meta_provider import SensorsProvider
+from .meta_provider import SensorsProvider as SensorsProvider

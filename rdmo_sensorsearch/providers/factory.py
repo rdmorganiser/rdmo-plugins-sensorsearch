@@ -1,4 +1,5 @@
 import logging
+
 from rdmo_sensorsearch.config import load_config
 from rdmo_sensorsearch.providers.registry import PROVIDER_REGISTRY
 

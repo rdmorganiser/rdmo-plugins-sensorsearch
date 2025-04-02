@@ -11,7 +11,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
     This handler fetches device information, including properties, from the
     SMS API.
     """
-    default_id_prefix = "sms"
+    id_prefix = "sms"
 
     def handle(self, id_):
         """

@@ -79,7 +79,7 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
             return []
 
         optionset = []
-        
+
         for _n, instrument in instruments:
             # Ensure the item is a dict with expected keys
             if not isinstance(instrument, dict) or "Instrument" not in instrument:

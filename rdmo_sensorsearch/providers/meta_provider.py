@@ -1,6 +1,7 @@
 
 
 import logging
+
 from rdmo.options.providers import Provider
 
 from rdmo_sensorsearch.config import load_config

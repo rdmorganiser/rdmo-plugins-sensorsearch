@@ -1,4 +1,5 @@
 import logging
+
 from rdmo.options.providers import Provider
 
 logger = logging.getLogger(__name__)
@@ -8,48 +9,38 @@ class BaseSensorProvider(Provider):
     """
     A common base class for sensor providers.
 
-    Subclasses should override the class attributes:
+    Subclasses must define the following class attributes:
     - id_prefix
     - text_prefix
-    - max_hits
     - base_url
+    - max_hits
 
-    These can also be overridden per instance via init args.
+    These can be optionally overridden at instantiation.
     """
-
-    id_prefix: str = None
-    text_prefix: str = None
-    max_hits: int = 10
 
     def __init__(
         self,
-        id_prefix: str = None,
-        text_prefix: str = None,
-        base_url: str = None,
-        max_hits: int = None
+        id_prefix: str | None = None,
+        text_prefix: str | None = None,
+        base_url: str | None = None,
+        max_hits: int | None = None,
     ):
-        if id_prefix is not None:
-            self.id_prefix = id_prefix
-        if text_prefix is not None:
-            self.text_prefix = text_prefix
-        if base_url is not None:
-            self.base_url = base_url
-        else:
-            self._base_url = None
-        if max_hits is not None:
-            self.max_hits = max_hits
-
+        self._id_prefix = id_prefix
+        self._text_prefix = text_prefix
+        self._base_url = base_url
+        self._max_hits = max_hits
+        self.results = []
 
     @property
     def id_prefix(self) -> str:
-        value = getattr(type(self), "id_prefix", None)
+        value = self._id_prefix or getattr(type(self), "id_prefix", None)
         if value is None:
             raise NotImplementedError(f"{type(self).__name__} must define `id_prefix`")
         return value
 
     @property
     def text_prefix(self) -> str:
-        value = getattr(type(self), "text_prefix", None)
+        value = self._text_prefix or getattr(type(self), "text_prefix", None)
         if value is None:
             raise NotImplementedError(f"{type(self).__name__} must define `text_prefix`")
         return value
@@ -58,7 +49,7 @@ class BaseSensorProvider(Provider):
     def base_url(self) -> str:
         value = self._base_url or getattr(type(self), "base_url", None)
         if value is None:
-            raise NotImplementedError(f"{type(self).__name__} must define `base_url` or pass it to the constructor")
+            raise NotImplementedError(f"{type(self).__name__} must define `base_url`")
         return value
 
     @base_url.setter
@@ -66,4 +57,11 @@ class BaseSensorProvider(Provider):
         if not isinstance(value, str):
             raise TypeError("base_url must be a string")
         self._base_url = value
+
+    @property
+    def max_hits(self) -> int:
+        value = self._max_hits if self._max_hits is not None else getattr(type(self), "max_hits", None)
+        if value is None:
+            raise NotImplementedError(f"{type(self).__name__} must define `max_hits`")
+        return value
 

@@ -11,8 +11,6 @@ from pathlib import Path
 
 from django.conf import settings
 
-from rdmo import __version__
-
 if sys.version_info >= (3, 11):
     import tomllib
 else:

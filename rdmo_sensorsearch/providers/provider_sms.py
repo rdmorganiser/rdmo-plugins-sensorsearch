@@ -1,8 +1,8 @@
 import logging
 from urllib.parse import quote
 
+from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.providers.base import BaseSensorProvider
-from rdmo_sensorsearch.client import get_user_agent, fetch_json
 
 logger = logging.getLogger(__name__)
 

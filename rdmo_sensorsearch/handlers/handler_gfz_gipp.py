@@ -14,7 +14,7 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
                                                 to GIPP. Defaults to
                                                 'https://gipp.gfz-potsdam.de/instruments/rest'.
     """
-    default_id_prefix = "gfzgipp"
+    id_prefix = "gfzgipp"
     base_url="https://gipp.gfz-potsdam.de/instruments/rest"
 
     def __init__(self,attribute_mapping=None,**kwargs,):
