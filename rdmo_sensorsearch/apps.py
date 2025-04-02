@@ -12,4 +12,4 @@ class SensorSearchConfig(AppConfig):
     verbose_name = "Sensor Search Option Set Plugin"
 
     def ready(self):
-        from . import handlers  # noqa: F401
+        from .signals import signal_handlers  # noqa: F401

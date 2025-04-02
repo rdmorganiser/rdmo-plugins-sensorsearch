@@ -23,27 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 @cache
-def get_user_agent():
-    """
-    Constructs a user agent string for HTTP requests.
-
-    This function generates a user agent string that identifies the RDMO
-    SensorSearch plugin along with the RDMO version and optionally the email
-    address configured in settings.
-
-    Returns:
-        str: A formatted user agent string.
-    """
-    user_agent = f"rdmo/{__version__} SensorSearch Plugin https://github.com/rdmorganiser/rdmo-plugins-sensorsearch"
-    try:
-        if settings.DEFAULT_FROM_EMAIL:
-            user_agent += f"{user_agent} ({settings.DEFAULT_FROM_EMAIL})"
-    except AttributeError:
-        pass
-    return user_agent
-
-
-@cache
 def load_config():
     """
     Loads the sensor search provider configuration from a TOML file.
