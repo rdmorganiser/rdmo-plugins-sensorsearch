@@ -1,10 +1,5 @@
 import logging
 
-import jmespath
-import requests
-
-from rdmo_sensorsearch.client import get_user_agent
-
 logger = logging.getLogger(__name__)
 
 
@@ -48,14 +43,14 @@ class GenericSearchHandler:
           Raises:
               NotImplementedError: If not set in subclass.
           """
-        value = self._id_prefix or getattr(type(self), "id_prefix", None)
+        value = self._id_prefix
         if value is None:
             raise NotImplementedError(f"{type(self).__name__} must define `id_prefix`")
         return value
 
     @property
     def base_url(self) -> str:
-        value = self._base_url or getattr(type(self), "base_url", None)
+        value = self._base_url
         if value is None:
             raise NotImplementedError(f"{type(self).__name__} must define `base_url`")
         return value
@@ -73,43 +68,3 @@ class GenericSearchHandler:
         if not isinstance(mapping, dict):
             raise TypeError("attribute_mapping must be a dictionary")
         self._attribute_mapping = mapping
-
-    def _get(self, url):
-        """
-        Performs a GET request to the specified URL with custom user agent.
-
-        Args:
-            url (str): The URL to send the GET request to.
-
-        Returns:
-            dict: A dictionary containing the JSON response from the server, or
-                  an empty dictionary if there is an error.
-
-        """
-        try:
-            return requests.get(url, headers={"User-Agent": get_user_agent()}).json()
-        except requests.exceptions.RequestException as e:
-            logger.error("Request failed: %s, %s", e, url)
-
-        return {}
-
-    def _map_jamespath_to_attribute_uri(self, data):
-        """
-        Maps values from the response data to attribute URIs using JamesPath
-        expressions.
-
-        The mapping is usually provided by the configuration file.
-
-        Args:
-            data (dict): The JSON response data.
-
-        Returns:
-            dict: A dictionary containing mapped values with attribute URIs as
-                  keys.
-
-        """
-        mapped_values = {}
-        for path, attribute_uri in self.attribute_mapping.items():
-            mapped_values.update({f"{attribute_uri}": jmespath.search(path, data)})
-        logger.debug("mapped_values %s", mapped_values)
-        return mapped_values

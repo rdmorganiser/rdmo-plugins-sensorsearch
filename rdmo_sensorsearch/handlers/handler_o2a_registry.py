@@ -1,6 +1,8 @@
 import logging
 
+from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import GenericSearchHandler
+from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +53,16 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
 
         """
         # basic date
-        basic_data = self._get(f"{self.base_url}/items/{id_}")
+        basic_data = fetch_json(f"{self.base_url}/items/{id_}")
 
         # contacts
-        contacts_data = self._get(f"{self.base_url}/items/{id_}/contacts")
+        contacts_data = fetch_json(f"{self.base_url}/items/{id_}/contacts")
 
         # parameters
-        parameters_data = self._get(f"{self.base_url}/items/{id_}/parameters")
+        parameters_data = fetch_json(f"{self.base_url}/items/{id_}/parameters")
 
         # units
-        units_data = self._get(f"{self.base_url}/units")
+        units_data = fetch_json(f"{self.base_url}/units")
 
         # extend basic data with contacts
         data = basic_data
@@ -92,9 +94,10 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
                 for u in units_data.get("records", []):
                     if u.get("@uuid") and u.get("@uuid") == unit_data:
                         parameter_unit = u.get("code")
-            #data.update({"parameters": data.get("parameters", []) + [{"name": parameter_name, "unit": parameter_unit}]})
             data.update({"parameters": [*data.get("parameters", []), {"name": parameter_name, "unit": parameter_unit}]})
 
         logger.debug("data: %s", data)
 
-        return self._map_jamespath_to_attribute_uri(data)
+        values = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
+
+        return values

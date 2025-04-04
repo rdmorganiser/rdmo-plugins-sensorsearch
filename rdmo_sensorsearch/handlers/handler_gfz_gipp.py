@@ -2,6 +2,9 @@ import logging
 
 from rdmo_sensorsearch.handlers.base import GenericSearchHandler
 
+from ..client import fetch_json
+from .parser import map_jamespath_to_attribute_uri
+
 logger = logging.getLogger(__name__)
 
 class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
@@ -15,7 +18,7 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
                                                 'https://gipp.gfz-potsdam.de/instruments/rest'.
     """
     id_prefix = "gfzgipp"
-    base_url="https://gipp.gfz-potsdam.de/instruments/rest"
+    base_url = "https://gipp.gfz-potsdam.de/instruments/rest"
 
     def __init__(self,attribute_mapping=None,**kwargs,):
         """
@@ -42,8 +45,10 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
                   response.
 
         """
-        data = self._get(f"{self.base_url}/{id_}.json")
-
+        url = f"{self.base_url}/{id_}.json"
+        data = fetch_json(url)
         logger.debug("data: %s", data)
 
-        return self._map_jamespath_to_attribute_uri(data)
+        values = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
+
+        return values
