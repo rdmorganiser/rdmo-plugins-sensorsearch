@@ -29,7 +29,7 @@ def fetch_json(url: str) -> dict| list:
 
     except requests.exceptions.RequestException as e:
         logger.error("Request failed for %s: %s", url, e)
-        return {}
+        return {'errors': [str(e)]}
 
 
 @cache
