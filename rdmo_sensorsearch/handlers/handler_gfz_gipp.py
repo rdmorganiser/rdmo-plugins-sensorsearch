@@ -19,6 +19,7 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
     """
     id_prefix = "gfzgipp"
     base_url = "https://gipp.gfz-potsdam.de/instruments/rest"
+    json_url = "{base_url}/{id}.json"
 
     def __init__(self,attribute_mapping=None,**kwargs,):
         """
@@ -45,10 +46,7 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
                   response.
 
         """
-        url = f"{self.base_url}/{id_}.json"
-        data = fetch_json(url)
+
+        data = fetch_json(self.json_url.format(base_url=self.base_url, id=id_))
         logger.debug("data: %s", data)
-
-        values = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
-
-        return values
+        return map_jamespath_to_attribute_uri(self.attribute_mapping, data)

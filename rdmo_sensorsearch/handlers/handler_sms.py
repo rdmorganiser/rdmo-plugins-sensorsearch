@@ -15,26 +15,33 @@ class SensorManagementSystemHandler(GenericSearchHandler):
     """
     id_prefix = "sms"
 
-    def handle(self, id_):
+    # URL templates with placeholders
+    device_url = "{base_url}/devices/{id}?include=device_properties"
+    contact_url = "{base_url}/devices/{id}/device-contact-roles?include=contact"
+
+    def handle(self, id_: str) -> dict:
         """
         Handles post_save for a specific device ID in the SMS.
 
         Args:
-            id_ (str): The ID of the device to get information for .
+            id_ (str): The ID of the device to get information for.
 
         Returns:
             dict: A dictionary containing the mapped values from the SMS API
                   response.
         """
-        data = fetch_json(f"{self.base_url}/devices/{id_}?include=device_properties")
 
+        data = fetch_json(self.device_url.format(base_url=self.base_url, id=id_))
         # contacts can not be included in the first request with the include parameter
-        contact_data = fetch_json(f"{self.base_url}/devices/{id_}/device-contact-roles?include=contact")
+        contact_data = fetch_json(self.contact_url.format(base_url=self.base_url, id=id_))
+
         # add the included contact data to the data
-        data.update({"included": [*data.get("included", []), *contact_data.get("included", [])]})
+        data["included"] = [
+            *data.get("included", []),
+            *contact_data.get("included", [])
+        ]
+
         if not data:
-            logger.debug("data: %s", data)
-        values = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
+            logger.debug("Empty data returned for ID %s", id_)
 
-        return values
-
+        return map_jamespath_to_attribute_uri(self.attribute_mapping, data)
