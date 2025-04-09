@@ -1,5 +1,4 @@
 import logging
-import re
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.providers.base import BaseSensorProvider
@@ -33,22 +32,12 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
     id_prefix = "gfzgipp"
     text_prefix = "GIPP:"
     base_url = "https://gipp.gfz-potsdam.de/instruments"
-    instruments_path = "/index.json?limit=10000&program=MOSES"
+    instruments_url = "{base_url}/index.json?limit=10000&program=MOSES"
+
+    id_template = "{prefix}:{id}"
+    text_template = "{prefix} {code}"
+
     max_hits = 10
-
-    @property
-    def instrument_url(self):
-        return self.base_url + self.instruments_path
-
-    def get_all_instruments(self) -> list | dict:
-        """
-        Retrieves a list of all instruments from the GIPP API.
-
-        Returns:
-            The JSON response containing instrument data as retrieved from the
-            GIPP API, or an empty list if the request fails.
-        """
-        return fetch_json(self.instrument_url)
 
     def get_options(self, project, search=None, user=None, site=None):
         """
@@ -70,28 +59,40 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
         Returns:
             list: A list of option dictionaries containing "id" and "text".
         """
-        if search is None:
+        if not search:
             return []
 
-        instruments = self.get_all_instruments()
+        url = self.instruments_url.format(base_url=self.base_url)
+        instruments = fetch_json(url)
+
         if not instruments:
-            logger.debug(f"No instruments could be found from {search} on {self.instrument_url} ")
+            logger.debug("No instruments found for query '%s'", search)
             return []
 
-        optionset = []
+        return self._filter_instruments(instruments, search)[:self.max_hits]
 
-        for _n, instrument in instruments:
-            # Ensure the item is a dict with expected keys
-            if not isinstance(instrument, dict) or "Instrument" not in instrument:
-                continue
+    def _filter_instruments(self, instruments: list, search: str) -> list[dict]:
+        options = []
+        for instrument in instruments:
+            option = self.extract_option_for_instrument(instrument, search)
+            if option:
+                options.append(option)
+        return options
 
-            for key, value in instrument["Instrument"].items():
-                if re.search(search, value, flags=re.IGNORECASE):
-                    optionset.append(
-                        {
-                            "id": f"{self.id_prefix}:{instrument['Instrument']['id']}",
-                            "text": f"{self.text_prefix} {instrument['Instrument']['code']}",
-                        }
-                    )
-                    break
-        return optionset[: self.max_hits]
+    def extract_option_for_instrument(self, instrument: dict, search: str) -> dict | None:
+        try:
+            inst_data = instrument["Instrument"]
+            if not isinstance(inst_data, dict):
+                return None
+
+            query = search.lower()
+            for _, value in inst_data.items():
+                if query in str(value).lower():
+                    return {
+                        "id": self.id_template.format(prefix=self.id_prefix, id=inst_data["id"]),
+                        "text": self.text_template.format(prefix=self.text_prefix, code=inst_data["code"]),
+                    }
+        except (KeyError, TypeError) as e:
+            logger.debug("Skipping malformed instrument entry: %s", e)
+
+        return None

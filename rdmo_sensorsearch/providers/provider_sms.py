@@ -32,11 +32,12 @@ class SensorManagementSystemProvider(BaseSensorProvider):
     id_prefix = "sms"
     text_prefix = "SMS:"
     # base_url is set by config
+    query_url = "{base_url}?q={query}"
+
+    option_id_template = "{id_prefix}:{id}"
+    option_text_template = "{prefix} {name}{serial}"
     max_hits = 10
 
-    def get_query_url(self, search: str):
-        query = quote(search)
-        return f"{self.base_url}?q={query}"
 
     def get_options(self, project, search=None, user=None, site=None):
         """
@@ -58,25 +59,24 @@ class SensorManagementSystemProvider(BaseSensorProvider):
         if search is None:
             return []
 
-        optionset = []
+        query = quote(search)
+        url = self.query_url.format(base_url=self.base_url, query=query)
+        json_fetched = fetch_json(url)
 
-        query_url = self.get_query_url(search)
-        json_fetched = fetch_json(query_url)
         json_data = json_fetched.get("data", [])
         if not json_data:
-            logger.debug(f"Empty response from SMS API for {query_url}")
+            logger.debug(f"Empty response from SMS API for {search}")
             return []
 
+        return [
+            {
+                "id": self.id_template.format(prefix=self.id_prefix, id=sensor["id"]),
+                "text": self._format_sensor_text(sensor["attributes"]),
+            }
+            for sensor in json_data[:self.max_hits]
+        ]
 
-        for data_set in json_data:
-            attrs = data_set["attributes"]
-            text = f"{self.text_prefix} {attrs.get('long_name') or attrs['short_name']}"
-            if attrs.get("serial_number"):
-                text += f" (s/n: {attrs['serial_number']})"
-
-            optionset.append({
-                "id": f"{self.id_prefix}:{data_set['id']}",
-                "text": text
-            })
-
-        return optionset[: self.max_hits]
+    def _format_sensor_text(self, attrs: dict) -> str:
+        name = attrs.get("long_name") or attrs.get("short_name", "")
+        serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
+        return self.text_template.format(prefix=self.text_prefix, name=name, serial=serial)
