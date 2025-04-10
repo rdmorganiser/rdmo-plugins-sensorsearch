@@ -1,5 +1,7 @@
 import logging
 
+from django.http import Http404
+
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import GenericSearchHandler
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
@@ -32,6 +34,12 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         """
 
         data = fetch_json(self.device_url.format(base_url=self.base_url, id=id_))
+
+        if 'errors' in data:
+            logger.debug("Errors in data returned for ID %s, %s", id_, ", ".join(data['errors']))
+            return data
+
+
         # contacts can not be included in the first request with the include parameter
         contact_data = fetch_json(self.contact_url.format(base_url=self.base_url, id=id_))
 

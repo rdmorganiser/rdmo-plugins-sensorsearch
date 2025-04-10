@@ -21,6 +21,9 @@ def handle_post_save(instance):
         return
 
     response = handler.handle(id_=external_id)
+    if 'errors' in response:
+        logger.error("Errors in handler response %s", response['errors'])
+        return
     update_values_from_response(instance, response)
 
 

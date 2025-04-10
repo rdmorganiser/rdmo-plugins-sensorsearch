@@ -5,6 +5,7 @@ from functools import cache
 from django.conf import settings
 
 import requests
+from django.http import Http404
 
 from rdmo import __version__
 
@@ -30,6 +31,7 @@ def fetch_json(url: str) -> dict| list:
     except requests.exceptions.RequestException as e:
         logger.error("Request failed for %s: %s", url, e)
         return {'errors': [str(e)]}
+
 
 
 @cache
