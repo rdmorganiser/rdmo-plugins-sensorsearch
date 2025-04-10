@@ -12,7 +12,11 @@ class GenericSearchHandler:
     JMESPath.
     """
 
-    def __init__(self, attribute_mapping=None, id_prefix=None, base_url=None):
+    def __init__(self,
+                 attribute_mapping=None,
+                 id_prefix=None,
+                 base_url=None
+        ):
         """
         Initializes the GenericSearchHandler.
 
@@ -42,26 +46,33 @@ class GenericSearchHandler:
 
           Raises:
               NotImplementedError: If not set in subclass.
-          """
-        value = self._id_prefix
+        """
+        value = self._id_prefix or getattr(type(self), "id_prefix", None)
         if value is None:
             raise NotImplementedError(f"{type(self).__name__} must define `id_prefix`")
         return value
 
     @property
     def base_url(self) -> str:
-        value = self._base_url
+        value = self._base_url or getattr(type(self), "base_url", None)
         if value is None:
             raise NotImplementedError(f"{type(self).__name__} must define `base_url`")
         return value
 
+    @base_url.setter
+    def base_url(self, value: str) -> None:
+        if not isinstance(value, str):
+            raise TypeError("base_url must be a string")
+        self._base_url = value
+
     @property
     def attribute_mapping(self) -> dict:
-        if self._attribute_mapping is None:
+        value = self._attribute_mapping or getattr(type(self), "attribute_mapping", None)
+        if value is None:
             raise ValueError(
                 f"{self.__class__.__name__} requires `attribute_mapping` to be set before use."
             )
-        return self._attribute_mapping
+        return value
 
     @attribute_mapping.setter
     def attribute_mapping(self, mapping: dict) -> None:

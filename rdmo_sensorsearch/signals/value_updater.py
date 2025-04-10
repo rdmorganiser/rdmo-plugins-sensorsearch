@@ -7,12 +7,15 @@ from rdmo.questions.models import Question, QuestionSet
 logger = logging.getLogger(__name__)
 
 
-def update_values_from_response(instance, data: dict):
+def update_values_from_mapped_data(instance, data: dict):
     for attribute_uri, value in data.items():
         if value is None:
             continue
 
-        attribute = Attribute.objects.get(uri=attribute_uri)
+        try:
+            attribute = Attribute.objects.get(uri=attribute_uri)
+        except Attribute.DoesNotExist:
+            continue
 
         if isinstance(value, list):
             _handle_list_value(instance, attribute, value)

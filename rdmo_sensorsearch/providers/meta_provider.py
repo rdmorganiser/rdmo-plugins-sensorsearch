@@ -9,7 +9,8 @@ from rdmo_sensorsearch.providers.factory import build_provider_instances
 
 logger = logging.getLogger(__name__)
 
-ALL_SENSOR_PROVIDERS = build_provider_instances("SensorsProvider")
+SENSORSPROVIDER_CONFIG_KEY = "SensorsProvider"
+ALL_SENSOR_PROVIDERS = build_provider_instances(SENSORSPROVIDER_CONFIG_KEY)
 
 
 class SensorsProvider(Provider):
@@ -52,7 +53,7 @@ class SensorsProvider(Provider):
                dictionary contains "id" and "text" keys.
                """
         configuration = load_config()
-        min_search_len = configuration.get(f"{self.__class__.__name__}", {}).get("min_search_len", 3)
+        min_search_len = configuration.get(f"{SENSORSPROVIDER_CONFIG_KEY}", {}).get("min_search_len", 3)
 
         if not search or len(search) < min_search_len:
             return []

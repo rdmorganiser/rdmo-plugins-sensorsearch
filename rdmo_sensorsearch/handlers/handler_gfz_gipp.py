@@ -19,20 +19,8 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
     """
     id_prefix = "gfzgipp"
     base_url = "https://gipp.gfz-potsdam.de/instruments/rest"
+
     json_url = "{base_url}/{id}.json"
-
-    def __init__(self,attribute_mapping=None,**kwargs,):
-        """
-        Initializes the GeophysicalInstrumentPoolPotsdamHandler.
-
-        Args:
-            attribute_mapping (dict, optional): A dictionary mapping JamesPath
-                                                expressions to attribute URIs.
-                                                Defaults to an empty dictionary.
-            **kwargs:                           Additional keyword arguments.
-
-        """
-        super().__init__(attribute_mapping=attribute_mapping, **kwargs)
 
     def handle(self, id_):
         """

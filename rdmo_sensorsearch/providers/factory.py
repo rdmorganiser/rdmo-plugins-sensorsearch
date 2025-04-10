@@ -19,15 +19,20 @@ def build_provider_instances(config_section_name: str) -> list:
     configuration = load_config()
     provider_definitions = configuration.get(config_section_name, {}).get("providers", {})
 
+    flattened_provider_definitions = [
+        (provider_name, config)
+        for provider_name, configs in provider_definitions.items()
+        for config in configs
+    ]
+
     instances = []
-    for provider_name, configs in provider_definitions.items():
-        for config in configs:
-            try:
-                provider_cls = PROVIDER_REGISTRY[provider_name]
-                instances.append(provider_cls(**config))
-            except KeyError:
-                logger.error("Provider class %s not found in registry", provider_name)
-            except TypeError as e:
-                logger.error("Error initializing %s with config %s: %s", provider_name, config, e)
+    for provider_name, provider_config in flattened_provider_definitions:
+        try:
+            provider_cls = PROVIDER_REGISTRY[provider_name]
+            instances.append(provider_cls(**provider_config))
+        except KeyError:
+            logger.error("Provider class %s not found in registry", provider_name)
+        except TypeError as e:
+            logger.error("Error initializing %s with config %s: %s", provider_name, provider_config, e)
 
     return instances

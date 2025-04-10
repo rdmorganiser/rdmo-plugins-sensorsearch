@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 @receiver(post_save, sender=Value)
-def post_save_project_values(sender, **kwargs):
-    instance = kwargs.get("instance")
-    if not instance or not instance.external_id:
+def post_save_project_values(sender, instance, **kwargs):
+    if instance is None:
+        return
+    if instance.external_id is None:
         return
     logger.debug("Triggering post_save_project_values")
     handle_post_save(instance)

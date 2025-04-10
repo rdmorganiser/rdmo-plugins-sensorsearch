@@ -23,7 +23,7 @@ class BaseSensorProvider(Provider):
         id_prefix: str | None = None,
         text_prefix: str | None = None,
         base_url: str | None = None,
-        max_hits: int | None = None,
+        max_hits: int = 10,
     ):
         self._id_prefix = id_prefix
         self._text_prefix = text_prefix
@@ -59,8 +59,14 @@ class BaseSensorProvider(Provider):
 
     @property
     def max_hits(self) -> int:
-        value = self._max_hits if self._max_hits is not None else getattr(type(self), "max_hits", None)
+        value = self._max_hits or getattr(type(self), "max_hits", None)
         if value is None:
             raise NotImplementedError(f"{type(self).__name__} must define `max_hits`")
         return value
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}:id={self.id_prefix}, "
+            f"text={self.text_prefix},max_hits={self.max_hits}, base_url={self.base_url}"
+            )
 

@@ -29,14 +29,16 @@ class SensorManagementSystemProvider(BaseSensorProvider):
                             before calling get_options().
     """
 
-    id_prefix: str = "sms"
-    text_prefix = "SMS:"
+    # The keys are set by config kwargs
+    # id_prefix: str = "sms"
+    # text_prefix = "SMS:"
     # base_url is set by config
+    # max_hits = 10
+
     query_url = "{base_url}?q={query}"
 
     option_id = "{id_prefix}:{id}"
     option_text = "{prefix} {name}{serial}"
-    max_hits = 10
 
 
     def get_options(self, project, search=None, user=None, site=None):

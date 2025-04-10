@@ -1,7 +1,5 @@
 import logging
 
-from django.http import Http404
-
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import GenericSearchHandler
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
@@ -15,7 +13,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
     This handler fetches device information, including properties, from the
     SMS API.
     """
-    id_prefix = "sms"
+    # id_prefix = "sms"
 
     # URL templates with placeholders
     device_url = "{base_url}/devices/{id}?include=device_properties"

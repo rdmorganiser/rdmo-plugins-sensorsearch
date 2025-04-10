@@ -1,32 +1,41 @@
 import logging
 
-from rdmo_sensorsearch.handlers.factory import build_handlers_from_config
-from rdmo_sensorsearch.signals.value_updater import update_values_from_response
+from rdmo_sensorsearch.handlers.factory import build_handlers_by_catalog
+from rdmo_sensorsearch.signals.value_updater import update_values_from_mapped_data
 
 logger = logging.getLogger(__name__)
 
-ALL_HANDLERS = build_handlers_from_config()
+ALL_HANDLER_MAP = build_handlers_by_catalog()
 
 def handle_post_save(instance):
-    if instance is None or instance.external_id is None:
+
+    try:
+        id_prefix, external_id = instance.external_id.split(":")
+    except ValueError:
+        logger.warning("Can not parse instance.external_id: %s", instance.external_id)
         return
 
-    id_prefix, external_id = parse_external_id(instance.external_id)
-    if not id_prefix or not external_id:
+    catalog_uri = instance.project.catalog.uri
+    attribute_uri = instance.attribute.uri
+
+    if not catalog_uri or not attribute_uri:
+        logger.warning("Missing catalog or attribute URI")
         return
 
-    handler = ALL_HANDLERS.get(id_prefix)
-    if not handler:
-        logger.warning("No handler found for id_prefix: %s", id_prefix)
-        return
+    handler_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
+    for candidate in handler_candidates:
+        if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute_uri:
+            mapped_data = candidate.handler.handle(id_=external_id)
+            matched = True
 
-    response = handler.handle(id_=external_id)
-    if 'errors' in response:
-        logger.error("Errors in handler response %s", response['errors'])
-        return
-    update_values_from_response(instance, response)
+            if 'errors' in mapped_data:
+                logger.error("Handler %s returned errors: %s", candidate.id_prefix, mapped_data['errors'])
+                continue
 
+            update_values_from_mapped_data(instance, mapped_data)
 
-def parse_external_id(external_id: str):
-    parts = external_id.split(":")
-    return parts if len(parts) == 2 else (None, None)
+    if not matched:
+        logger.warning(
+            "No matching handlers found for id_prefix=%s and attribute_uri=%s in catalog=%s",
+            id_prefix, attribute_uri, catalog_uri
+        )

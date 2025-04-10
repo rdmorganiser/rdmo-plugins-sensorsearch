@@ -5,7 +5,6 @@ from functools import cache
 from django.conf import settings
 
 import requests
-from django.http import Http404
 
 from rdmo import __version__
 
