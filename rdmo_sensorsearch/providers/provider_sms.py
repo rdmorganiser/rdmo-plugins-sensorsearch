@@ -29,13 +29,13 @@ class SensorManagementSystemProvider(BaseSensorProvider):
                             before calling get_options().
     """
 
-    id_prefix = "sms"
+    id_prefix: str = "sms"
     text_prefix = "SMS:"
     # base_url is set by config
     query_url = "{base_url}?q={query}"
 
-    option_id_template = "{id_prefix}:{id}"
-    option_text_template = "{prefix} {name}{serial}"
+    option_id = "{id_prefix}:{id}"
+    option_text = "{prefix} {name}{serial}"
     max_hits = 10
 
 
@@ -68,15 +68,18 @@ class SensorManagementSystemProvider(BaseSensorProvider):
             logger.debug(f"Empty response from SMS API for {search}")
             return []
 
-        return [
-            {
-                "id": self.id_template.format(prefix=self.id_prefix, id=sensor["id"]),
-                "text": self._format_sensor_text(sensor["attributes"]),
-            }
-            for sensor in json_data[:self.max_hits]
-        ]
+        optionset = []
+
+        for sensor in json_data[:self.max_hits]:
+            optionset.append(
+                {
+                    "id": self.option_id.format(id_prefix=self.id_prefix, id=sensor["id"]),
+                    "text": self._format_sensor_text(sensor["attributes"]),
+                }
+            )
+        return optionset
 
     def _format_sensor_text(self, attrs: dict) -> str:
         name = attrs.get("long_name") or attrs.get("short_name", "")
         serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
-        return self.text_template.format(prefix=self.text_prefix, name=name, serial=serial)
+        return self.option_text.format(prefix=self.text_prefix, name=name, serial=serial)

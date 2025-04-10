@@ -34,8 +34,8 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
     base_url = "https://gipp.gfz-potsdam.de/instruments"
     instruments_url = "{base_url}/index.json?limit=10000&program=MOSES"
 
-    id_template = "{prefix}:{id}"
-    text_template = "{prefix} {code}"
+    option_id = "{prefix}:{id}"
+    option_text = "{prefix} {code}"
 
     max_hits = 10
 
@@ -69,15 +69,16 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
             logger.debug("No instruments found for query '%s'", search)
             return []
 
-        return self._filter_instruments(instruments, search)[:self.max_hits]
-
-    def _filter_instruments(self, instruments: list, search: str) -> list[dict]:
-        options = []
+        optionset = []
         for instrument in instruments:
             option = self.extract_option_for_instrument(instrument, search)
             if option:
-                options.append(option)
-        return options
+                optionset.append(option)
+            if len(optionset) >= self.max_hits:
+                break
+
+        return optionset
+
 
     def extract_option_for_instrument(self, instrument: dict, search: str) -> dict | None:
         try:
@@ -89,8 +90,8 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
             for _, value in inst_data.items():
                 if query in str(value).lower():
                     return {
-                        "id": self.id_template.format(prefix=self.id_prefix, id=inst_data["id"]),
-                        "text": self.text_template.format(prefix=self.text_prefix, code=inst_data["code"]),
+                        "id": self.option_id.format(prefix=self.id_prefix, id=inst_data["id"]),
+                        "text": self.option_text.format(prefix=self.text_prefix, code=inst_data["code"]),
                     }
         except (KeyError, TypeError) as e:
             logger.debug("Skipping malformed instrument entry: %s", e)

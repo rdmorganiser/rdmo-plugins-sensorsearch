@@ -29,7 +29,6 @@ class BaseSensorProvider(Provider):
         self._text_prefix = text_prefix
         self._base_url = base_url
         self._max_hits = max_hits
-        self.results = []
 
     @property
     def id_prefix(self) -> str:
