@@ -1,5 +1,4 @@
 import logging
-import re
 from urllib.parse import quote
 
 from rdmo_sensorsearch.client import fetch_json
@@ -28,11 +27,13 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
         base_url (str):     Base URL for the O2A Registry API endpoint.
                             Defaults to "https://registry.o2a-data.de/index/rest/search/sensor-v2".
     """
+    # max_hits = 10 from base provider
 
     id_prefix = "o2aregistry"
     text_prefix = "O2A REGISTRY:"
+
     base_url = "https://registry.o2a-data.de/index/rest/search/sensor-v2"
-    max_hits = 10
+    query_url = "{base_url}?hits={hits}&q={query}"
 
     def get_options(self, project, search=None, user=None, site=None):
         """
@@ -55,7 +56,9 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
 
         optionset: list[dict[str, str]] = []
 
-        search = re.sub(r"[^A-Za-z0-9\s]", "", search)
+        #keep alphanumerics(and Unicode characters) and spaces
+        search = "".join(c for c in search if c.isalnum() or c.isspace())
+
         query = (
             f"(title:({search}*)^2 OR id:(/{search}/)^20 OR "
             f"({search}*)^0) AND (states.itemState:(public devicestore)^0)"
@@ -63,17 +66,34 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
         url = f"{self.base_url}?hits={self.max_hits}&q={quote(query)}"
         json_data = fetch_json(url)
 
-        for data_set in json_data.get("records", []):
-            text = f"{self.text_prefix} {data_set['title']}"
-            serial = data_set.get("metadata", {}).get("serial")
-            if serial:
-                text += f" (s/n: {serial}, id: {data_set['id']})"
-            else:
-                text += f" (id: {data_set['id']})"
+        for record in json_data.get("records", []):
+            optionset.append(self.parse_option(record))
+            if len(optionset) >= self.max_hits:
+                break
 
-            optionset.append({
-                "id": f"{self.id_prefix}:{data_set['uniqueId']}",
-                "text": text
-            })
+        return optionset
 
-        return optionset[: self.max_hits]
+    def parse_option(self, data_set: dict) -> dict[str, str]:
+        """
+        Converts a single data_set entry to an option dictionary.
+
+        Args:
+            data_set (dict): The JSON dictionary for a single sensor record.
+
+        Returns:
+            dict: An option dictionary with "id" and "text" keys.
+        """
+        title = data_set["title"]
+        serial = data_set.get("metadata", {}).get("serial")
+        unique_id = data_set["uniqueId"]
+        registry_id = data_set["id"]
+
+        if serial:
+            text = f"{self.text_prefix} {title} (s/n: {serial}, id: {registry_id})"
+        else:
+            text = f"{self.text_prefix} {title} (id: {registry_id})"
+
+        return {
+            "id": f"{self.id_prefix}:{unique_id}",
+            "text": text
+        }

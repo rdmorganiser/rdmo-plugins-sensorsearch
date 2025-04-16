@@ -33,7 +33,8 @@ class SensorManagementSystemProvider(BaseSensorProvider):
     # id_prefix: str = "sms"
     # text_prefix = "SMS:"
     # base_url is set by config
-    # max_hits = 10
+    # max_hits = 10 from base provider
+
 
     query_url = "{base_url}?q={query}"
 
