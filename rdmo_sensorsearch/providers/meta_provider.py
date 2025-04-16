@@ -1,6 +1,7 @@
 
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from rdmo.options.providers import Provider
 
@@ -62,8 +63,23 @@ class SensorsProvider(Provider):
         logger.debug("Search term: %s", search)
 
         results = []
-        for provider in ALL_SENSOR_PROVIDERS:
-            results += provider.get_options(project, search, user, site)
+
+        # Use ThreadPoolExecutor for parallel requests
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            # Schedule all get_options calls concurrently
+            future_to_provider = {
+                executor.submit(provider.get_options, project, search, user, site): provider
+                for provider in ALL_SENSOR_PROVIDERS
+            }
+
+            # Gather results as they complete
+            for future in as_completed(future_to_provider):
+                try:
+                    result = future.result()
+                    results.extend(result)
+                except Exception as e:
+                    provider = future_to_provider[future]
+                    logger.warning("Provider %s failed with exception: %s", provider.__class__.__name__, e)
 
         logger.debug("Results: %s", results)
         return results
