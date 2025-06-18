@@ -11,8 +11,6 @@ from pathlib import Path
 
 from django.conf import settings
 
-from rdmo import __version__
-
 if sys.version_info >= (3, 11):
     import tomllib
 else:
@@ -20,27 +18,6 @@ else:
 
 
 logger = logging.getLogger(__name__)
-
-
-@cache
-def get_user_agent():
-    """
-    Constructs a user agent string for HTTP requests.
-
-    This function generates a user agent string that identifies the RDMO
-    SensorSearch plugin along with the RDMO version and optionally the email
-    address configured in settings.
-
-    Returns:
-        str: A formatted user agent string.
-    """
-    user_agent = f"rdmo/{__version__} SensorSearch Plugin https://github.com/rdmorganiser/rdmo-plugins-sensorsearch"
-    try:
-        if settings.DEFAULT_FROM_EMAIL:
-            user_agent += f"{user_agent} ({settings.DEFAULT_FROM_EMAIL})"
-    except AttributeError:
-        pass
-    return user_agent
 
 
 @cache
@@ -68,30 +45,30 @@ def load_config():
     """
     # load settings
     try:
-        CONFIG_FILE_NAME = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME
+        config_file_name = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME
     except AttributeError:
-        CONFIG_FILE_NAME = "config.toml"
+        config_file_name = "config.toml"
 
     try:
-        CONFIG_FILE_PATH = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH
+        config_file_path = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH
     except AttributeError:
-        CONFIG_FILE_PATH = None
+        config_file_path = None
 
     # override by environment variables or use defaults
-    CONFIG_FILE_NAME = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME", CONFIG_FILE_NAME)
-    CONFIG_FILE_PATH = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH", CONFIG_FILE_PATH)
+    config_file_name = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME", config_file_name)
+    config_file_path = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH", config_file_path)
 
-    if CONFIG_FILE_PATH is None:
-        CONFIG_FILE_PATH = os.path.join(Path(__file__).parent, CONFIG_FILE_NAME)
+    if config_file_path is None:
+        config_file_path = os.path.join(Path(__file__).parent, config_file_name)
 
-    logger.debug("Try to open configuration file: %s", CONFIG_FILE_PATH)
+    logger.debug("Try to open configuration file: %s", config_file_path)
 
     try:
-        with open(CONFIG_FILE_PATH, "rb") as config_file:
+        with open(config_file_path, "rb") as config_file:
             return tomllib.load(config_file)
     except (FileNotFoundError, PermissionError) as e:
-        logger.error("Connot open configuration file: %s", CONFIG_FILE_PATH)
+        logger.error("Cannot open configuration file: %s", config_file_path)
         raise e from e
     except tomllib.TOMLDecodeError as e:
-        logger.error("Failed to decode configuration file: %s", CONFIG_FILE_PATH)
+        logger.error("Failed to decode configuration file: %s", config_file_path)
         raise e from e

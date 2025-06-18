@@ -1,74 +1,112 @@
-# SPDX-FileCopyrightText: 2023 - 2024 Hannes Fuchs (GFZ) <hannes.fuchs@gfz-potsdam.de>
-# SPDX-FileCopyrightText: 2023 - 2024 Helmholtz Centre Potsdam - GFZ German Research Centre for Geosciences
-#
-# SPDX-License-Identifier: Apache-2.0
+    # SPDX-FileCopyrightText: 2023 - 2024 Hannes Fuchs (GFZ) <hannes.fuchs@gfz-potsdam.de>
+    # SPDX-FileCopyrightText: 2023 - 2024 Helmholtz Centre Potsdam - GFZ German Research Centre for Geosciences
+    #
+    # SPDX-License-Identifier: Apache-2.0
 
-[SensorsProvider]
-min_search_len = 3 
+    [SensorsProvider]
+    min_search_len = 3
 
-[handlers.O2ARegistrySearchHandler]
-# Use defaults
-#[[handlers.O2ARegistrySearchHandler.backends]]
-#id_prefix = "o2aregistry"
-# Example Catalog
-[[handlers.O2ARegistrySearchHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/sensorsearch"
-auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
-[handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
-"longName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
-"shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
-"serialNumber" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
-"parameters[].name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
-"parameters[].unit" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
+    [handlers.O2ARegistrySearchHandler]
+    # Use defaults
+    #[[handlers.O2ARegistrySearchHandler.backends]]
+    #id_prefix = "o2aregistry"
+    # Example Catalog
+    [[handlers.O2ARegistrySearchHandler.catalogs]]
+    catalog_uri = "http://example.com/terms/questions/sensorsearch"
+    auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
+    [handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
+    "longName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+    "shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
+    "serialNumber" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+    "parameters[].name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
+    "parameters[].unit" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
+    # MOSES Catalog mapping
+    [[handlers.O2ARegistrySearchHandler.catalogs]]
+    catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+    [handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
+    "longName || shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+    "type.generalName" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
+    "manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+    "model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
+    "serialNumber" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+    "citation" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+    "parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+    "parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+    "contacts[].join(', ', [lastName, firstName])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 
-[handlers.SensorManagementSystemHandler]
-[[handlers.SensorManagementSystemHandler.backends]]
-id_prefix = "gfzsms" 
-base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
-[[handlers.SensorManagementSystemHandler.backends]]
-id_prefix = "kitsms"
-base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1"
-[[handlers.SensorManagementSystemHandler.backends]]
-id_prefix = "ufzsms"
-base_url = "https://web.app.ufz.de/sms/backend/api/v1"
-# Example Catalog
-[[handlers.SensorManagementSystemHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/sensorsearch"
-auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
-[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
-"data.attributes.long_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
-"data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
-"data.attributes.serial_number" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
-# Advanced usage of JMESPath
-"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
-"included[].attributes.unit_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
+    [handlers.SensorManagementSystemHandler]
+    [[handlers.SensorManagementSystemHandler.backends]]
+    id_prefix = "gfzsms"
+    base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
+    [[handlers.SensorManagementSystemHandler.backends]]
+    id_prefix = "kitsms"
+    base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1"
+    [[handlers.SensorManagementSystemHandler.backends]]
+    id_prefix = "ufzsms"
+    base_url = "https://web.app.ufz.de/sms/backend/api/v1"
+    # Example Catalog
+    [[handlers.SensorManagementSystemHandler.catalogs]]
+    catalog_uri = "http://example.com/terms/questions/sensorsearch"
+    auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
+    [handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+    "data.attributes.long_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+    "data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
+    "data.attributes.serial_number" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+    # Advanced usage of JMESPath
+    "included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
+    "included[].attributes.unit_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
+    # MOSES Catalog mapping
+    [[handlers.SensorManagementSystemHandler.catalogs]]
+    catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+    [handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+    "data.attributes.long_name || data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+    "data.attributes.device_type_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
+    "data.attributes.manufacturer_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+    "data.attributes.model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
+    "data.attributes.serial_number" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+    "data.attributes.persistent_identifier" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+    "included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+    "included[?type==`device_property`].attributes.unit_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+    "included[?type==`contact`].attributes.join(', ', [family_name, given_name])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
-[handlers.GeophysicalInstrumentPoolPotsdamHandler]
-# Example Catalog
-[[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/sensorsearch"
-auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
-[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
-"Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
-"Instrumentcategory.name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
-"Instrument.serialNo" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+    [handlers.GeophysicalInstrumentPoolPotsdamHandler]
+    # Example Catalog
+    [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+    catalog_uri = "http://example.com/terms/questions/sensorsearch"
+    auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
+    [handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
+    "Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+    "Instrumentcategory.name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+    "Instrument.serialNo" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+    # MOSES Catalog mapping
+    [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+    catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+    [handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
+    "Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+    "Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+    "Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+    "Instrument.pid" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+    "Person.[surname, givenname].join(', ', @)" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
-[[SensorsProvider.providers.O2ARegistrySearchProvider]]
+    [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
-[[SensorsProvider.providers.SensorManagementSystemProvider]]
-id_prefix = "gfzsms" 
-text_prefix = "GFZ Sensors:" 
-base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
+    [[SensorsProvider.providers.SensorManagementSystemProvider]]
+    id_prefix = "gfzsms"
+    text_prefix = "GFZ Sensors:"
+    base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/devices"
 
-[[SensorsProvider.providers.SensorManagementSystemProvider]]
-id_prefix = "kitsms"
-text_prefix = "KIT Sensors:"
-base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1"
+    [[SensorsProvider.providers.SensorManagementSystemProvider]]
+    id_prefix = "kitsms"
+    text_prefix = "KIT Sensors:"
+    base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1/devices"
 
-[[SensorsProvider.providers.SensorManagementSystemProvider]]
-id_prefix = "ufzsms"
-text_prefix = "UFZ Sensors:"
-base_url = "https://web.app.ufz.de/sms/backend/api/v1"
+    [[SensorsProvider.providers.SensorManagementSystemProvider]]
+    id_prefix = "ufzsms"
+    text_prefix = "UFZ Sensors:"
+    base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
-[[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]
+    [[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]
