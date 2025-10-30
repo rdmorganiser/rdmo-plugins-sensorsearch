@@ -9,6 +9,10 @@ ALL_HANDLER_MAP = build_handlers_by_catalog()
 
 def handle_post_save(instance):
 
+    if not ALL_HANDLER_MAP:
+        logger.warning("No handlers found for %s", __name__)
+        return
+
     try:
         id_prefix, external_id = instance.external_id.split(":")
     except ValueError:
@@ -23,6 +27,7 @@ def handle_post_save(instance):
         return
 
     handler_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
+    matched = False
     for candidate in handler_candidates:
         if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute_uri:
             mapped_data = candidate.handler.handle(id_=external_id)
