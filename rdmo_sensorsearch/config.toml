@@ -42,7 +42,7 @@
     base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
     [[handlers.SensorManagementSystemHandler.backends]]
     id_prefix = "kitsms"
-    base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1"
+    base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
     [[handlers.SensorManagementSystemHandler.backends]]
     id_prefix = "ufzsms"
     base_url = "https://web.app.ufz.de/sms/backend/api/v1"
@@ -102,7 +102,7 @@
     [[SensorsProvider.providers.SensorManagementSystemProvider]]
     id_prefix = "kitsms"
     text_prefix = "KIT Sensors:"
-    base_url = "https://sms.atmohub.kit.edu/backend/rdm/svm-api/v1/devices"
+    base_url = "https://sms.atmohub.kit.edu/backend/api/v1/devices"
 
     [[SensorsProvider.providers.SensorManagementSystemProvider]]
     id_prefix = "ufzsms"
