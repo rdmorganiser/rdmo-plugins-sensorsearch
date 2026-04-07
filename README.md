@@ -46,6 +46,8 @@ Add the plugin to the `OPTIONSET_PROVIDERS` in `config/settings/local.py`:
 ```python
 OPTIONSET_PROVIDERS = [
     ('sensorssearch', _('Sensor Search'), 'rdmo_sensorsearch.providers.SensorsProvider'),
+    ('sensorssearch_configurations', _('Configuration Search'), 'rdmo_sensorsearch.providers.ConfigurationsProvider'),
+    ('sensorssearch_project_sensors', _('Project Configuration Sensors'), 'rdmo_sensorsearch.providers.ProjectConfigurationSensorsProvider'),
 ]
 ```
 
@@ -56,12 +58,15 @@ INSTALLED_APPS = ['rdmo_sensorsearch'] + INSTALLED_APPS
 ```
 
 After restarting RDMO, the `Sensor Search` should be selectable as a provider
-option for option sets.
+option for option sets. If you enable the second and third provider entries, a
+separate `Configuration Search` provider and a project-local reuse provider for
+mounted sensors are available as well.
 
 ## Configuration
 
 With `config.toml` the providers which should be used can be configured. The
 `SensorsProvider` aggregates the results of the configured providers.
+`ConfigurationsProvider` works the same way for configuration backends.
 
 To automatically fill out questions with results of the matching sensor,
 attribute mapping for the specific catalog(s) must be configured in the
@@ -77,6 +82,14 @@ name.
 ```toml
 [SensorsProvider]
 min_search_len = 3 
+
+[ConfigurationsProvider]
+min_search_len = 3
+
+[ProjectConfigurationSensorsProvider]
+[[ProjectConfigurationSensorsProvider.catalogs]]
+catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
+source_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
@@ -96,6 +109,25 @@ text_prefix = "UFZ Sensors:"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
 [[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]
+
+[[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
+id_prefix = "gfzcfg"
+text_prefix = "GFZ Configurations:"
+base_url = "https://sensors.gfz.de/backend/api/v1/configurations"
+
+[handlers.SensorManagementSystemConfigurationsHandler]
+[[handlers.SensorManagementSystemConfigurationsHandler.backends]]
+id_prefix = "gfzcfg"
+base_url = "https://sensors.gfz.de/backend/api/v1"
+sensor_id_prefix = "gfzsms"
+[[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
+catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
+auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
+member_sensors_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+[handlers.SensorManagementSystemConfigurationsHandler.catalogs.attribute_mapping]
+"data.attributes.label" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+"data.attributes.project" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
+"data.attributes.persistent_identifier" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
 ```
 
 This configures all available providers with three SMS instances to query. The
@@ -115,13 +147,18 @@ along the value in `external_id`. This is used by the handler to query the
 correct registry when filling out questions with attribute mapping
 automatically.
 
-In conclusion, every provider has the following options:
+In conclusion, every remote provider has the following options:
 - `id_prefix` to identify the instance internally and used by the handler
 - `text_prefix` is displayed next to the queried result to identify the used
   registry
 - `max_hits` defaults to `10` and limits the results to display
 - `base_url` the API URL of the used instance, must be set for the
-  `SensorManagementSystemProvider`
+  `SensorManagementSystemProvider` and
+  `SensorManagementSystemConfigurationsProvider`
+
+The `ProjectConfigurationSensorsProvider` is different. It does not query a
+remote backend, but reads project-local values which were materialized by a
+configuration handler after a configuration was selected.
 
 ### Configuration: Handlers
 

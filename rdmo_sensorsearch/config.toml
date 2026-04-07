@@ -6,6 +6,14 @@
     [SensorsProvider]
     min_search_len = 3
 
+    [ConfigurationsProvider]
+    min_search_len = 3
+
+    [ProjectConfigurationSensorsProvider]
+    [[ProjectConfigurationSensorsProvider.catalogs]]
+    catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
+    source_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+
     [handlers.O2ARegistrySearchHandler]
     # Use defaults
     #[[handlers.O2ARegistrySearchHandler.backends]]
@@ -92,6 +100,20 @@
     "Instrument.pid" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
     "Person.[surname, givenname].join(', ', @)" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
+    [handlers.SensorManagementSystemConfigurationsHandler]
+    [[handlers.SensorManagementSystemConfigurationsHandler.backends]]
+    id_prefix = "gfzcfg"
+    base_url = "https://sensors.gfz.de/backend/api/v1"
+    sensor_id_prefix = "gfzsms"
+    [[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
+    catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
+    auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
+    member_sensors_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+    [handlers.SensorManagementSystemConfigurationsHandler.catalogs.attribute_mapping]
+    "data.attributes.label" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
+    "data.attributes.project" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
+    "data.attributes.persistent_identifier" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+
     [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
     [[SensorsProvider.providers.SensorManagementSystemProvider]]
@@ -110,3 +132,8 @@
     base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
     [[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]
+
+    [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
+    id_prefix = "gfzcfg"
+    text_prefix = "GFZ Configurations:"
+    base_url = "https://sensors.gfz.de/backend/api/v1/configurations"

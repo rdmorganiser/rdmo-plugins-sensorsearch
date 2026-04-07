@@ -1,7 +1,11 @@
 import logging
 
+from rdmo_sensorsearch.handlers.base import HandlerResult
 from rdmo_sensorsearch.handlers.factory import build_handlers_by_catalog
-from rdmo_sensorsearch.signals.value_updater import update_values_from_mapped_data
+from rdmo_sensorsearch.signals.value_updater import (
+    update_values_from_handler_result,
+    update_values_from_mapped_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +37,14 @@ def handle_post_save(instance):
             mapped_data = candidate.handler.handle(id_=external_id)
             matched = True
 
-            if 'errors' in mapped_data:
+            if isinstance(mapped_data, dict) and 'errors' in mapped_data:
                 logger.error("Handler %s returned errors: %s", candidate.id_prefix, mapped_data['errors'])
                 continue
 
-            update_values_from_mapped_data(instance, mapped_data)
+            if isinstance(mapped_data, HandlerResult):
+                update_values_from_handler_result(instance, mapped_data)
+            else:
+                update_values_from_mapped_data(instance, mapped_data)
 
     if not matched:
         logger.warning(

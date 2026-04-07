@@ -1,6 +1,21 @@
 import logging
+from dataclasses import dataclass, field
+from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class CollectionAssignment:
+    attribute_uri: str
+    values: list[dict[str, Any]] = field(default_factory=list)
+    replace_existing: bool = True
+
+
+@dataclass
+class HandlerResult:
+    mapped_values: dict[str, Any] = field(default_factory=dict)
+    collections: list[CollectionAssignment] = field(default_factory=list)
 
 
 class GenericSearchHandler:
@@ -15,7 +30,8 @@ class GenericSearchHandler:
     def __init__(self,
                  attribute_mapping=None,
                  id_prefix=None,
-                 base_url=None
+                 base_url=None,
+                 **kwargs,
         ):
         """
         Initializes the GenericSearchHandler.
@@ -35,6 +51,9 @@ class GenericSearchHandler:
             self.attribute_mapping = attribute_mapping  # must be set via the setter
         else:
             self._attribute_mapping = None  # internal default
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     @property
     def id_prefix(self) -> str:

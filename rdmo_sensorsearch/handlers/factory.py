@@ -30,6 +30,11 @@ def build_handlers_by_catalog() -> dict:
             catalog_uri = catalog.get("catalog_uri")
             auto_field_uri = catalog.get("auto_complete_field_uri")
             attribute_mapping = catalog.get("attribute_mapping", {})
+            catalog_extra_kwargs = {
+                key: value
+                for key, value in catalog.items()
+                if key not in {"catalog_uri", "auto_complete_field_uri", "attribute_mapping"}
+            }
 
             if not catalog_uri or not auto_field_uri:
                 logger.warning("Skipping catalog with missing catalog_uri or"
@@ -44,7 +49,10 @@ def build_handlers_by_catalog() -> dict:
             if not backends:
                 # No backends defined, single handler instance using class defaults
                 try:
-                    instance = handler_cls(attribute_mapping=attribute_mapping)
+                    instance = handler_cls(
+                        attribute_mapping=attribute_mapping,
+                        **catalog_extra_kwargs,
+                    )
                     hid = HandlerInstanceData(
                         id_prefix=instance.id_prefix,
                         handler=instance,
@@ -60,12 +68,19 @@ def build_handlers_by_catalog() -> dict:
             for backend in backends:
                 id_prefix = backend.get("id_prefix")
                 base_url = backend.get("base_url")
+                backend_extra_kwargs = {
+                    key: value
+                    for key, value in backend.items()
+                    if key not in {"id_prefix", "base_url"}
+                }
 
                 try:
                     instance = handler_cls(
                         attribute_mapping=attribute_mapping,
                         id_prefix=id_prefix,
-                        base_url=base_url
+                        base_url=base_url,
+                        **backend_extra_kwargs,
+                        **catalog_extra_kwargs,
                     )
                     hid = HandlerInstanceData(
                         id_prefix=instance.id_prefix,

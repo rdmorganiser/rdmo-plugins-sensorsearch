@@ -1,0 +1,43 @@
+# Earth-Sensor catalog additions for rdmo_sensorsearch
+# https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
+
+[handlers.O2ARegistrySearchHandler]
+[[handlers.O2ARegistrySearchHandler.catalogs]]
+catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+[handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
+"longName || shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+"type.generalName" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
+"manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+"model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
+"serialNumber" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+"citation" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+"parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+"contacts[].join(', ', [lastName, firstName])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+
+[handlers.SensorManagementSystemHandler]
+[[handlers.SensorManagementSystemHandler.catalogs]]
+catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+"data.attributes.long_name || data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+"data.attributes.device_type_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
+"data.attributes.manufacturer_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+"data.attributes.model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
+"data.attributes.serial_number" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+"data.attributes.persistent_identifier" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+"included[?type==`device_property`].attributes.unit_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+"included[?type==`contact`].attributes.join(', ', [family_name, given_name])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+
+[handlers.GeophysicalInstrumentPoolPotsdamHandler]
+[[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
+"Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+"Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+"Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+"Instrument.pid" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"Person.[surname, givenname].join(', ', @)" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
