@@ -3,6 +3,7 @@ import logging
 from rdmo_sensorsearch.handlers.base import HandlerResult
 from rdmo_sensorsearch.handlers.factory import build_handlers_by_catalog
 from rdmo_sensorsearch.signals.value_updater import (
+    build_clear_payload,
     update_values_from_handler_result,
     update_values_from_mapped_data,
 )
@@ -17,17 +18,46 @@ def handle_post_save(instance):
         logger.warning("No handlers found for %s", __name__)
         return
 
+    project = instance.project
+    attribute = instance.attribute
+
+    if project is None or attribute is None or project.catalog is None:
+        logger.debug("Skipping post_save handling for incomplete value instance: %r", instance)
+        return
+
+    catalog_uri = project.catalog.uri
+    attribute_uri = attribute.uri
+
+    if not catalog_uri or not attribute_uri:
+        logger.warning("Missing catalog or attribute URI")
+        return
+
+    if not instance.external_id and getattr(instance, "is_empty", False):
+        handler_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
+        matched_handlers = [
+            candidate for candidate in handler_candidates if candidate.auto_complete_field_uri == attribute_uri
+        ]
+
+        if not matched_handlers:
+            logger.info(
+                "No matching handlers found for empty selection and attribute_uri=%s in catalog=%s",
+                attribute_uri,
+                catalog_uri,
+            )
+            return
+
+        for candidate in matched_handlers:
+            update_values_from_mapped_data(instance, build_clear_payload(candidate.handler.attribute_mapping))
+        return
+
+    if not instance.external_id:
+        logger.debug("external_id is empty and not marked empty: %r", instance)
+        return
+
     try:
         id_prefix, external_id = instance.external_id.split(":")
     except ValueError:
         logger.warning("Can not parse instance.external_id: %s", instance.external_id)
-        return
-
-    catalog_uri = instance.project.catalog.uri
-    attribute_uri = instance.attribute.uri
-
-    if not catalog_uri or not attribute_uri:
-        logger.warning("Missing catalog or attribute URI")
         return
 
     handler_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
