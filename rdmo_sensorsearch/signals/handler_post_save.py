@@ -4,6 +4,7 @@ from rdmo_sensorsearch.handlers.base import HandlerResult
 from rdmo_sensorsearch.handlers.factory import build_handlers_by_catalog
 from rdmo_sensorsearch.signals.value_updater import (
     build_clear_payload,
+    clear_collection_attribute,
     update_values_from_handler_result,
     update_values_from_mapped_data,
 )
@@ -48,6 +49,9 @@ def handle_post_save(instance):
 
         for candidate in matched_handlers:
             update_values_from_mapped_data(instance, build_clear_payload(candidate.handler.attribute_mapping))
+            member_sensors_attribute_uri = getattr(candidate.handler, "member_sensors_attribute_uri", None)
+            if member_sensors_attribute_uri:
+                clear_collection_attribute(instance, member_sensors_attribute_uri)
         return
 
     if not instance.external_id:

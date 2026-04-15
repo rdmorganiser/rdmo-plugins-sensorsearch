@@ -35,6 +35,23 @@ def build_clear_payload(attribute_mapping: Mapping[str, str]) -> dict[str, objec
     return clear
 
 
+def clear_collection_attribute(instance, attribute_uri: str) -> None:
+    try:
+        attribute = Attribute.objects.get(uri=attribute_uri)
+    except Attribute.DoesNotExist:
+        logger.warning("Collection clear target attribute not found: %s", attribute_uri)
+        return
+
+    mode = _collection_shape(instance, attribute)
+    if mode is None:
+        logger.warning("Cannot clear collection attribute without collection shape: %s", attribute_uri)
+        return
+
+    with transaction.atomic(), mute_value_post_save():
+        deleted, _ = _qs_collection(instance, attribute, mode).delete()
+        logger.info("Cleared collection values for attribute %s (%s rows)", attribute_uri, deleted)
+
+
 def _collection_shape(instance, attribute) -> str | None:
     question_match_count = Question.objects.filter(
         is_collection=True,
@@ -56,12 +73,15 @@ def _collection_shape(instance, attribute) -> str | None:
 
 
 def _qs_scalar(instance, attribute):
-    return Value.objects.filter(
+    queryset = Value.objects.filter(
         project=instance.project,
         attribute=attribute,
         set_index=instance.set_index,
         set_collection=False,
     )
+    if instance.set_prefix is None:
+        return queryset.filter(set_prefix__isnull=True)
+    return queryset.filter(set_prefix=instance.set_prefix)
 
 
 def _qs_collection(instance, attribute, mode: str):
@@ -96,15 +116,42 @@ def update_values_from_mapped_data(instance, data: dict):
                 continue
 
             if _is_blank_scalar(value):
-                _qs_scalar(instance, attribute).delete()
+                deleted, _ = _qs_scalar(instance, attribute).delete()
+                logger.info("Cleared scalar values for attribute %s (%s rows)", attribute.uri, deleted)
                 continue
 
-            Value.objects.update_or_create(
-                project=instance.project,
-                attribute=attribute,
-                set_index=instance.set_index,
-                set_collection=False,
-                defaults={"text": _normalize_scalar(value)},
+            normalized_value = _normalize_scalar(value)
+            queryset = _qs_scalar(instance, attribute).order_by("id")
+            current = queryset.first()
+
+            if current is None:
+                _, created = Value.objects.update_or_create(
+                    project=instance.project,
+                    attribute=attribute,
+                    set_prefix=instance.set_prefix,
+                    set_index=instance.set_index,
+                    set_collection=False,
+                    defaults={"text": normalized_value},
+                )
+            else:
+                created = False
+                if current.text != normalized_value and getattr(current, "value", None) != normalized_value:
+                    current.text = normalized_value
+                    current.save(update_fields=["text"])
+
+                duplicate_ids = list(queryset.values_list("id", flat=True)[1:])
+                if duplicate_ids:
+                    deleted, _ = queryset.exclude(id=current.id).delete()
+                    logger.info(
+                        "Deleted duplicate scalar values for attribute %s (%s rows)",
+                        attribute.uri,
+                        deleted,
+                    )
+            logger.info(
+                "%s scalar value for attribute %s: %r",
+                "Created" if created else "Updated",
+                attribute.uri,
+                normalized_value,
             )
 
 
@@ -128,19 +175,21 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
             set_collection=True,
             set_prefix=instance.set_index,
         ).delete()
+        logger.info("Cleared stray collection values for attribute %s", attribute.uri)
         return
 
     queryset = _qs_collection(instance, attribute, mode)
 
     if not items:
-        queryset.delete()
+        deleted, _ = queryset.delete()
+        logger.info("Cleared collection values for attribute %s (%s rows)", attribute.uri, deleted)
         return
 
     if mode == "question":
         existing = {value.collection_index: value for value in queryset.only("id", "collection_index", "text")}
 
         def upsert_at(index: int, text: Any):
-            Value.objects.update_or_create(
+            _, created = Value.objects.update_or_create(
                 project=instance.project,
                 attribute=attribute,
                 set_collection=True,
@@ -148,17 +197,37 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
                 collection_index=index,
                 defaults={"text": text},
             )
+            logger.info(
+                "%s collection value for attribute %s at collection_index=%s: %r",
+                "Created" if created else "Updated",
+                attribute.uri,
+                index,
+                text,
+            )
 
         def delete_index(index: int):
-            queryset.filter(collection_index=index).delete()
+            deleted, _ = queryset.filter(collection_index=index).delete()
+            if deleted:
+                logger.info(
+                    "Deleted collection value for attribute %s at collection_index=%s",
+                    attribute.uri,
+                    index,
+                )
 
         def delete_from(start: int):
-            queryset.filter(collection_index__gte=start).delete()
+            deleted, _ = queryset.filter(collection_index__gte=start).delete()
+            if deleted:
+                logger.info(
+                    "Deleted surplus collection values for attribute %s from collection_index=%s (%s rows)",
+                    attribute.uri,
+                    start,
+                    deleted,
+                )
     else:
         existing = {value.set_index: value for value in queryset.only("id", "set_index", "text")}
 
         def upsert_at(index: int, text: Any):
-            Value.objects.update_or_create(
+            _, created = Value.objects.update_or_create(
                 project=instance.project,
                 attribute=attribute,
                 set_prefix=instance.set_index,
@@ -166,12 +235,32 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
                 set_index=index,
                 defaults={"text": text},
             )
+            logger.info(
+                "%s collection value for attribute %s at set_index=%s: %r",
+                "Created" if created else "Updated",
+                attribute.uri,
+                index,
+                text,
+            )
 
         def delete_index(index: int):
-            queryset.filter(set_index=index, set_prefix=instance.set_index).delete()
+            deleted, _ = queryset.filter(set_index=index, set_prefix=instance.set_index).delete()
+            if deleted:
+                logger.info(
+                    "Deleted collection value for attribute %s at set_index=%s",
+                    attribute.uri,
+                    index,
+                )
 
         def delete_from(start: int):
-            queryset.filter(set_index__gte=start).delete()
+            deleted, _ = queryset.filter(set_index__gte=start).delete()
+            if deleted:
+                logger.info(
+                    "Deleted surplus collection values for attribute %s from set_index=%s (%s rows)",
+                    attribute.uri,
+                    start,
+                    deleted,
+                )
 
     last_nonblank_index = -1
     for index, raw_value in enumerate(items):
@@ -221,7 +310,7 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
             defaults["external_id"] = value.get("external_id")
 
         if mode == "question":
-            Value.objects.update_or_create(
+            _, created = Value.objects.update_or_create(
                 project=instance.project,
                 attribute=attribute,
                 set_collection=True,
@@ -229,14 +318,28 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
                 collection_index=index,
                 defaults=defaults,
             )
+            logger.info(
+                "%s handler collection value for attribute %s at collection_index=%s: %r",
+                "Created" if created else "Updated",
+                attribute.uri,
+                index,
+                defaults,
+            )
         elif mode == "questionset":
-            Value.objects.update_or_create(
+            _, created = Value.objects.update_or_create(
                 project=instance.project,
                 attribute=attribute,
                 set_prefix=instance.set_index,
                 set_collection=True,
                 set_index=index,
                 defaults=defaults,
+            )
+            logger.info(
+                "%s handler collection value for attribute %s at set_index=%s: %r",
+                "Created" if created else "Updated",
+                attribute.uri,
+                index,
+                defaults,
             )
         else:
             logger.warning(
@@ -260,4 +363,6 @@ def _delete_existing_collection_values(instance, attribute, mode: str | None):
         )
         return
 
-    queryset.delete()
+    deleted, _ = queryset.delete()
+    if deleted:
+        logger.info("Deleted existing collection values for attribute %s (%s rows)", attribute.uri, deleted)

@@ -15,7 +15,13 @@ class SensorManagementSystemConfigurationsProvider(BaseSensorProvider):
     searches them by label and returns one option per matching configuration.
     """
 
-    query_url = "{base_url}?filter[label]={query}&page[size]={page_size}"
+    # Match the SMS frontend configuration search more closely. `q` performs
+    # the free-text search; the other flags keep the result set aligned with
+    # the public UI behavior.
+    query_url = (
+        "{base_url}?page[size]={page_size}&page[number]=1&include=created_by.contact"
+        "&filter=[]&q={query}&sort=label&hide_archived=false"
+    )
 
     option_id = "{id_prefix}:{id}"
     option_text = "{prefix} {label}{project}{pid}"
