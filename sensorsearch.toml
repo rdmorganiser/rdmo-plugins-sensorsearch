@@ -37,7 +37,7 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "citation" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
 "parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
 "parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
-"contacts[].join(', ', [lastName, firstName])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+"contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 # Earth-Sensor catalog https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
 [[handlers.O2ARegistrySearchHandler.catalogs]]
@@ -52,7 +52,7 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "citation" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
 "parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
 "parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
-"contacts[].join(', ', [lastName, firstName])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+"contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 
 [handlers.SensorManagementSystemHandler]
@@ -76,7 +76,7 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 "data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
 "data.attributes.serial_number" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
 # Advanced usage of JMESPath
-"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
+"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label][?@ != null]) || included[?type==`device_property`].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
 "included[].attributes.unit_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
 
 # MOSES Catalog mapping
@@ -90,9 +90,9 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "data.attributes.model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
 "data.attributes.serial_number" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 "data.attributes.persistent_identifier" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
-"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label][?@ != null]) || included[?type==`device_property`].attributes.property_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
 "included[?type==`device_property`].attributes.unit_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
-"included[?type==`contact`].attributes.join(', ', [family_name, given_name])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+"included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 # Earth-Sensor catalog https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
 [[handlers.SensorManagementSystemHandler.catalogs]]
@@ -105,9 +105,9 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "data.attributes.model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
 "data.attributes.serial_number" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 "data.attributes.persistent_identifier" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
-"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label]) || included[?type==`device_property`].attributes.property_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+"included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label][?@ != null]) || included[?type==`device_property`].attributes.property_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
 "included[?type==`device_property`].attributes.unit_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
-"included[?type==`contact`].attributes.join(', ', [family_name, given_name])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+"included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 
 [handlers.SensorManagementSystemConfigurationsHandler]
@@ -153,7 +153,7 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
 "Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 "Instrument.pid" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
-"Person.[surname, givenname].join(', ', @)" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+"join(', ', Person.[surname, givenname][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 # Earth-Sensor catalog https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
 [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
@@ -164,7 +164,7 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
 "Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 "Instrument.pid" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
-"Person.[surname, givenname].join(', ', @)" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+"join(', ', Person.[surname, givenname][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]

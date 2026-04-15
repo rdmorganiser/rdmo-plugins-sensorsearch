@@ -34,7 +34,17 @@ def handle_post_save(instance):
     matched = False
     for candidate in handler_candidates:
         if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute_uri:
-            mapped_data = candidate.handler.handle(id_=external_id)
+            try:
+                mapped_data = candidate.handler.handle(id_=external_id)
+            except Exception:
+                logger.exception(
+                    "Handler %s failed while processing external_id=%s for catalog=%s",
+                    candidate.id_prefix,
+                    external_id,
+                    catalog_uri,
+                )
+                continue
+
             matched = True
 
             if isinstance(mapped_data, dict) and 'errors' in mapped_data:
