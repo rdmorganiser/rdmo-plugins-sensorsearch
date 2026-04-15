@@ -35,6 +35,28 @@ def build_clear_payload(attribute_mapping: Mapping[str, str]) -> dict[str, objec
     return clear
 
 
+def clear_attribute_values(instance, attribute_uri: str) -> None:
+    try:
+        attribute = Attribute.objects.get(uri=attribute_uri)
+    except Attribute.DoesNotExist:
+        logger.warning("Clear target attribute not found: %s", attribute_uri)
+        return
+
+    queryset = Value.objects.filter(
+        project=instance.project,
+        attribute=attribute,
+        set_index=instance.set_index,
+    )
+    if instance.set_prefix is None:
+        queryset = queryset.filter(set_prefix__isnull=True)
+    else:
+        queryset = queryset.filter(set_prefix=instance.set_prefix)
+
+    with transaction.atomic(), mute_value_post_save():
+        deleted, _ = queryset.delete()
+        logger.info("Cleared values for attribute %s (%s rows)", attribute_uri, deleted)
+
+
 def clear_collection_attribute(instance, attribute_uri: str) -> None:
     try:
         attribute = Attribute.objects.get(uri=attribute_uri)

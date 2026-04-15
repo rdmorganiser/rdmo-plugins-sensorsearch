@@ -9,6 +9,11 @@ min_search_len = 3
 [ConfigurationsProvider]
 min_search_len = 3
 
+[ProjectConfigurationSensorsProvider]
+[[ProjectConfigurationSensorsProvider.catalogs]]
+catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
+source_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+
 
 [handlers.O2ARegistrySearchHandler]
 # Use defaults
@@ -127,16 +132,19 @@ sensor_id_prefix = "ufzsms"
 # Example configuration catalog mapping
 [[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
 catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
-auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
+auto_complete_field_uri = "http://example.com/terms/domain/sensorsearch/configurations/search"
 member_sensors_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+reset_attribute_uris = ["http://example.com/terms/domain/sensorsearch/configurations/used-sensor"]
 # Optional: only materialize mounted devices overlapping with the configured
 # period from the interview.
 # cfg_start_uri = "https://example.com/terms/domain/configuration-set/configuration-start-datetime"
 # cfg_end_uri = "https://example.com/terms/domain/configuration-set/configuration-end-datetime"
 [handlers.SensorManagementSystemConfigurationsHandler.catalogs.attribute_mapping]
-"data.attributes.label" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
-"data.attributes.project" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
-"data.attributes.persistent_identifier" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+"data.attributes.label" = "http://example.com/terms/domain/sensorsearch/configurations/label"
+"data.attributes.project" = "http://example.com/terms/domain/sensorsearch/configurations/project"
+"data.attributes.persistent_identifier" = "http://example.com/terms/domain/sensorsearch/configurations/pid"
+"data.attributes.start_date" = "http://example.com/terms/domain/sensorsearch/configurations/start_date"
+"data.attributes.end_date" = "http://example.com/terms/domain/sensorsearch/configurations/end_date"
 
 
 [handlers.GeophysicalInstrumentPoolPotsdamHandler]

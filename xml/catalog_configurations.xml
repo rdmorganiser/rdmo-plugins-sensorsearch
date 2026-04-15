@@ -7,7 +7,7 @@ SPDX-FileCopyrightText: 2023 - 2024 Helmholtz Centre Potsdam - GFZ German Resear
 SPDX-License-Identifier: Apache-2.0
 -->
 
-<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-04-07T12:00:00+02:00" version="2.2.0+b1963de">
+<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-04-15T17:53:25.045963+02:00" required="2.1.0" version="2.4.0">
 	<catalog dc:uri="http://example.com/terms/questions/sensorsearch/configurations">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>sensorsearch/configurations</uri_path>
@@ -49,14 +49,189 @@ SPDX-License-Identifier: Apache-2.0
 		<short_title lang="de"/>
 		<help lang="de"/>
 		<verbose_name lang="de"/>
+		<questionsets/>
 		<questions>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/search-optionset" order="0"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/label" order="1"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/project" order="2"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/pid" order="3"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/start_date" order="4"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/end_date" order="5"/>
 		</questions>
 		<conditions/>
 	</page>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/search-optionset">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/search-optionset</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/search"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en">It may take some seconds to show the results.</help>
+		<text lang="en">Type to search for configuration</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de">Es kann ein paar Sekunden dauern, bis die Ergebnisse angezeigt werden.</help>
+		<text lang="de">Tippe, um Konfigurationen zu suchen</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>select</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets>
+			<optionset dc:uri="http://example.com/terms/options/sensorsearch/configurations/optionset"/>
+		</optionsets>
+		<conditions/>
+	</question>
+	<optionset dc:uri="http://example.com/terms/options/sensorsearch/configurations/optionset">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/optionset</uri_path>
+		<dc:comment/>
+		<provider_key>sensorssearch_configurations</provider_key>
+		<options/>
+		<conditions/>
+	</optionset>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/label">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/label</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/label"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Configuration Label</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Konfigurationsbezeichnung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/project">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/project</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/project"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Project</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Projekt</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/pid">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/pid</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/pid"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Persistent Identifier</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Persistenter Identifikator</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/start_date">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/start_date</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/start_date"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Start Date</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Startdatum</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>date</widget_type>
+		<value_type>datetime</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/end_date">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/end_date</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/end_date"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">End Date</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Enddatum</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>date</widget_type>
+		<value_type>datetime</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
 	<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/member-sensors">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>sensorsearch/configurations/configuration/member-sensors</uri_path>
@@ -71,59 +246,12 @@ SPDX-License-Identifier: Apache-2.0
 		<short_title lang="de"/>
 		<help lang="de"/>
 		<verbose_name lang="de"/>
+		<questionsets/>
 		<questions>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/member-sensor" order="0"/>
 		</questions>
 		<conditions/>
 	</page>
-	<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/used-sensors">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/used-sensors</uri_path>
-		<dc:comment>Example page where the user selects which sensors from the configuration were actually used.</dc:comment>
-		<attribute/>
-		<is_collection>False</is_collection>
-		<title lang="en">Used Sensors</title>
-		<short_title lang="en"/>
-		<help lang="en">Select the sensors from the chosen configuration that were actually used in the project.</help>
-		<verbose_name lang="en"/>
-		<title lang="de">Verwendete Sensoren</title>
-		<short_title lang="de"/>
-		<help lang="de">Wahlen Sie die Sensoren aus der gewählten Konfiguration aus, die tatsächlich im Projekt verwendet wurden.</help>
-		<verbose_name lang="de"/>
-		<questions>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/used-sensor" order="0"/>
-		</questions>
-		<conditions/>
-	</page>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/search-optionset">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/search-optionset</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/title"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en">It may take some seconds to show the results.</help>
-		<text lang="en">Type to search for configuration</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de">Es kann ein paar Sekunden dauern, bis die Ergebnisse angezeigt werden.</help>
-		<text lang="de">Tippe, um Konfigurationen zu suchen</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>autocomplete</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets>
-			<optionset dc:uri="http://example.com/terms/options/sensorsearch/configurations/optionset"/>
-		</optionsets>
-		<conditions/>
-	</question>
 	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/member-sensor">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>sensorsearch/configurations/configuration/member-sensor</uri_path>
@@ -151,12 +279,95 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/member-sensor">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>member-sensor</key>
+		<path>sensorsearch/configurations/member-sensor</path>
+		<dc:comment/>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/search">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>search</key>
+		<path>sensorsearch/configurations/search</path>
+		<dc:comment>Configuration search field backed by the SMS configuration provider.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/label">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>label</key>
+		<path>sensorsearch/configurations/label</path>
+		<dc:comment>Materialized label of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/project">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>project</key>
+		<path>sensorsearch/configurations/project</path>
+		<dc:comment>Materialized project of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/pid">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>pid</key>
+		<path>sensorsearch/configurations/pid</path>
+		<dc:comment>Materialized persistent identifier of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/start_date">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>start_date</key>
+		<path>sensorsearch/configurations/start_date</path>
+		<dc:comment>Materialized start date of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/end_date">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>end_date</key>
+		<path>sensorsearch/configurations/end_date</path>
+		<dc:comment>Materialized end date of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>configurations</key>
+		<path>sensorsearch/configurations</path>
+		<dc:comment/>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>sensorsearch</key>
+		<path>sensorsearch</path>
+		<dc:comment>Example Attribute for rdmo_sensorsearch</dc:comment>
+		<parent/>
+	</attribute>
+	<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/used-sensors">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/used-sensors</uri_path>
+		<dc:comment>Example page where the user selects which sensors from the configuration were actually used.</dc:comment>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">Used Sensors</title>
+		<short_title lang="en"/>
+		<help lang="en">Select the sensors from the chosen configuration that were actually used in the project.</help>
+		<verbose_name lang="en"/>
+		<title lang="de">Verwendete Sensoren</title>
+		<short_title lang="de"/>
+		<help lang="de">Wahlen Sie die Sensoren aus der gewählten Konfiguration aus, die tatsächlich im Projekt verwendet wurden.</help>
+		<verbose_name lang="de"/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/used-sensor" order="0"/>
+		</questions>
+		<conditions/>
+	</page>
 	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/used-sensor">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>sensorsearch/configurations/configuration/used-sensor</uri_path>
 		<dc:comment>User-facing selection of the sensors actually used in the project.</dc:comment>
 		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/used-sensor"/>
-		<is_collection>True</is_collection>
+		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
 		<text lang="en">Which sensors were actually used?</text>
@@ -180,106 +391,19 @@ SPDX-License-Identifier: Apache-2.0
 		</optionsets>
 		<conditions/>
 	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/label">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/label</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/description"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Configuration Label</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Konfigurationsbezeichnung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/project">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/project</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Project</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Projekt</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/pid">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/pid</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/id"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Persistent Identifier</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Persistenter Identifikator</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>configurations</key>
-		<path>sensorsearch/configurations</path>
-		<dc:comment>Example domain root for configuration search test attributes.</dc:comment>
-		<parent/>
-	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/member-sensor">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>member-sensor</key>
-		<path>sensorsearch/configurations/member-sensor</path>
-		<dc:comment>Technical storage attribute for sensors materialized from the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
-	</attribute>
 	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/used-sensor">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<key>used-sensor</key>
 		<path>sensorsearch/configurations/used-sensor</path>
-		<dc:comment>User-facing attribute for selected sensors from a configuration.</dc:comment>
+		<dc:comment/>
 		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
 	</attribute>
+	<optionset dc:uri="http://example.com/terms/options/sensorsearch/project-sensors/optionset">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/project-sensors/optionset</uri_path>
+		<dc:comment>Project-local options generated from a selected configuration.</dc:comment>
+		<provider_key>sensorssearch_project_sensors</provider_key>
+		<options/>
+		<conditions/>
+	</optionset>
 </rdmo>

@@ -4,6 +4,7 @@ from rdmo_sensorsearch.handlers.base import HandlerResult
 from rdmo_sensorsearch.handlers.factory import build_handlers_by_catalog
 from rdmo_sensorsearch.signals.value_updater import (
     build_clear_payload,
+    clear_attribute_values,
     clear_collection_attribute,
     update_values_from_handler_result,
     update_values_from_mapped_data,
@@ -33,21 +34,23 @@ def handle_post_save(instance):
         logger.warning("Missing catalog or attribute URI")
         return
 
+    handler_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
+    attribute_handler_candidates = [
+        candidate for candidate in handler_candidates if candidate.auto_complete_field_uri == attribute_uri
+    ]
+
+    if not attribute_handler_candidates:
+        logger.debug(
+            "Skipping post_save handling for attribute_uri=%s in catalog=%s because no handler is configured for it",
+            attribute_uri,
+            catalog_uri,
+        )
+        return
+
     if not instance.external_id and getattr(instance, "is_empty", False):
-        handler_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
-        matched_handlers = [
-            candidate for candidate in handler_candidates if candidate.auto_complete_field_uri == attribute_uri
-        ]
-
-        if not matched_handlers:
-            logger.info(
-                "No matching handlers found for empty selection and attribute_uri=%s in catalog=%s",
-                attribute_uri,
-                catalog_uri,
-            )
-            return
-
-        for candidate in matched_handlers:
+        for candidate in attribute_handler_candidates:
+            for attribute_uri_to_clear in getattr(candidate.handler, "reset_attribute_uris", []):
+                clear_attribute_values(instance, attribute_uri_to_clear)
             update_values_from_mapped_data(instance, build_clear_payload(candidate.handler.attribute_mapping))
             member_sensors_attribute_uri = getattr(candidate.handler, "member_sensors_attribute_uri", None)
             if member_sensors_attribute_uri:
@@ -64,11 +67,12 @@ def handle_post_save(instance):
         logger.warning("Can not parse instance.external_id: %s", instance.external_id)
         return
 
-    handler_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
     matched = False
-    for candidate in handler_candidates:
+    for candidate in attribute_handler_candidates:
         if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute_uri:
             try:
+                for attribute_uri_to_clear in getattr(candidate.handler, "reset_attribute_uris", []):
+                    clear_attribute_values(instance, attribute_uri_to_clear)
                 mapped_data = candidate.handler.handle(id_=external_id, instance=instance)
             except Exception:
                 logger.exception(
