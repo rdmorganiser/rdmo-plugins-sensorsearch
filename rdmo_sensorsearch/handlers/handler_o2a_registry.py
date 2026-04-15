@@ -48,7 +48,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
 
         super().__init__(attribute_mapping=attribute_mapping, id_prefix=id_prefix, base_url=base_url)
 
-    def handle(self, id_):
+    def handle(self, id_, instance=None):
         """
         Handles post_save for a specific ID.
 

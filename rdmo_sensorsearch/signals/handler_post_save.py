@@ -65,7 +65,7 @@ def handle_post_save(instance):
     for candidate in handler_candidates:
         if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute_uri:
             try:
-                mapped_data = candidate.handler.handle(id_=external_id)
+                mapped_data = candidate.handler.handle(id_=external_id, instance=instance)
             except Exception:
                 logger.exception(
                     "Handler %s failed while processing external_id=%s for catalog=%s",

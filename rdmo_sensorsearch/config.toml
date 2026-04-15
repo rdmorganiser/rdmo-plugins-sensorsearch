@@ -43,6 +43,21 @@
     "parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
     "contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
+    # Earth-Sensor catalog mapping
+    [[handlers.O2ARegistrySearchHandler.catalogs]]
+    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+    [handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
+    "longName || shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+    "type.generalName" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
+    "manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+    "model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
+    "serialNumber" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+    "citation" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+    "parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+    "parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+    "contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+
 
     [handlers.SensorManagementSystemHandler]
     [[handlers.SensorManagementSystemHandler.backends]]
@@ -80,6 +95,31 @@
     "included[?type==`device_property`].attributes.unit_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
     "included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
+    # Earth-Sensor catalog mapping
+    [[handlers.SensorManagementSystemHandler.catalogs]]
+    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+    [handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+    "data.attributes.long_name || data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+    "data.attributes.device_type_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
+    "data.attributes.manufacturer_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+    "data.attributes.model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
+    "data.attributes.serial_number" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+    "data.attributes.persistent_identifier" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+    "included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label][?@ != null]) || included[?type==`device_property`].attributes.property_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+    "included[?type==`device_property`].attributes.unit_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+    "included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+    # UFZ additions from config_ufz.toml need concrete source keys instead of placeholders:
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/sop"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner"
+
     [handlers.GeophysicalInstrumentPoolPotsdamHandler]
     # Example Catalog
     [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
@@ -100,19 +140,49 @@
     "Instrument.pid" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
     "join(', ', Person.[surname, givenname][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
+    # Earth-Sensor catalog mapping
+    [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+    [handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
+    "Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+    "Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
+    "Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+    "Instrument.pid" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+    "join(', ', Person.[surname, givenname][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
+
     [handlers.SensorManagementSystemConfigurationsHandler]
     [[handlers.SensorManagementSystemConfigurationsHandler.backends]]
     id_prefix = "gfzcfg"
     base_url = "https://sensors.gfz.de/backend/api/v1"
     sensor_id_prefix = "gfzsms"
+    [[handlers.SensorManagementSystemConfigurationsHandler.backends]]
+    id_prefix = "kitcfg"
+    base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
+    sensor_id_prefix = "kitsms"
+    [[handlers.SensorManagementSystemConfigurationsHandler.backends]]
+    id_prefix = "ufzcfg"
+    base_url = "https://web.app.ufz.de/sms/backend/api/v1"
+    sensor_id_prefix = "ufzsms"
     [[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
     catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
     auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
     member_sensors_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+    # Optional: only materialize mounted devices overlapping with the
+    # configured period from the interview.
+    # cfg_start_uri = "https://example.com/terms/domain/configuration-set/configuration-start-datetime"
+    # cfg_end_uri = "https://example.com/terms/domain/configuration-set/configuration-end-datetime"
     [handlers.SensorManagementSystemConfigurationsHandler.catalogs.attribute_mapping]
     "data.attributes.label" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
     "data.attributes.project" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
     "data.attributes.persistent_identifier" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
+    # UFZ configuration additions from config_ufz.toml need concrete source keys instead of placeholders:
+    # auto_complete_field_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-label"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-location"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
+    # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link"
 
     [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
@@ -137,3 +207,11 @@
     id_prefix = "gfzcfg"
     text_prefix = "GFZ Configurations:"
     base_url = "https://sensors.gfz.de/backend/api/v1/configurations"
+    [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
+    id_prefix = "kitcfg"
+    text_prefix = "KIT Configurations:"
+    base_url = "https://sms.atmohub.kit.edu/backend/api/v1/configurations"
+    [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
+    id_prefix = "ufzcfg"
+    text_prefix = "UFZ Configurations:"
+    base_url = "https://web.app.ufz.de/sms/backend/api/v1/configurations"

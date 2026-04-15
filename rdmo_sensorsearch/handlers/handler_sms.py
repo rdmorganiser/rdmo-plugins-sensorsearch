@@ -19,7 +19,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
     device_url = "{base_url}/devices/{id}?include=device_properties"
     contact_url = "{base_url}/devices/{id}/device-contact-roles?include=contact"
 
-    def handle(self, id_: str) -> dict:
+    def handle(self, id_: str, instance=None) -> dict:
         """
         Handles post_save for a specific device ID in the SMS.
 

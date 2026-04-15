@@ -1,4 +1,7 @@
 import logging
+from datetime import datetime
+
+from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, GenericSearchHandler, HandlerResult
@@ -13,12 +16,14 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     """
 
     configuration_url = "{base_url}/configurations/{id}"
+    device_url = "{base_url}/devices/{id}"
+    device_mount_action_url = "{base_url}/device-mount-actions/{id}"
     device_mount_actions_url = (
         "{base_url}/device-mount-actions?filter[configuration_id]={id}&include=device&page[size]={page_size}"
     )
     mounted_sensor_max_hits = 100
 
-    def handle(self, id_: str) -> dict | HandlerResult:
+    def handle(self, id_: str, instance=None) -> dict | HandlerResult:
         configuration_data = fetch_json(self.configuration_url.format(base_url=self.base_url, id=id_))
         if "errors" in configuration_data:
             logger.debug("Errors in configuration data returned for ID %s: %s", id_, configuration_data["errors"])
@@ -41,16 +46,26 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         )
 
         if getattr(self, "member_sensors_attribute_uri", None):
+            cfg_period = self._get_cfg_period(instance)
             result.collections.append(
                 CollectionAssignment(
                     attribute_uri=self.member_sensors_attribute_uri,
-                    values=self._build_member_sensor_values(mount_action_data),
+                    values=self._build_member_sensor_values(
+                        configuration_data=configuration_data,
+                        mount_action_data=mount_action_data,
+                        cfg_period=cfg_period,
+                    ),
                 )
             )
 
         return result
 
-    def _build_member_sensor_values(self, mount_action_data: dict) -> list[dict[str, str]]:
+    def _build_member_sensor_values(
+        self,
+        configuration_data: dict,
+        mount_action_data: dict,
+        cfg_period: tuple[datetime, datetime] | None = None,
+    ) -> list[dict[str, str]]:
         included_devices = {
             item["id"]: item
             for item in mount_action_data.get("included", [])
@@ -60,15 +75,22 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         sensor_id_prefix = getattr(self, "sensor_id_prefix", self.id_prefix)
         member_sensor_values = []
 
-        for mount_action in mount_action_data.get("data", []):
+        mount_actions = self._get_mount_actions(configuration_data, mount_action_data)
+
+        for mount_action in mount_actions:
+            if cfg_period is not None and not self._is_mount_action_in_period(mount_action, cfg_period):
+                continue
+
             device_ref = mount_action.get("relationships", {}).get("device", {}).get("data")
             if not device_ref:
                 continue
 
             device = included_devices.get(device_ref["id"])
             if device is None:
-                logger.warning("Mounted device %s not found in included data", device_ref["id"])
-                continue
+                device = self._fetch_device(device_ref["id"])
+                if device is None:
+                    logger.warning("Mounted device %s could not be resolved", device_ref["id"])
+                    continue
 
             member_sensor_values.append(
                 {
@@ -83,3 +105,117 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         name = attrs.get("long_name") or attrs.get("short_name", "")
         serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
         return f"{name}{serial}"
+
+    def _get_mount_actions(self, configuration_data: dict, mount_action_data: dict) -> list[dict]:
+        mount_actions = mount_action_data.get("data", [])
+        if mount_actions:
+            return mount_actions
+
+        relationship_actions = (
+            configuration_data.get("data", {})
+            .get("relationships", {})
+            .get("device_mount_actions", {})
+            .get("data", [])
+        )
+
+        resolved_mount_actions = []
+        for action_ref in relationship_actions:
+            action_id = action_ref.get("id")
+            if not action_id:
+                continue
+
+            action_data = fetch_json(self.device_mount_action_url.format(base_url=self.base_url, id=action_id))
+            if "errors" in action_data:
+                logger.warning("Could not fetch mount action %s: %s", action_id, action_data["errors"])
+                continue
+
+            action = action_data.get("data")
+            if action:
+                resolved_mount_actions.append(action)
+
+        return resolved_mount_actions
+
+    def _fetch_device(self, device_id: str) -> dict | None:
+        device_data = fetch_json(self.device_url.format(base_url=self.base_url, id=device_id))
+        if "errors" in device_data:
+            logger.warning("Could not fetch device %s: %s", device_id, device_data["errors"])
+            return None
+        return device_data.get("data")
+
+    def _get_cfg_period(self, instance) -> tuple[datetime, datetime] | None:
+        if instance is None:
+            return None
+
+        cfg_start_uri = getattr(self, "cfg_start_uri", None)
+        cfg_end_uri = getattr(self, "cfg_end_uri", None)
+        if not cfg_start_uri or not cfg_end_uri:
+            return None
+
+        cfg_start = self._get_project_value(instance, cfg_start_uri)
+        cfg_end = self._get_project_value(instance, cfg_end_uri)
+        if cfg_start is None or cfg_end is None:
+            return None
+
+        start_dt = self._parse_datetime(cfg_start)
+        end_dt = self._parse_datetime(cfg_end)
+        if start_dt is None or end_dt is None:
+            logger.warning(
+                "Skipping configuration period filter because start or end date could not be parsed: %s, %s",
+                cfg_start,
+                cfg_end,
+            )
+            return None
+
+        return start_dt, end_dt
+
+    def _get_project_value(self, instance, attribute_uri: str) -> str | None:
+        query_variants = [
+            {"project": instance.project, "attribute__uri": attribute_uri, "set_prefix": instance.set_prefix, "set_index": instance.set_index},
+            {"project": instance.project, "attribute__uri": attribute_uri, "set_prefix": instance.set_prefix},
+            {"project": instance.project, "attribute__uri": attribute_uri, "set_index": instance.set_index},
+            {"project": instance.project, "attribute__uri": attribute_uri},
+        ]
+
+        for filters in query_variants:
+            queryset = Value.objects.filter(**filters).order_by("-id")
+            value = queryset.first()
+            if value is None:
+                continue
+
+            if value.text:
+                return value.text
+            if value.value:
+                return value.value
+
+        return None
+
+    def _is_mount_action_in_period(
+        self,
+        mount_action: dict,
+        cfg_period: tuple[datetime, datetime],
+    ) -> bool:
+        attrs = mount_action.get("attributes", {})
+        begin_date = attrs.get("begin_date")
+        if not begin_date:
+            return False
+
+        mount_start = self._parse_datetime(begin_date)
+        if mount_start is None:
+            return False
+
+        end_date = attrs.get("end_date")
+        if end_date:
+            mount_end = self._parse_datetime(end_date)
+            if mount_end is None:
+                return False
+        else:
+            mount_end = datetime.max.replace(tzinfo=mount_start.tzinfo)
+
+        cfg_start, cfg_end = cfg_period
+        return mount_start <= cfg_end and mount_end >= cfg_start
+
+    def _parse_datetime(self, value: str) -> datetime | None:
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None

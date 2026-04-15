@@ -129,6 +129,10 @@ sensor_id_prefix = "ufzsms"
 catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
 auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
 member_sensors_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+# Optional: only materialize mounted devices overlapping with the configured
+# period from the interview.
+# cfg_start_uri = "https://example.com/terms/domain/configuration-set/configuration-start-datetime"
+# cfg_end_uri = "https://example.com/terms/domain/configuration-set/configuration-end-datetime"
 [handlers.SensorManagementSystemConfigurationsHandler.catalogs.attribute_mapping]
 "data.attributes.label" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
 "data.attributes.project" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
