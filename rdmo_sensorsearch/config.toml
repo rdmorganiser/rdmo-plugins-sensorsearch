@@ -29,10 +29,21 @@
     "parameters[].name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
     "parameters[].unit" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
     # MOSES Catalog mapping
-    [[handlers.O2ARegistrySearchHandler.catalogs]]
-    catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
-    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-    [handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
+[[handlers.O2ARegistrySearchHandler.catalogs]]
+catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+reset_attribute_uris = [
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/sop",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner",
+]
+[handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
     "longName || shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
     "type.generalName" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
     "manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
@@ -44,10 +55,21 @@
     "contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
     # Earth-Sensor catalog mapping
-    [[handlers.O2ARegistrySearchHandler.catalogs]]
-    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-    [handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
+[[handlers.O2ARegistrySearchHandler.catalogs]]
+catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+reset_attribute_uris = [
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/sop",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner",
+]
+[handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
     "longName || shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
     "type.generalName" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
     "manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
@@ -81,10 +103,21 @@
     "included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label][?@ != null]) || included[?type==`device_property`].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
     "included[].attributes.unit_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
     # MOSES Catalog mapping
-    [[handlers.SensorManagementSystemHandler.catalogs]]
-    catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
-    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-    [handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+[[handlers.SensorManagementSystemHandler.catalogs]]
+catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+reset_attribute_uris = [
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/sop",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner",
+]
+[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
     "data.attributes.long_name || data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
     "data.attributes.device_type_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
     "data.attributes.manufacturer_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
@@ -96,10 +129,21 @@
     "included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
     # Earth-Sensor catalog mapping
-    [[handlers.SensorManagementSystemHandler.catalogs]]
-    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-    [handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+[[handlers.SensorManagementSystemHandler.catalogs]]
+catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+reset_attribute_uris = [
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/sop",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner",
+]
+[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
     "data.attributes.long_name || data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
     "data.attributes.device_type_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
     "data.attributes.manufacturer_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
@@ -130,10 +174,21 @@
     "Instrumentcategory.name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
     "Instrument.serialNo" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
     # MOSES Catalog mapping
-    [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
-    catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
-    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-    [handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
+[[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+reset_attribute_uris = [
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/sop",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner",
+]
+[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
     "Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
     "Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
     "Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
@@ -141,10 +196,21 @@
     "join(', ', Person.[surname, givenname][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
     # Earth-Sensor catalog mapping
-    [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
-    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-    auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-    [handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
+[[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+reset_attribute_uris = [
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/sop",
+    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner",
+]
+[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
     "Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
     "Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
     "Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"

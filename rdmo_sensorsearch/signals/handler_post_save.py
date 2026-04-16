@@ -14,6 +14,16 @@ logger = logging.getLogger(__name__)
 
 ALL_HANDLER_MAP = build_handlers_by_catalog()
 
+
+def _clear_handler_targets(instance, handler) -> None:
+    for attribute_uri_to_clear in getattr(handler, "reset_attribute_uris", []):
+        clear_attribute_values(instance, attribute_uri_to_clear)
+    update_values_from_mapped_data(instance, build_clear_payload(handler.attribute_mapping))
+    member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+    if member_sensors_attribute_uri:
+        clear_collection_attribute(instance, member_sensors_attribute_uri)
+
+
 def handle_post_save(instance):
 
     if not ALL_HANDLER_MAP:
@@ -49,12 +59,7 @@ def handle_post_save(instance):
 
     if not instance.external_id and getattr(instance, "is_empty", False):
         for candidate in attribute_handler_candidates:
-            for attribute_uri_to_clear in getattr(candidate.handler, "reset_attribute_uris", []):
-                clear_attribute_values(instance, attribute_uri_to_clear)
-            update_values_from_mapped_data(instance, build_clear_payload(candidate.handler.attribute_mapping))
-            member_sensors_attribute_uri = getattr(candidate.handler, "member_sensors_attribute_uri", None)
-            if member_sensors_attribute_uri:
-                clear_collection_attribute(instance, member_sensors_attribute_uri)
+            _clear_handler_targets(instance, candidate.handler)
         return
 
     if not instance.external_id:
@@ -71,8 +76,7 @@ def handle_post_save(instance):
     for candidate in attribute_handler_candidates:
         if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute_uri:
             try:
-                for attribute_uri_to_clear in getattr(candidate.handler, "reset_attribute_uris", []):
-                    clear_attribute_values(instance, attribute_uri_to_clear)
+                _clear_handler_targets(instance, candidate.handler)
                 mapped_data = candidate.handler.handle(id_=external_id, instance=instance)
             except Exception:
                 logger.exception(

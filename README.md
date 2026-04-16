@@ -222,6 +222,10 @@ attributes of the catalog. It is possible to configure more than one catalog.
   to attributes
 - `auto_complete_field_uri` is the uri of the question with the option set
   provider used in the catalog
+- `reset_attribute_uris` can be used to clear additional attributes when the
+  selection changes or the search field is erased. This is useful for
+  sensor-related fields which are not filled by every backend but must still
+  be reset when replacing a sensor.
 
 With `catalogs.attribute_mapping` the mapping from the APIs JSON response is
 mapped to attributes of the specified catalog. On the left a
