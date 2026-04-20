@@ -128,12 +128,12 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 member_sensors_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
 frontend_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/uri"
 api_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
+location_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/spatial"
 [handlers.SensorManagementSystemConfigurationsHandler.defaults.attribute_mapping]
 "data.attributes.label" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
 "data.attributes.project" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
 "data.attributes.persistent_identifier" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
 "data.attributes.description" = "https://rdmorganiser.github.io/terms/domain/project/dataset/annotation"
-"data.attributes.location" = "https://rdmorganiser.github.io/terms/domain/project/dataset/spatial"
 "data.links.self" = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
 [[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
 catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"

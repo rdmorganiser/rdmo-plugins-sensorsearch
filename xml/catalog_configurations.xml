@@ -216,12 +216,12 @@ SPDX-License-Identifier: Apache-2.0
 		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/location"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Location</text>
+		<help lang="en">Is fetched from SMS or O2A Registry, if available.</help>
+		<text lang="en">2.012) Static location of your configuration or mission: (latitude, longitude) in [deg]</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Ort</text>
+		<help lang="de">Wird, falls vorhanden, aus SMS oder O2A Registry übernommen.</help>
+		<text lang="de">2.012) Statischer Standort Ihrer Konfiguration oder Mission: (Breitengrad, Längengrad) in [deg]</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>

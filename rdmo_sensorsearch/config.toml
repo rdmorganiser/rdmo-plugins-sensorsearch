@@ -235,8 +235,10 @@ reset_attribute_uris = [
     member_sensors_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
     frontend_link_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/link"
     api_link_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/link_api"
+    location_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/location"
     reset_attribute_uris = [
         "http://example.com/terms/domain/sensorsearch/configurations/used-sensor",
+        "http://example.com/terms/domain/sensorsearch/configurations/location",
         "http://example.com/terms/domain/sensorsearch/configurations/link",
         "http://example.com/terms/domain/sensorsearch/configurations/link_api",
     ]
@@ -245,7 +247,6 @@ reset_attribute_uris = [
     "data.attributes.project" = "http://example.com/terms/domain/sensorsearch/configurations/project"
     "data.attributes.persistent_identifier" = "http://example.com/terms/domain/sensorsearch/configurations/pid"
     "data.attributes.description" = "http://example.com/terms/domain/sensorsearch/configurations/description"
-    "data.attributes.location" = "http://example.com/terms/domain/sensorsearch/configurations/location"
     "data.links.self" = "http://example.com/terms/domain/sensorsearch/configurations/link_api"
     "data.attributes.start_date" = "http://example.com/terms/domain/sensorsearch/configurations/start_date"
     "data.attributes.end_date" = "http://example.com/terms/domain/sensorsearch/configurations/end_date"

@@ -23,7 +23,11 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     device_mount_actions_url = (
         "{base_url}/device-mount-actions?filter[configuration_id]={id}&include=device&page[size]={page_size}"
     )
+    static_location_actions_url = (
+        "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]={page_size}"
+    )
     mounted_sensor_max_hits = 100
+    static_location_max_hits = 100
     configuration_self_link_path = "data.links.self"
     configuration_start_date_path = "data.attributes.start_date"
     configuration_end_date_path = "data.attributes.end_date"
@@ -51,6 +55,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, configuration_data)
         self._set_configuration_links(mapped_values, configuration_data)
         self._normalize_configuration_datetimes(mapped_values)
+        self._set_configuration_location(mapped_values, id_)
 
         result = HandlerResult(
             mapped_values=mapped_values,
@@ -141,6 +146,55 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 localized_value = django_timezone.make_aware(parsed_value, current_tz)
 
             mapped_values[attribute_uri] = localized_value.strftime("%Y-%m-%d %H:%M")
+
+    def _set_configuration_location(self, mapped_values: dict[str, str | None], configuration_id: str) -> None:
+        location_attribute_uri = getattr(self, "location_attribute_uri", None)
+        if not location_attribute_uri:
+            return
+
+        location_actions_data = fetch_json(
+            self.static_location_actions_url.format(
+                base_url=self.base_url,
+                id=configuration_id,
+                page_size=self.static_location_max_hits,
+            )
+        )
+        if "errors" in location_actions_data:
+            logger.debug(
+                "Errors in static location action data returned for configuration ID %s: %s",
+                configuration_id,
+                location_actions_data["errors"],
+            )
+            return
+
+        action = self._select_best_static_location_action(location_actions_data.get("data", []))
+        if action is None:
+            return
+
+        attrs = action.get("attributes", {})
+        lat = attrs.get("y")
+        lon = attrs.get("x")
+        if lat is None or lon is None:
+            return
+
+        mapped_values[location_attribute_uri] = f"({lat}, {lon})"
+
+    def _select_best_static_location_action(self, actions: list[dict]) -> dict | None:
+        if not actions:
+            return None
+
+        def parse_begin(action: dict) -> datetime:
+            begin_raw = action.get("attributes", {}).get("begin_date")
+            parsed = self._parse_datetime(begin_raw) if begin_raw else None
+            return parsed or datetime.min
+
+        active_actions = [
+            action for action in actions
+            if not action.get("attributes", {}).get("end_date")
+        ]
+        if active_actions:
+            return max(active_actions, key=parse_begin)
+        return max(actions, key=parse_begin)
 
     def _build_member_sensor_values(
         self,
