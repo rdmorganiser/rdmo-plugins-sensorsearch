@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from urllib.parse import urljoin, urlsplit
 
 from rdmo.projects.models import Value
 
@@ -22,9 +23,13 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         "{base_url}/device-mount-actions?filter[configuration_id]={id}&include=device&page[size]={page_size}"
     )
     mounted_sensor_max_hits = 100
+    configuration_self_link_path = "data.links.self"
+    frontend_link_suffix = "/basic"
+    backend_link_marker = "/backend/api/v1/"
 
     def handle(self, id_: str, instance=None) -> dict | HandlerResult:
         configuration_data = fetch_json(self.configuration_url.format(base_url=self.base_url, id=id_))
+        logger.debug("Fetched SMS configuration payload for ID %s: %s", id_, configuration_data)
         if "errors" in configuration_data:
             logger.debug("Errors in configuration data returned for ID %s: %s", id_, configuration_data["errors"])
             return configuration_data
@@ -40,8 +45,11 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             logger.debug("Errors in device mount action data returned for ID %s: %s", id_, mount_action_data["errors"])
             return mount_action_data
 
+        mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, configuration_data)
+        self._set_configuration_links(mapped_values, configuration_data)
+
         result = HandlerResult(
-            mapped_values=map_jamespath_to_attribute_uri(self.attribute_mapping, configuration_data),
+            mapped_values=mapped_values,
             collections=[],
         )
 
@@ -59,6 +67,47 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             )
 
         return result
+
+    def _set_configuration_links(self, mapped_values: dict[str, str | None], configuration_data: dict) -> None:
+        raw_self_link = self._get_configuration_self_link(configuration_data)
+        if not raw_self_link:
+            return
+
+        api_link = self._to_absolute_link(raw_self_link)
+
+        api_attribute_uri = getattr(self, "api_link_attribute_uri", None)
+        if api_attribute_uri:
+            mapped_values[api_attribute_uri] = api_link
+
+        frontend_attribute_uri = getattr(self, "frontend_link_attribute_uri", None)
+        if frontend_attribute_uri:
+            mapped_values[frontend_attribute_uri] = self._to_frontend_link(api_link)
+
+    def _get_configuration_self_link(self, configuration_data: dict) -> str | None:
+        for source_path, attribute_uri in self.attribute_mapping.items():
+            if source_path != self.configuration_self_link_path:
+                continue
+            value = map_jamespath_to_attribute_uri({source_path: attribute_uri}, configuration_data).get(attribute_uri)
+            if isinstance(value, str) and value:
+                return value
+        return None
+
+    def _to_absolute_link(self, value: str) -> str:
+        return urljoin(self._base_origin(), value)
+
+    def _to_frontend_link(self, api_link: str) -> str:
+        if self.backend_link_marker in api_link:
+            frontend_link = api_link.replace(self.backend_link_marker, "/", 1)
+        else:
+            frontend_link = api_link
+
+        if frontend_link.endswith(self.frontend_link_suffix):
+            return frontend_link
+        return f"{frontend_link.rstrip('/')}{self.frontend_link_suffix}"
+
+    def _base_origin(self) -> str:
+        parsed = urlsplit(self.base_url)
+        return f"{parsed.scheme}://{parsed.netloc}"
 
     def _build_member_sensor_values(
         self,

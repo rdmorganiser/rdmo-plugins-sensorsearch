@@ -55,8 +55,12 @@ SPDX-License-Identifier: Apache-2.0
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/label" order="1"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/project" order="2"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/pid" order="3"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/start_date" order="4"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/end_date" order="5"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/description" order="4"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/location" order="5"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/link" order="6"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/link_api" order="7"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/start_date" order="8"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/end_date" order="9"/>
 		</questions>
 		<conditions/>
 	</page>
@@ -170,6 +174,114 @@ SPDX-License-Identifier: Apache-2.0
 		<default_external_id/>
 		<widget_type>text</widget_type>
 		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/description">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/description</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/description"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Description</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Beschreibung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>textarea</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/location">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/location</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/location"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Location</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Ort</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/link">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/link</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/link"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Link</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Link</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>url</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/link_api">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/configuration/link_api</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/link_api"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">API Link</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">API-Link</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>url</value_type>
 		<maximum/>
 		<minimum/>
 		<step/>
@@ -312,6 +424,34 @@ SPDX-License-Identifier: Apache-2.0
 		<key>pid</key>
 		<path>sensorsearch/configurations/pid</path>
 		<dc:comment>Materialized persistent identifier of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/description">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>description</key>
+		<path>sensorsearch/configurations/description</path>
+		<dc:comment>Materialized description of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/location">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>location</key>
+		<path>sensorsearch/configurations/location</path>
+		<dc:comment>Materialized location of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/link">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>link</key>
+		<path>sensorsearch/configurations/link</path>
+		<dc:comment>Materialized link of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/link_api">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>link_api</key>
+		<path>sensorsearch/configurations/link_api</path>
+		<dc:comment>Materialized backend API link of the selected configuration.</dc:comment>
 		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
 	</attribute>
 	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/start_date">
