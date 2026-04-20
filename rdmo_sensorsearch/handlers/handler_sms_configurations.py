@@ -24,7 +24,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     )
     mounted_sensor_max_hits = 100
     configuration_self_link_path = "data.links.self"
-    frontend_link_suffix = "/basic"
+    frontend_link_suffix = None  # redirects to "/basic"
     backend_link_marker = "/backend/api/v1/"
 
     def handle(self, id_: str, instance=None) -> dict | HandlerResult:
@@ -100,6 +100,9 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             frontend_link = api_link.replace(self.backend_link_marker, "/", 1)
         else:
             frontend_link = api_link
+
+        if not self.frontend_link_suffix:
+            return frontend_link
 
         if frontend_link.endswith(self.frontend_link_suffix):
             return frontend_link
