@@ -296,19 +296,19 @@ SPDX-License-Identifier: Apache-2.0
 		<dc:comment/>
 		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/start_date"/>
 		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
+		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">Start Date</text>
+		<text lang="en">Start date and time of configuration or mission (YYYY-MM-DD hh:mm):</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Startdatum</text>
+		<text lang="de">Startdatum und -uhrzeit der Konfiguration oder Mission (YYYY-MM-DD hh:mm):</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
-		<widget_type>date</widget_type>
-		<value_type>datetime</value_type>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
 		<maximum/>
 		<minimum/>
 		<step/>
@@ -325,17 +325,17 @@ SPDX-License-Identifier: Apache-2.0
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">End Date</text>
+		<text lang="en">End date and time of configuration or mission (YYYY-MM-DD hh:mm):</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Enddatum</text>
+		<text lang="de">Enddatum und -uhrzeit der Konfiguration oder Mission (YYYY-MM-DD hh:mm):</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
-		<widget_type>date</widget_type>
-		<value_type>datetime</value_type>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
 		<maximum/>
 		<minimum/>
 		<step/>

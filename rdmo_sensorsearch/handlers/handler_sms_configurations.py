@@ -24,6 +24,8 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     )
     mounted_sensor_max_hits = 100
     configuration_self_link_path = "data.links.self"
+    configuration_start_date_path = "data.attributes.start_date"
+    configuration_end_date_path = "data.attributes.end_date"
     frontend_link_suffix = None  # redirects to "/basic"
     backend_link_marker = "/backend/api/v1/"
 
@@ -47,6 +49,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
         mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, configuration_data)
         self._set_configuration_links(mapped_values, configuration_data)
+        self._normalize_configuration_datetimes(mapped_values)
 
         result = HandlerResult(
             mapped_values=mapped_values,
@@ -111,6 +114,26 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     def _base_origin(self) -> str:
         parsed = urlsplit(self.base_url)
         return f"{parsed.scheme}://{parsed.netloc}"
+
+    def _normalize_configuration_datetimes(self, mapped_values: dict[str, str | None]) -> None:
+        datetime_paths = {
+            self.configuration_start_date_path,
+            self.configuration_end_date_path,
+        }
+
+        for source_path, attribute_uri in self.attribute_mapping.items():
+            if source_path not in datetime_paths:
+                continue
+
+            value = mapped_values.get(attribute_uri)
+            if not isinstance(value, str) or not value:
+                continue
+
+            parsed_value = self._parse_datetime(value)
+            if parsed_value is None:
+                continue
+
+            mapped_values[attribute_uri] = parsed_value.strftime("%Y-%m-%d %H:%M")
 
     def _build_member_sensor_values(
         self,
