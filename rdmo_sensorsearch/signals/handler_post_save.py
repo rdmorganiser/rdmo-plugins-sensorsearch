@@ -1,7 +1,7 @@
 import logging
 
 from rdmo_sensorsearch.handlers.base import HandlerResult
-from rdmo_sensorsearch.handlers.factory import build_handlers_by_catalog
+from rdmo_sensorsearch.handlers.factory import WILDCARD_CATALOG_URI, build_handlers_by_catalog
 from rdmo_sensorsearch.signals.value_updater import (
     build_clear_payload,
     clear_attribute_values,
@@ -13,6 +13,24 @@ from rdmo_sensorsearch.signals.value_updater import (
 logger = logging.getLogger(__name__)
 
 ALL_HANDLER_MAP = build_handlers_by_catalog()
+
+
+def _get_handler_candidates(catalog_uri: str) -> list:
+    specific_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
+    wildcard_candidates = ALL_HANDLER_MAP.get(WILDCARD_CATALOG_URI, [])
+
+    seen = {
+        (candidate.id_prefix, candidate.auto_complete_field_uri, type(candidate.handler))
+        for candidate in specific_candidates
+    }
+
+    merged_candidates = list(specific_candidates)
+    for candidate in wildcard_candidates:
+        key = (candidate.id_prefix, candidate.auto_complete_field_uri, type(candidate.handler))
+        if key not in seen:
+            merged_candidates.append(candidate)
+
+    return merged_candidates
 
 
 def _clear_handler_targets(instance, handler) -> None:
@@ -44,7 +62,7 @@ def handle_post_save(instance):
         logger.warning("Missing catalog or attribute URI")
         return
 
-    handler_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
+    handler_candidates = _get_handler_candidates(catalog_uri)
     attribute_handler_candidates = [
         candidate for candidate in handler_candidates if candidate.auto_complete_field_uri == attribute_uri
     ]

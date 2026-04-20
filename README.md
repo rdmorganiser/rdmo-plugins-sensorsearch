@@ -83,6 +83,9 @@ name.
 [SensorsProvider]
 min_search_len = 3 
 
+[SensorsProvider.provider_defaults.SensorManagementSystemProvider]
+max_hits = 20
+
 [ConfigurationsProvider]
 min_search_len = 3
 
@@ -156,6 +159,18 @@ In conclusion, every remote provider has the following options:
   `SensorManagementSystemProvider` and
   `SensorManagementSystemConfigurationsProvider`
 
+To avoid repeating shared provider settings, provider defaults can be declared
+once per meta-provider and provider class:
+
+```toml
+[SensorsProvider.provider_defaults.SensorManagementSystemProvider]
+max_hits = 20
+```
+
+These defaults are merged into every
+`[[SensorsProvider.providers.SensorManagementSystemProvider]]` entry. Any value
+declared on the concrete provider entry still overrides the default.
+
 The `ProjectConfigurationSensorsProvider` is different. It does not query a
 remote backend, but reads project-local values which were materialized by a
 configuration handler after a configuration was selected.
@@ -166,20 +181,24 @@ Handlers can be used to fill out questions automatically with the use of a
 configured attribute mapping. For every provider a handler is implemented,
 which can request additional information from the registry to answer questions.
 
-For every catalog, which should use handlers, the catalog must be configured
-and the attribute mapping for every provider must also be configured. 
+Handler defaults can also be configured once and then reused by multiple
+catalogs or even applied as a wildcard mapping for any catalog which uses the
+same autocomplete field.
 
 ```toml
 [handlers.O2ARegistrySearchHandler]
 #[[handlers.O2ARegistrySearchHandler.backends]]
 #id_prefix = "o2aregistry"
-[[handlers.O2ARegistrySearchHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+[handlers.O2ARegistrySearchHandler.defaults]
 auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
-[handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
+[handlers.O2ARegistrySearchHandler.defaults.attribute_mapping]
 "longName" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
 "shortName" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
 "serialNumber" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
+
+[[handlers.O2ARegistrySearchHandler.catalogs]]
+catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+# optional per-catalog overrides can be added here
 
 [handlers.SensorManagementSystemHandler]
 [[handlers.SensorManagementSystemHandler.backends]]
@@ -191,22 +210,26 @@ base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
 [[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "ufzsms"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1"
-[[handlers.SensorManagementSystemHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+[handlers.SensorManagementSystemHandler.defaults]
 auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
-[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+[handlers.SensorManagementSystemHandler.defaults.attribute_mapping]
 "data.attributes.long_name" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
 "data.attributes.short_name" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
 "data.attributes.serial_number" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
-[handlers.GeophysicalInstrumentPoolPotsdamHandler]
-[[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+[[handlers.SensorManagementSystemHandler.catalogs]]
 catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+
+[handlers.GeophysicalInstrumentPoolPotsdamHandler]
+[handlers.GeophysicalInstrumentPoolPotsdamHandler.defaults]
 auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
-[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
+[handlers.GeophysicalInstrumentPoolPotsdamHandler.defaults.attribute_mapping]
 "Instrument.code" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
 "Instrumentcategory.name" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
 "Instrument.serialNo" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
+
+[[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
 ```
 
 A `backends` configuration must be defined in the case of
@@ -226,6 +249,12 @@ attributes of the catalog. It is possible to configure more than one catalog.
   selection changes or the search field is erased. This is useful for
   sensor-related fields which are not filled by every backend but must still
   be reset when replacing a sensor.
+
+The new `defaults` table is merged into every `catalogs` entry for the same
+handler. If `defaults` define `auto_complete_field_uri`, they also act as a
+wildcard handler configuration for any catalog using that field, even when no
+explicit `[[handlers.<Handler>.catalogs]]` entry exists. Explicit catalog
+entries take precedence over the wildcard defaults.
 
 With `catalogs.attribute_mapping` the mapping from the APIs JSON response is
 mapped to attributes of the specified catalog. On the left a

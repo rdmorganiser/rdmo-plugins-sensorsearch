@@ -1,6 +1,6 @@
 import logging
 
-from rdmo_sensorsearch.config import load_config
+from rdmo_sensorsearch.config import load_config, merge_config
 from rdmo_sensorsearch.providers.registry import PROVIDER_REGISTRY
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,9 @@ def build_provider_instances(config_section_name: str) -> list:
         list: List of instantiated provider objects.
     """
     configuration = load_config()
-    provider_definitions = configuration.get(config_section_name, {}).get("providers", {})
+    section_config = configuration.get(config_section_name, {})
+    provider_definitions = section_config.get("providers", {})
+    provider_defaults = section_config.get("provider_defaults", {})
     logger.debug(
         "Building provider instances for %s from configured provider keys: %s",
         config_section_name,
@@ -25,7 +27,7 @@ def build_provider_instances(config_section_name: str) -> list:
     )
 
     flattened_provider_definitions = [
-        (provider_name, config)
+        (provider_name, merge_config(provider_defaults.get(provider_name, {}), config))
         for provider_name, configs in provider_definitions.items()
         for config in configs
     ]

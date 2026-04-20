@@ -8,6 +8,7 @@ import os
 import sys
 from functools import cache
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 
@@ -18,6 +19,27 @@ else:
 
 
 logger = logging.getLogger(__name__)
+
+
+def merge_config(base: dict[str, Any] | None, override: dict[str, Any] | None) -> dict[str, Any]:
+    """Merge two TOML-derived dictionaries recursively.
+
+    Nested tables are merged, while scalar values and lists from ``override``
+    replace the corresponding values from ``base``.
+    """
+    if not base:
+        return dict(override or {})
+    if not override:
+        return dict(base)
+
+    merged: dict[str, Any] = dict(base)
+    for key, value in override.items():
+        current = merged.get(key)
+        if isinstance(current, dict) and isinstance(value, dict):
+            merged[key] = merge_config(current, value)
+        else:
+            merged[key] = value
+    return merged
 
 
 def get_config_file_path() -> str:
