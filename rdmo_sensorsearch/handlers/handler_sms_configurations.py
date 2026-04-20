@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from urllib.parse import urljoin, urlsplit
 
+from django.utils import timezone as django_timezone
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
@@ -133,7 +134,13 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             if parsed_value is None:
                 continue
 
-            mapped_values[attribute_uri] = parsed_value.strftime("%Y-%m-%d %H:%M")
+            current_tz = django_timezone.get_current_timezone()
+            if django_timezone.is_aware(parsed_value):
+                localized_value = django_timezone.localtime(parsed_value, current_tz)
+            else:
+                localized_value = django_timezone.make_aware(parsed_value, current_tz)
+
+            mapped_values[attribute_uri] = localized_value.strftime("%Y-%m-%d %H:%M")
 
     def _build_member_sensor_values(
         self,
