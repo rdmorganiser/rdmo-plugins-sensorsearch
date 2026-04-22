@@ -173,7 +173,7 @@ id_prefix = "ufzcfg"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1"
 sensor_id_prefix = "ufzsms"
 [handlers.SensorManagementSystemConfigurationsHandler.defaults]
-auto_complete_field_uri = "http://example.com/terms/domain/configuration-set/configuration-label"
+auto_complete_field_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
 member_sensors_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 frontend_link_attribute_uri = "http://example.com/terms/domain/configuration-set/configuration-link"
 api_link_attribute_uri = "http://example.com/terms/domain/configuration-set/configuration-api-link"

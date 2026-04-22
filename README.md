@@ -124,7 +124,7 @@ id_prefix = "gfzcfg"
 base_url = "https://sensors.gfz.de/backend/api/v1"
 sensor_id_prefix = "gfzsms"
 [handlers.SensorManagementSystemConfigurationsHandler.defaults]
-auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
+auto_complete_field_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
 member_sensors_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 frontend_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/uri"
 api_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"

@@ -65,7 +65,7 @@ In case you did not use campaigns or missions in your sensor management system j
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>configuration_ident_api</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-label"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-search"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">If your configuration / mission is listed in any of the above listed databases, please enter here the name or any identifier for the search. Then you should be able to select your configuration from the list and the following fields will be filled automatically.
@@ -422,6 +422,13 @@ In case you did not use campaigns or missions in your sensor management system j
 		<key>member-sensor</key>
 		<path>configuration-set/member-sensor</path>
 		<dc:comment/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-search">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<key>configuration-search</key>
+		<path>configuration-set/configuration-search</path>
+		<dc:comment>Technical search field used to select a configuration or mission via the option set provider.</dc:comment>
 		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
 	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-label">
