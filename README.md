@@ -130,6 +130,7 @@ frontend_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/proje
 api_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
 location_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/spatial"
 [handlers.SensorManagementSystemConfigurationsHandler.defaults.attribute_mapping]
+"data.id" = "https://rdmorganiser.github.io/terms/domain/project/dataset/identifier"
 "data.attributes.label" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
 "data.attributes.project" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
 "data.attributes.persistent_identifier" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"

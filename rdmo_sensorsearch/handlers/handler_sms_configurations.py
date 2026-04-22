@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
 from urllib.parse import urljoin, urlsplit
 
 from django.utils import timezone as django_timezone
@@ -139,13 +139,12 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             if parsed_value is None:
                 continue
 
-            current_tz = django_timezone.get_current_timezone()
             if django_timezone.is_aware(parsed_value):
-                localized_value = django_timezone.localtime(parsed_value, current_tz)
+                utc_value = parsed_value.astimezone(dt_timezone.utc)
             else:
-                localized_value = django_timezone.make_aware(parsed_value, current_tz)
+                utc_value = django_timezone.make_aware(parsed_value, dt_timezone.utc)
 
-            mapped_values[attribute_uri] = localized_value.strftime("%Y-%m-%d %H:%M")
+            mapped_values[attribute_uri] = utc_value.strftime("%Y-%m-%d %H:%M")
 
     def _set_configuration_location(self, mapped_values: dict[str, str | None], configuration_id: str) -> None:
         location_attribute_uri = getattr(self, "location_attribute_uri", None)
@@ -177,24 +176,28 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if lat is None or lon is None:
             return
 
-        mapped_values[location_attribute_uri] = f"({lat}, {lon})"
+        mapped_values[location_attribute_uri] = f"({lat},{lon})"
 
     def _select_best_static_location_action(self, actions: list[dict]) -> dict | None:
         if not actions:
             return None
 
-        def parse_begin(action: dict) -> datetime:
+        def parse_begin_timestamp(action: dict) -> float:
             begin_raw = action.get("attributes", {}).get("begin_date")
             parsed = self._parse_datetime(begin_raw) if begin_raw else None
-            return parsed or datetime.min
+            if parsed is None:
+                return float("-inf")
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=dt_timezone.utc)
+            return parsed.timestamp()
 
         active_actions = [
             action for action in actions
             if not action.get("attributes", {}).get("end_date")
         ]
         if active_actions:
-            return max(active_actions, key=parse_begin)
-        return max(actions, key=parse_begin)
+            return max(active_actions, key=parse_begin_timestamp)
+        return max(actions, key=parse_begin_timestamp)
 
     def _build_member_sensor_values(
         self,

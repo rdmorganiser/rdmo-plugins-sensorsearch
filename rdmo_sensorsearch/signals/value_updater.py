@@ -5,6 +5,7 @@ from typing import Any
 from django.db import transaction
 
 from rdmo.domain.models import Attribute
+from rdmo.projects.answers import AnswerTree
 from rdmo.projects.models import Value
 from rdmo.questions.models import Question, QuestionSet
 
@@ -42,19 +43,13 @@ def clear_attribute_values(instance, attribute_uri: str) -> None:
         logger.warning("Clear target attribute not found: %s", attribute_uri)
         return
 
-    queryset = Value.objects.filter(
-        project=instance.project,
-        attribute=attribute,
-        set_index=instance.set_index,
-    )
-    if instance.set_prefix is None:
-        queryset = queryset.filter(set_prefix__isnull=True)
-    else:
-        queryset = queryset.filter(set_prefix=instance.set_prefix)
-
     with transaction.atomic(), mute_value_post_save():
-        deleted, _ = queryset.delete()
-        logger.info("Cleared values for attribute %s (%s rows)", attribute_uri, deleted)
+        deleted_total = 0
+        for set_prefix, set_index in _scalar_scopes(instance, attribute):
+            queryset = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index)
+            deleted, _ = queryset.delete()
+            deleted_total += deleted
+        logger.info("Cleared values for attribute %s (%s rows)", attribute_uri, deleted_total)
 
 
 def clear_collection_attribute(instance, attribute_uri: str) -> None:
@@ -94,16 +89,15 @@ def _collection_shape(instance, attribute) -> str | None:
     return None
 
 
-def _qs_scalar(instance, attribute):
+def _qs_scalar_for_scope(instance, attribute, set_prefix: str, set_index: int):
     queryset = Value.objects.filter(
         project=instance.project,
         attribute=attribute,
-        set_index=instance.set_index,
+        set_index=set_index,
         set_collection=False,
+        set_prefix=set_prefix,
     )
-    if instance.set_prefix is None:
-        return queryset.filter(set_prefix__isnull=True)
-    return queryset.filter(set_prefix=instance.set_prefix)
+    return queryset
 
 
 def _qs_collection(instance, attribute, mode: str):
@@ -127,6 +121,7 @@ def update_values_from_mapped_data(instance, data: dict):
         return
 
     with transaction.atomic(), mute_value_post_save():
+        scope_cache: dict[int, list[tuple[str, int]]] = {}
         for attribute_uri, value in data.items():
             try:
                 attribute = Attribute.objects.get(uri=attribute_uri)
@@ -137,21 +132,41 @@ def update_values_from_mapped_data(instance, data: dict):
                 _apply_list(instance, attribute, value)
                 continue
 
+            scopes = scope_cache.setdefault(attribute.id, _scalar_scopes(instance, attribute))
+            if not scopes:
+                scopes = [(_normalize_set_prefix(instance.set_prefix), instance.set_index)]
+            if len(scopes) > 1:
+                logger.debug(
+                    "Resolved scalar scopes for attribute %s: %s",
+                    attribute.uri,
+                    scopes,
+                )
+            primary_set_prefix, primary_set_index = scopes[0]
+            secondary_scopes = scopes[1:]
+
             if _is_blank_scalar(value):
-                deleted, _ = _qs_scalar(instance, attribute).delete()
-                logger.info("Cleared scalar values for attribute %s (%s rows)", attribute.uri, deleted)
+                deleted_total = 0
+                for set_prefix, set_index in scopes:
+                    deleted, _ = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).delete()
+                    deleted_total += deleted
+                logger.info("Cleared scalar values for attribute %s (%s rows)", attribute.uri, deleted_total)
                 continue
 
             normalized_value = _normalize_scalar(value)
-            queryset = _qs_scalar(instance, attribute).order_by("id")
+            queryset = _qs_scalar_for_scope(
+                instance,
+                attribute,
+                primary_set_prefix,
+                primary_set_index,
+            ).order_by("id")
             current = queryset.first()
 
             if current is None:
                 _, created = Value.objects.update_or_create(
                     project=instance.project,
                     attribute=attribute,
-                    set_prefix=instance.set_prefix,
-                    set_index=instance.set_index,
+                    set_prefix=primary_set_prefix,
+                    set_index=primary_set_index,
                     set_collection=False,
                     defaults={"text": normalized_value},
                 )
@@ -167,6 +182,17 @@ def update_values_from_mapped_data(instance, data: dict):
                     logger.info(
                         "Deleted duplicate scalar values for attribute %s (%s rows)",
                         attribute.uri,
+                        deleted,
+                    )
+
+            for set_prefix, set_index in secondary_scopes:
+                deleted, _ = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).delete()
+                if deleted:
+                    logger.info(
+                        "Deleted scalar values in secondary scope for attribute %s (set_prefix=%s, set_index=%s, rows=%s)",
+                        attribute.uri,
+                        set_prefix,
+                        set_index,
                         deleted,
                     )
             logger.info(
@@ -388,3 +414,78 @@ def _delete_existing_collection_values(instance, attribute, mode: str | None):
     deleted, _ = queryset.delete()
     if deleted:
         logger.info("Deleted existing collection values for attribute %s (%s rows)", attribute.uri, deleted)
+
+
+def _normalize_set_prefix(set_prefix: str | None) -> str:
+    return set_prefix or ""
+
+
+def _scalar_scopes(instance, attribute) -> list[tuple[str, int]]:
+    return _scalar_scopes_via_answer_tree(instance, attribute)
+
+
+def _scalar_scopes_via_answer_tree(instance, attribute) -> list[tuple[str, int]]:
+    base_scope = (_normalize_set_prefix(instance.set_prefix), instance.set_index)
+    project = instance.project
+    catalog = project.catalog
+    if catalog is None:
+        return []
+
+    catalog.prefetch_elements()
+    values = project.values.filter(snapshot=None).select_related("attribute")
+    answer_tree = AnswerTree(catalog, values)
+
+    discovered_scopes: list[tuple[str, int]] = []
+    for page in catalog.pages:
+        if not _element_contains_attribute(page, instance.attribute_id):
+            continue
+        if not _element_contains_attribute(page, attribute.id):
+            continue
+
+        page_sets = answer_tree.compute_element_sets(page, parent_set=None)
+        for page_set in page_sets:
+            trigger_scopes = _collect_question_scopes(answer_tree, page, page_set, instance.attribute_id)
+            if base_scope not in trigger_scopes:
+                continue
+
+            discovered_scopes.extend(
+                _collect_question_scopes(answer_tree, page, page_set, attribute.id)
+            )
+
+    return _unique_scopes(discovered_scopes, base_scope)
+
+
+def _unique_scopes(discovered_scopes: list[tuple[str, int]], base_scope: tuple[str, int]) -> list[tuple[str, int]]:
+    ordered_scopes: list[tuple[str, int]] = []
+    for scope in [*discovered_scopes, base_scope]:
+        if scope not in ordered_scopes:
+            ordered_scopes.append(scope)
+    return ordered_scopes
+
+
+def _element_contains_attribute(element, attribute_id: int) -> bool:
+    if getattr(element, "attribute_id", None) == attribute_id:
+        return True
+    return any(getattr(descendant, "attribute_id", None) == attribute_id for descendant in element.descendants)
+
+
+def _collect_question_scopes(
+    answer_tree: AnswerTree,
+    element,
+    parent_set: tuple[str, int],
+    attribute_id: int,
+) -> list[tuple[str, int]]:
+    scopes: list[tuple[str, int]] = []
+    for child in element.elements:
+        child_type = child._meta.model_name
+        if child_type == "question":
+            if child.attribute_id == attribute_id:
+                scopes.append(parent_set)
+            continue
+
+        if child_type == "questionset":
+            child_sets = answer_tree.compute_element_sets(child, parent_set)
+            for child_set in child_sets:
+                scopes.extend(_collect_question_scopes(answer_tree, child, child_set, attribute_id))
+
+    return scopes
