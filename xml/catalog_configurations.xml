@@ -8,107 +8,106 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-04-15T17:53:25.045963+02:00" required="2.1.0" version="2.4.0">
-	<catalog dc:uri="http://example.com/terms/questions/sensorsearch/configurations">
+	<catalog dc:uri="http://example.com/terms/questions/example-configurations-earth-sensor">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations</uri_path>
-		<dc:comment>Example catalog for configuration search in the Sensor Search option set plugin</dc:comment>
+		<uri_path>example-configurations-earth-sensor</uri_path>
+		<dc:comment>Example catalog for configuration search in the Sensor Search option set plugin, aligned to the Earth-Sensor configuration workflow.</dc:comment>
 		<order>0</order>
 		<title lang="en">Configuration Search Example Catalog</title>
-		<help lang="en">Demonstration of the configuration search option set provider.</help>
+		<help lang="en">Demonstration of the configuration search option set provider aligned to the Earth-Sensor configuration page.</help>
 		<title lang="de">Konfigurationssuche Beispielkatalog</title>
-		<help lang="de">Demonstration des Konfigurationssuche-Option-Set-Providers.</help>
+		<help lang="de">Demonstration des Konfigurationssuche-Option-Set-Providers, ausgerichtet an der Earth-Sensor-Konfigurationsseite.</help>
 		<sections>
-			<section dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration" order="1"/>
+			<section dc:uri="http://example.com/terms/questions/instruments" order="1"/>
 		</sections>
 	</catalog>
-	<section dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration">
+	<section dc:uri="http://example.com/terms/questions/instruments">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration</uri_path>
+		<uri_path>instruments</uri_path>
 		<dc:comment/>
-		<title lang="en">Configuration</title>
+		<title lang="en">2) Sensors &amp; Instruments</title>
 		<short_title lang="en"/>
-		<title lang="de">Konfiguration</title>
+		<title lang="de">2) Sensoren und Instrumente</title>
 		<short_title lang="de"/>
 		<pages>
-			<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/search" order="1"/>
-			<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/member-sensors" order="2"/>
-			<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/used-sensors" order="3"/>
+			<page dc:uri="http://example.com/terms/questions/configurations-general" order="1"/>
+			<page dc:uri="http://example.com/terms/questions/configurations/member-sensors" order="2"/>
+			<page dc:uri="http://example.com/terms/questions/configurations/used-sensors" order="3"/>
 		</pages>
 	</section>
-	<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/search">
+	<page dc:uri="http://example.com/terms/questions/configurations-general">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/search</uri_path>
-		<dc:comment/>
-		<attribute/>
-		<is_collection>False</is_collection>
-		<title lang="en">Configuration</title>
-		<short_title lang="en"/>
-		<help lang="en"/>
-		<verbose_name lang="en"/>
-		<title lang="de">Konfiguration</title>
-		<short_title lang="de"/>
-		<help lang="de"/>
-		<verbose_name lang="de"/>
+		<uri_path>configurations-general</uri_path>
+		<dc:comment>Example page aligned with the Earth-Sensor configuration import workflow.</dc:comment>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set"/>
+		<is_collection>True</is_collection>
+		<title lang="en">2.01) Configurations / Missions from Sensor Management System SMS and O2A</title>
+		<short_title lang="en">Sensor Configurations / Missions</short_title>
+		<help lang="en">Information about your configurations or missions will be filled automatically in case they are listed in a sensor management system (&lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt;, or &lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;). Please enter a name in the first field and select your configuration / mission from the list. The form will be automatically filled and you just need to check.
+In case you did not use campaigns or missions in your sensor management system just proceed to the next page and enter or review the plugin-specific sensor details there.</help>
+		<verbose_name lang="en">Sensor Configurations and Missions</verbose_name>
+		<title lang="de">2.01) Konfigurationen / Missionen aus Sensor Management System SMS und O2A</title>
+		<short_title lang="de">Konfigurationen / Missionen</short_title>
+		<help lang="de">Informationen zu Ihren Konfigurationen oder Missionen werden automatisch ausgefüllt, wenn sie in einem Sensor-Management-System (SMS, O2A REGISTRY) hinterlegt sind. Geben Sie im ersten Feld einen Namen oder Identifikator ein und wählen Sie anschließend Ihre Konfiguration / Mission aus der Liste aus. Das Formular wird dann automatisch ausgefüllt und sollte anschließend geprüft werden.</help>
+		<verbose_name lang="de">Sensor-Konfigurationen und Missionen</verbose_name>
 		<questionsets>
-			<questionset dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/time-period" order="8"/>
+			<questionset dc:uri="http://example.com/terms/questions/configurations/time-period" order="3"/>
 		</questionsets>
 		<questions>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/search-optionset" order="0"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/label" order="1"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/project" order="2"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/pid" order="3"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/description" order="4"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/location" order="5"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/link" order="6"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/link_api" order="7"/>
+			<question dc:uri="http://example.com/terms/questions/configuration_ident_api" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/configurations-general/description" order="1"/>
+			<question dc:uri="http://example.com/terms/questions/configurations-general/location" order="2"/>
+			<question dc:uri="http://example.com/terms/questions/configurations-general/link" order="4"/>
 		</questions>
 		<conditions/>
 	</page>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/search-optionset">
+	<question dc:uri="http://example.com/terms/questions/configuration_ident_api">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/search-optionset</uri_path>
+		<uri_path>configuration_ident_api</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/search"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-label"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">It may take some seconds to show the results.</help>
-		<text lang="en">Type to search for configuration</text>
+		<help lang="en">If your configuration / mission is listed in any of the above listed databases, please enter here the name or any identifier for the search. Then you should be able to select your configuration from the list and the following fields will be filled automatically.
+
+&lt;b&gt;Nevertheless, please check the entries below for correctness in case of automatic entries.&lt;/b&gt;</help>
+		<text lang="en">2.011) Configuration / Mission identification for API search</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Es kann ein paar Sekunden dauern, bis die Ergebnisse angezeigt werden.</help>
-		<text lang="de">Tippe, um Konfigurationen zu suchen</text>
+		<help lang="de">Geben Sie hier den Namen oder einen anderen Identifikator Ihrer Konfiguration / Mission für die Suche ein. Nach der Auswahl aus der Liste werden die folgenden Felder automatisch ausgefüllt und sollten anschließend geprüft werden.</help>
+		<text lang="de">2.011) Identifikation der Konfiguration / Mission für die API-Suche</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
 		<widget_type>select</widget_type>
-		<value_type>text</value_type>
+		<value_type>option</value_type>
 		<maximum/>
 		<minimum/>
 		<step/>
 		<unit/>
 		<width/>
 		<optionsets>
-			<optionset dc:uri="http://example.com/terms/options/sensorsearch/configurations/optionset"/>
+			<optionset dc:uri="http://example.com/terms/options/configurations/optionset"/>
 		</optionsets>
 		<conditions/>
 	</question>
-	<optionset dc:uri="http://example.com/terms/options/sensorsearch/configurations/optionset">
+	<optionset dc:uri="http://example.com/terms/options/configurations/optionset">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/optionset</uri_path>
+		<uri_path>configurations/optionset</uri_path>
 		<dc:comment/>
 		<provider_key>sensorssearch_configurations</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/label">
+	<question dc:uri="http://example.com/terms/questions/configurations-general/label">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/label</uri_path>
+		<uri_path>configurations-general/label</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/label"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-label"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en"/>
+		<help lang="en">Technical field retaining the imported configuration label.</help>
 		<text lang="en">Configuration Label</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
@@ -128,14 +127,14 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/project">
+	<question dc:uri="http://example.com/terms/questions/configurations-general/project">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/project</uri_path>
+		<uri_path>configurations-general/project</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/project"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-project"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en"/>
+		<help lang="en">Technical field retaining the imported project or campaign name.</help>
 		<text lang="en">Project</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
@@ -155,14 +154,14 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/pid">
+	<question dc:uri="http://example.com/terms/questions/configurations-general/pid">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/pid</uri_path>
+		<uri_path>configurations-general/pid</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/pid"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-persistent-identifier"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en"/>
+		<help lang="en">Technical field retaining the imported persistent identifier.</help>
 		<text lang="en">Persistent Identifier</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
@@ -182,19 +181,19 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/description">
+	<question dc:uri="http://example.com/terms/questions/configurations-general/description">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/description</uri_path>
+		<uri_path>configurations-general/description</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/description"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-description"/>
 		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
+		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">Description</text>
+		<text lang="en">2.011a) Configuration description:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Beschreibung</text>
+		<text lang="de">2.011a) Konfigurationsbeschreibung:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -209,19 +208,23 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/location">
+	<question dc:uri="http://example.com/terms/questions/configurations-general/location">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/location</uri_path>
+		<uri_path>configurations-general/location</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/location"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-location"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Is fetched from SMS or O2A Registry, if available.</help>
-		<text lang="en">2.012) Static location of your configuration or mission: (latitude, longitude) in [deg]</text>
+		<help lang="en">Is fetched from SMS or O2A Registry, if available.
+
+(latitude, longitude)</help>
+		<text lang="en">2.012) Static location of your configuration or mission:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Wird, falls vorhanden, aus SMS oder O2A Registry übernommen.</help>
-		<text lang="de">2.012) Statischer Standort Ihrer Konfiguration oder Mission: (Breitengrad, Längengrad) in [deg]</text>
+		<help lang="de">Wird, falls vorhanden, aus SMS oder O2A Registry übernommen.
+
+(Breitengrad, Längengrad)</help>
+		<text lang="de">2.012) Statischer Standort Ihrer Konfiguration oder Mission:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -231,24 +234,24 @@ SPDX-License-Identifier: Apache-2.0
 		<maximum/>
 		<minimum/>
 		<step/>
-		<unit/>
+		<unit>[deg]</unit>
 		<width/>
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/link">
+	<question dc:uri="http://example.com/terms/questions/configurations-general/link">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/link</uri_path>
+		<uri_path>configurations-general/link</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/link"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-link"/>
 		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
+		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">Link</text>
+		<text lang="en">2.014) Link to SMS configuration or O2A mission</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Link</text>
+		<text lang="de">2.014) Link zur SMS-Konfiguration oder O2A-Mission</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -263,14 +266,14 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/link_api">
+	<question dc:uri="http://example.com/terms/questions/configurations-general/api-link">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/link_api</uri_path>
+		<uri_path>configurations-general/api-link</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/link_api"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-api-link"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en"/>
+		<help lang="en">Technical field retaining the backend API link of the selected configuration.</help>
 		<text lang="en">API Link</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
@@ -290,38 +293,38 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
-	<questionset dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/time-period">
+	<questionset dc:uri="http://example.com/terms/questions/configurations/time-period">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/time-period</uri_path>
+		<uri_path>configurations/time-period</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/time-period"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-time-period"/>
 		<is_collection>False</is_collection>
 		<title lang="en">2.013) Time period of the configuration or mission:</title>
-		<help lang="en">Date and time values are stored in UTC. End date can be empty when configuration or mission is still active.</help>
+		<help lang="en">End date can be empty when configuration or mission is still active.</help>
 		<verbose_name lang="en"/>
 		<title lang="de">2.013) Zeitspanne der Konfiguration oder Mission:</title>
-		<help lang="de">Datums- und Zeitwerte werden in UTC gespeichert. Das Enddatum kann leer bleiben, wenn die Konfiguration oder Mission noch aktiv ist.</help>
+		<help lang="de">Das Enddatum kann leer bleiben, wenn die Konfiguration oder Mission noch aktiv ist.</help>
 		<verbose_name lang="de"/>
 		<questionsets/>
 		<questions>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/start_date" order="1"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/end_date" order="2"/>
+			<question dc:uri="http://example.com/terms/questions/configurations/time-period/start" order="1"/>
+			<question dc:uri="http://example.com/terms/questions/configurations/time-period/end" order="2"/>
 		</questions>
 		<conditions/>
 	</questionset>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/start_date">
+	<question dc:uri="http://example.com/terms/questions/configurations/time-period/start">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/start_date</uri_path>
+		<uri_path>configurations/time-period/start</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/start_date"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-start-datetime"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">Stored as UTC.</help>
-		<text lang="en">Start date and time of configuration or mission (YYYY-MM-DD hh:mm, UTC):</text>
+		<help lang="en"/>
+		<text lang="en">Start date and time of configuration or mission (YYYY-MM-DD hh:mm):</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Wird in UTC gespeichert.</help>
-		<text lang="de">Startdatum und -uhrzeit der Konfiguration oder Mission (YYYY-MM-DD hh:mm, UTC):</text>
+		<help lang="de"/>
+		<text lang="de">Startdatum und -uhrzeit der Konfiguration oder Mission (YYYY-MM-DD hh:mm):</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -336,19 +339,19 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/end_date">
+	<question dc:uri="http://example.com/terms/questions/configurations/time-period/end">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/end_date</uri_path>
+		<uri_path>configurations/time-period/end</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/end_date"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/configurations-end-datetime"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Stored as UTC.</help>
-		<text lang="en">End date and time of configuration or mission (YYYY-MM-DD hh:mm, UTC):</text>
+		<help lang="en"/>
+		<text lang="en">End date and time of configuration or mission (YYYY-MM-DD hh:mm):</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Wird in UTC gespeichert.</help>
-		<text lang="de">Enddatum und -uhrzeit der Konfiguration oder Mission (YYYY-MM-DD hh:mm, UTC):</text>
+		<help lang="de"/>
+		<text lang="de">Enddatum und -uhrzeit der Konfiguration oder Mission (YYYY-MM-DD hh:mm):</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -363,12 +366,12 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
-	<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/member-sensors">
+	<page dc:uri="http://example.com/terms/questions/configurations/member-sensors">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/member-sensors</uri_path>
+		<uri_path>configurations/member-sensors</uri_path>
 		<dc:comment>Technical storage page for member sensors materialized from the selected configuration.</dc:comment>
-		<attribute/>
-		<is_collection>False</is_collection>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set"/>
+		<is_collection>True</is_collection>
 		<title lang="en">Member Sensors</title>
 		<short_title lang="en"/>
 		<help lang="en"/>
@@ -379,15 +382,19 @@ SPDX-License-Identifier: Apache-2.0
 		<verbose_name lang="de"/>
 		<questionsets/>
 		<questions>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/member-sensor" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/configurations/member-sensor" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/configurations-general/label" order="1"/>
+			<question dc:uri="http://example.com/terms/questions/configurations-general/project" order="2"/>
+			<question dc:uri="http://example.com/terms/questions/configurations-general/pid" order="3"/>
+			<question dc:uri="http://example.com/terms/questions/configurations-general/api-link" order="4"/>
 		</questions>
 		<conditions/>
 	</page>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/member-sensor">
+	<question dc:uri="http://example.com/terms/questions/configurations/member-sensor">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/member-sensor</uri_path>
+		<uri_path>configurations/member-sensor</uri_path>
 		<dc:comment>Technical collection used by the configuration handler to cache mounted sensors.</dc:comment>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/member-sensor"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/member-sensor"/>
 		<is_collection>True</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
@@ -410,110 +417,96 @@ SPDX-License-Identifier: Apache-2.0
 		<optionsets/>
 		<conditions/>
 	</question>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/member-sensor">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/member-sensor">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<key>member-sensor</key>
-		<path>sensorsearch/configurations/member-sensor</path>
+		<path>configuration-set/member-sensor</path>
 		<dc:comment/>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/search">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-label">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>search</key>
-		<path>sensorsearch/configurations/search</path>
-		<dc:comment>Configuration search field backed by the SMS configuration provider.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
-	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/label">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>label</key>
-		<path>sensorsearch/configurations/label</path>
+		<key>configuration-label</key>
+		<path>configuration-set/configuration-label</path>
 		<dc:comment>Materialized label of the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/project">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-project">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>project</key>
-		<path>sensorsearch/configurations/project</path>
+		<key>configuration-project</key>
+		<path>configuration-set/configuration-project</path>
 		<dc:comment>Materialized project of the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/pid">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-persistent-identifier">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>pid</key>
-		<path>sensorsearch/configurations/pid</path>
+		<key>configuration-persistent-identifier</key>
+		<path>configuration-set/configuration-persistent-identifier</path>
 		<dc:comment>Materialized persistent identifier of the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/description">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-description">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>description</key>
-		<path>sensorsearch/configurations/description</path>
+		<key>configuration-description</key>
+		<path>configuration-set/configuration-description</path>
 		<dc:comment>Materialized description of the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/location">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-location">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>location</key>
-		<path>sensorsearch/configurations/location</path>
+		<key>configuration-location</key>
+		<path>configuration-set/configuration-location</path>
 		<dc:comment>Materialized location of the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/link">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-link">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>link</key>
-		<path>sensorsearch/configurations/link</path>
-		<dc:comment>Materialized link of the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<key>configuration-link</key>
+		<path>configuration-set/configuration-link</path>
+		<dc:comment>Materialized frontend link of the selected configuration.</dc:comment>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/link_api">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-api-link">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>link_api</key>
-		<path>sensorsearch/configurations/link_api</path>
+		<key>configuration-api-link</key>
+		<path>configuration-set/configuration-api-link</path>
 		<dc:comment>Materialized backend API link of the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/time-period">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-time-period">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>time-period</key>
-		<path>sensorsearch/configurations/time-period</path>
+		<key>configuration-time-period</key>
+		<path>configuration-set/configuration-time-period</path>
 		<dc:comment/>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/start_date">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configuration-start-datetime">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>start_date</key>
-		<path>sensorsearch/configurations/start_date</path>
+		<key>configuration-start-datetime</key>
+		<path>configuration-set/configuration-start-datetime</path>
 		<dc:comment>Materialized start date of the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/end_date">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/configurations-end-datetime">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>end_date</key>
-		<path>sensorsearch/configurations/end_date</path>
+		<key>configurations-end-datetime</key>
+		<path>configuration-set/configurations-end-datetime</path>
 		<dc:comment>Materialized end date of the selected configuration.</dc:comment>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>configurations</key>
-		<path>sensorsearch/configurations</path>
-		<dc:comment/>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch"/>
-	</attribute>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<key>sensorsearch</key>
-		<path>sensorsearch</path>
-		<dc:comment>Example Attribute for rdmo_sensorsearch</dc:comment>
+		<key>configuration-set</key>
+		<path>configuration-set</path>
+		<dc:comment>Example root attribute aligned with the Earth-Sensor configuration set model.</dc:comment>
 		<parent/>
 	</attribute>
-	<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/used-sensors">
+	<page dc:uri="http://example.com/terms/questions/configurations/used-sensors">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/used-sensors</uri_path>
+		<uri_path>configurations/used-sensors</uri_path>
 		<dc:comment>Example page where the user selects which sensors from the configuration were actually used.</dc:comment>
-		<attribute/>
-		<is_collection>False</is_collection>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set"/>
+		<is_collection>True</is_collection>
 		<title lang="en">Used Sensors</title>
 		<short_title lang="en"/>
 		<help lang="en">Select the sensors from the chosen configuration that were actually used in the project.</help>
@@ -524,15 +517,15 @@ SPDX-License-Identifier: Apache-2.0
 		<verbose_name lang="de"/>
 		<questionsets/>
 		<questions>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/used-sensor" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/configurations/used-sensor" order="0"/>
 		</questions>
 		<conditions/>
 	</page>
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/configuration/used-sensor">
+	<question dc:uri="http://example.com/terms/questions/configurations/used-sensor">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/configuration/used-sensor</uri_path>
+		<uri_path>configurations/used-sensor</uri_path>
 		<dc:comment>User-facing selection of the sensors actually used in the project.</dc:comment>
-		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/used-sensor"/>
+		<attribute dc:uri="http://example.com/terms/domain/configuration-set/used-sensor"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
@@ -553,20 +546,20 @@ SPDX-License-Identifier: Apache-2.0
 		<unit/>
 		<width/>
 		<optionsets>
-			<optionset dc:uri="http://example.com/terms/options/sensorsearch/project-sensors/optionset"/>
+			<optionset dc:uri="http://example.com/terms/options/configurations/project-sensors/optionset"/>
 		</optionsets>
 		<conditions/>
 	</question>
-	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/configurations/used-sensor">
+	<attribute dc:uri="http://example.com/terms/domain/configuration-set/used-sensor">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<key>used-sensor</key>
-		<path>sensorsearch/configurations/used-sensor</path>
+		<path>configuration-set/used-sensor</path>
 		<dc:comment/>
-		<parent dc:uri="http://example.com/terms/domain/sensorsearch/configurations"/>
+		<parent dc:uri="http://example.com/terms/domain/configuration-set"/>
 	</attribute>
-	<optionset dc:uri="http://example.com/terms/options/sensorsearch/project-sensors/optionset">
+	<optionset dc:uri="http://example.com/terms/options/configurations/project-sensors/optionset">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/project-sensors/optionset</uri_path>
+		<uri_path>configurations/project-sensors/optionset</uri_path>
 		<dc:comment>Project-local options generated from a selected configuration.</dc:comment>
 		<provider_key>sensorssearch_project_sensors</provider_key>
 		<options/>

@@ -8,9 +8,9 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-04-07T12:00:00+02:00" version="2.2.0+b1963de">
-	<optionset dc:uri="http://example.com/terms/options/sensorsearch/configurations/optionset">
+	<optionset dc:uri="http://example.com/terms/options/configurations/optionset">
 		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/optionset</uri_path>
+		<uri_path>configurations/optionset</uri_path>
 		<dc:comment/>
 		<provider_key>sensorssearch_configurations</provider_key>
 		<options/>

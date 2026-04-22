@@ -91,8 +91,8 @@ min_search_len = 3
 
 [ProjectConfigurationSensorsProvider]
 [[ProjectConfigurationSensorsProvider.catalogs]]
-catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
-source_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
+source_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
@@ -125,7 +125,7 @@ base_url = "https://sensors.gfz.de/backend/api/v1"
 sensor_id_prefix = "gfzsms"
 [handlers.SensorManagementSystemConfigurationsHandler.defaults]
 auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
-member_sensors_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+member_sensors_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 frontend_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/uri"
 api_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
 location_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/spatial"
@@ -137,7 +137,7 @@ location_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/da
 "data.attributes.description" = "https://rdmorganiser.github.io/terms/domain/project/dataset/annotation"
 "data.links.self" = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
 [[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
+catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
 ```
 
 This configures all available providers with three SMS instances to query. The

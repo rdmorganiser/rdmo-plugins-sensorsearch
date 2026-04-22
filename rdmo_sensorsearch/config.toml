@@ -11,8 +11,8 @@
 
     [ProjectConfigurationSensorsProvider]
     [[ProjectConfigurationSensorsProvider.catalogs]]
-    catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
-    source_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
+    catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
+    source_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 
     [handlers.O2ARegistrySearchHandler]
     # Use defaults
@@ -231,31 +231,31 @@ reset_attribute_uris = [
     base_url = "https://web.app.ufz.de/sms/backend/api/v1"
     sensor_id_prefix = "ufzsms"
     [handlers.SensorManagementSystemConfigurationsHandler.defaults]
-    auto_complete_field_uri = "http://example.com/terms/domain/sensorsearch/configurations/search"
-    member_sensors_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/member-sensor"
-    frontend_link_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/link"
-    api_link_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/link_api"
-    location_attribute_uri = "http://example.com/terms/domain/sensorsearch/configurations/location"
+    auto_complete_field_uri = "http://example.com/terms/domain/configuration-set/configuration-label"
+    member_sensors_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
+    frontend_link_attribute_uri = "http://example.com/terms/domain/configuration-set/configuration-link"
+    api_link_attribute_uri = "http://example.com/terms/domain/configuration-set/configuration-api-link"
+    location_attribute_uri = "http://example.com/terms/domain/configuration-set/configuration-location"
     reset_attribute_uris = [
-        "http://example.com/terms/domain/sensorsearch/configurations/used-sensor",
-        "http://example.com/terms/domain/sensorsearch/configurations/location",
-        "http://example.com/terms/domain/sensorsearch/configurations/link",
-        "http://example.com/terms/domain/sensorsearch/configurations/link_api",
+        "http://example.com/terms/domain/configuration-set/used-sensor",
+        "http://example.com/terms/domain/configuration-set/configuration-location",
+        "http://example.com/terms/domain/configuration-set/configuration-link",
+        "http://example.com/terms/domain/configuration-set/configuration-api-link",
     ]
     [handlers.SensorManagementSystemConfigurationsHandler.defaults.attribute_mapping]
-    "data.attributes.label" = "http://example.com/terms/domain/sensorsearch/configurations/label"
-    "data.attributes.project" = "http://example.com/terms/domain/sensorsearch/configurations/project"
-    "data.attributes.persistent_identifier" = "http://example.com/terms/domain/sensorsearch/configurations/pid"
-    "data.attributes.description" = "http://example.com/terms/domain/sensorsearch/configurations/description"
-    "data.links.self" = "http://example.com/terms/domain/sensorsearch/configurations/link_api"
-    "data.attributes.start_date" = "http://example.com/terms/domain/sensorsearch/configurations/start_date"
-    "data.attributes.end_date" = "http://example.com/terms/domain/sensorsearch/configurations/end_date"
+    "data.attributes.label" = "http://example.com/terms/domain/configuration-set/configuration-label"
+    "data.attributes.project" = "http://example.com/terms/domain/configuration-set/configuration-project"
+    "data.attributes.persistent_identifier" = "http://example.com/terms/domain/configuration-set/configuration-persistent-identifier"
+    "data.attributes.description" = "http://example.com/terms/domain/configuration-set/configuration-description"
+    "data.links.self" = "http://example.com/terms/domain/configuration-set/configuration-api-link"
+    "data.attributes.start_date" = "http://example.com/terms/domain/configuration-set/configuration-start-datetime"
+    "data.attributes.end_date" = "http://example.com/terms/domain/configuration-set/configurations-end-datetime"
     [[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
-    catalog_uri = "http://example.com/terms/questions/sensorsearch/configurations"
+    catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
     # Optional: only materialize mounted devices overlapping with the
     # configured period from the interview.
-    # cfg_start_uri = "https://example.com/terms/domain/configuration-set/configuration-start-datetime"
-    # cfg_end_uri = "https://example.com/terms/domain/configuration-set/configuration-end-datetime"
+    # cfg_start_uri = "http://example.com/terms/domain/configuration-set/configuration-start-datetime"
+    # cfg_end_uri = "http://example.com/terms/domain/configuration-set/configurations-end-datetime"
     # UFZ configuration additions from config_ufz.toml need concrete source keys instead of placeholders:
     # auto_complete_field_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-label"
     # "SMS.ATTRIBUTE.NAME" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-location"
