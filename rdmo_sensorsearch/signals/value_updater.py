@@ -428,8 +428,6 @@ def _scalar_scopes_via_answer_tree(instance, attribute) -> list[tuple[str, int]]
     base_scope = (_normalize_set_prefix(instance.set_prefix), instance.set_index)
     project = instance.project
     catalog = project.catalog
-    if catalog is None:
-        return []
 
     catalog.prefetch_elements()
     values = project.values.filter(snapshot=None).select_related("attribute")
