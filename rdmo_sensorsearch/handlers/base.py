@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,7 @@ class CollectionAssignment:
 class HandlerResult:
     mapped_values: dict[str, Any] = field(default_factory=dict)
     collections: list[CollectionAssignment] = field(default_factory=list)
+    post_actions: list[Callable[[], None]] = field(default_factory=list)
 
 
 class GenericSearchHandler:

@@ -329,11 +329,15 @@ def update_values_from_handler_result(instance, result: HandlerResult):
     update_values_from_mapped_data(instance, result.mapped_values)
 
     if not result.collections:
+        for post_action in result.post_actions:
+            post_action()
         return
 
     with transaction.atomic(), mute_value_post_save():
         for collection in result.collections:
             _update_collection_assignment(instance, collection)
+        for post_action in result.post_actions:
+            post_action()
 
 
 def _update_collection_assignment(instance, collection: CollectionAssignment):

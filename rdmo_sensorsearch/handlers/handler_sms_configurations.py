@@ -1,4 +1,5 @@
 import logging
+from functools import partial
 from datetime import datetime, timezone as dt_timezone
 from urllib.parse import urljoin, urlsplit
 
@@ -8,6 +9,10 @@ from rdmo.projects.models import Value
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, GenericSearchHandler, HandlerResult
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
+from rdmo_sensorsearch.signals.device_set_sync import (
+    SelectedDevice,
+    sync_device_detail_blocks_from_payload,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,16 +69,36 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
         if getattr(self, "member_sensors_attribute_uri", None):
             cfg_period = self._get_cfg_period(instance)
+            member_sensor_values = self._build_member_sensor_values(
+                configuration_data=configuration_data,
+                mount_action_data=mount_action_data,
+                cfg_period=cfg_period,
+            )
             result.collections.append(
                 CollectionAssignment(
                     attribute_uri=self.member_sensors_attribute_uri,
-                    values=self._build_member_sensor_values(
-                        configuration_data=configuration_data,
-                        mount_action_data=mount_action_data,
-                        cfg_period=cfg_period,
-                    ),
+                    values=member_sensor_values,
                 )
             )
+
+            device_collection_attribute_uri = getattr(self, "device_collection_attribute_uri", None)
+            if instance is not None and device_collection_attribute_uri:
+                selected_devices = [
+                    SelectedDevice(text=value["text"], external_id=value["external_id"])
+                    for value in member_sensor_values
+                    if value.get("external_id")
+                ]
+                result.post_actions.append(
+                    partial(
+                        sync_device_detail_blocks_from_payload,
+                        project=instance.project,
+                        catalog=instance.project.catalog,
+                        scope_prefix=instance.set_prefix,
+                        selected_devices=selected_devices,
+                        selected_devices_attribute_uri=self.member_sensors_attribute_uri,
+                        device_collection_attribute_uri=device_collection_attribute_uri,
+                    )
+                )
 
         return result
 
@@ -93,6 +118,14 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             mapped_values[frontend_attribute_uri] = self._to_frontend_link(api_link)
 
     def _get_configuration_self_link(self, configuration_data: dict) -> str | None:
+        direct_self_link = (
+            configuration_data.get("data", {})
+            .get("links", {})
+            .get("self")
+        )
+        if isinstance(direct_self_link, str) and direct_self_link:
+            return direct_self_link
+
         for source_path, attribute_uri in self.attribute_mapping.items():
             if source_path != self.configuration_self_link_path:
                 continue
@@ -148,7 +181,9 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
     def _set_configuration_location(self, mapped_values: dict[str, str | None], configuration_id: str) -> None:
         location_attribute_uri = getattr(self, "location_attribute_uri", None)
-        if not location_attribute_uri:
+        latitude_attribute_uri = getattr(self, "latitude_attribute_uri", None)
+        longitude_attribute_uri = getattr(self, "longitude_attribute_uri", None)
+        if not any((location_attribute_uri, latitude_attribute_uri, longitude_attribute_uri)):
             return
 
         location_actions_data = fetch_json(
@@ -176,7 +211,14 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if lat is None or lon is None:
             return
 
-        mapped_values[location_attribute_uri] = f"({lat},{lon})"
+        if latitude_attribute_uri:
+            mapped_values[latitude_attribute_uri] = lat
+
+        if longitude_attribute_uri:
+            mapped_values[longitude_attribute_uri] = lon
+
+        if location_attribute_uri:
+            mapped_values[location_attribute_uri] = f"({lat},{lon})"
 
     def _select_best_static_location_action(self, actions: list[dict]) -> dict | None:
         if not actions:
