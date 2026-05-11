@@ -39,7 +39,7 @@ class SensorManagementSystemProvider(BaseSensorProvider):
     query_url = "{base_url}?q={query}"
 
     option_id = "{id_prefix}:{id}"
-    option_text = "{prefix} {name}{serial}"
+    option_text = "{prefix}({id}): {name}{serial}"
 
 
     def get_options(self, project, search=None, user=None, site=None):
@@ -77,12 +77,12 @@ class SensorManagementSystemProvider(BaseSensorProvider):
             optionset.append(
                 {
                     "id": self.option_id.format(id_prefix=self.id_prefix, id=sensor["id"]),
-                    "text": self._format_sensor_text(sensor["attributes"]),
+                    "text": self._format_sensor_text(sensor["id"], sensor["attributes"]),
                 }
             )
         return optionset
 
-    def _format_sensor_text(self, attrs: dict) -> str:
+    def _format_sensor_text(self, sensor_id: str, attrs: dict) -> str:
         name = attrs.get("long_name") or attrs.get("short_name", "")
         serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
-        return self.option_text.format(prefix=self.text_prefix, name=name, serial=serial)
+        return self.option_text.format(prefix=self.text_prefix, id=sensor_id, name=name, serial=serial)

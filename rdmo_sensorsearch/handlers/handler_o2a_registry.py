@@ -32,7 +32,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
     units_url = "{base_url}/units"
 
 
-    def __init__(self, attribute_mapping=None, id_prefix=None, base_url=None):
+    def __init__(self, attribute_mapping=None, id_prefix=None, base_url=None, **kwargs):
         """
         Initializes the O2ARegistrySearchHandler.
 
@@ -46,7 +46,12 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         """
         base_url = base_url or self.base_url
 
-        super().__init__(attribute_mapping=attribute_mapping, id_prefix=id_prefix, base_url=base_url)
+        super().__init__(
+            attribute_mapping=attribute_mapping,
+            id_prefix=id_prefix,
+            base_url=base_url,
+            **kwargs,
+        )
 
     def handle(self, id_, instance=None):
         """

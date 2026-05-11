@@ -86,7 +86,7 @@ reset_attribute_uris = [
 
 [[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "gfzsms"
-base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
+base_url = "https://sensors.gfz.de/backend/api/v1"
 [[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "kitsms"
 base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
@@ -164,14 +164,17 @@ reset_attribute_uris = [
 id_prefix = "gfzcfg"
 base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
 sensor_id_prefix = "gfzsms"
+sensor_text_prefix = "GFZ Sensor"
 [[handlers.SensorManagementSystemConfigurationsHandler.backends]]
 id_prefix = "kitcfg"
 base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
 sensor_id_prefix = "kitsms"
+sensor_text_prefix = "KIT Sensor"
 [[handlers.SensorManagementSystemConfigurationsHandler.backends]]
 id_prefix = "ufzcfg"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1"
 sensor_id_prefix = "ufzsms"
+sensor_text_prefix = "UFZ Sensor"
 [handlers.SensorManagementSystemConfigurationsHandler.defaults]
 auto_complete_field_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
 member_sensors_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
@@ -260,32 +263,32 @@ reset_attribute_uris = [
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "gfzsms"
-text_prefix = "GFZ Sensors:"
+text_prefix = "GFZ Sensor"
 base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/devices"
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "kitsms"
-text_prefix = "KIT Sensors:"
+text_prefix = "KIT Sensor"
 base_url = "https://sms.atmohub.kit.edu/backend/api/v1/devices"
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "ufzsms"
-text_prefix = "UFZ Sensors:"
+text_prefix = "UFZ Sensor"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
 [[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]
 
 [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
 id_prefix = "gfzcfg"
-text_prefix = "GFZ Configurations:"
+text_prefix = "GFZ Config"
 base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/configurations"
 
 [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
 id_prefix = "kitcfg"
-text_prefix = "KIT Configurations:"
+text_prefix = "KIT Config"
 base_url = "https://sms.atmohub.kit.edu/backend/api/v1/configurations"
 
 [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
 id_prefix = "ufzcfg"
-text_prefix = "UFZ Configurations:"
+text_prefix = "UFZ Config"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1/configurations"

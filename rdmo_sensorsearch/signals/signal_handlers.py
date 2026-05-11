@@ -58,5 +58,6 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
             selected_values,
             selected_devices_attribute_uri=selected_devices_attribute_uri,
             device_collection_attribute_uri=device_collection_attribute_uri,
+            configuration_search_attribute_uri=candidate.auto_complete_field_uri,
         )
         break

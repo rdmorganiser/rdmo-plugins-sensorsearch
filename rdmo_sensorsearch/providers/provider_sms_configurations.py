@@ -24,7 +24,7 @@ class SensorManagementSystemConfigurationsProvider(BaseSensorProvider):
     )
 
     option_id = "{id_prefix}:{id}"
-    option_text = "{prefix} {label}{project}{pid}"
+    option_text = "{prefix}({id}): {label}{project}{pid}"
 
     def get_options(self, project, search=None, user=None, site=None):
         if search is None:
@@ -42,17 +42,18 @@ class SensorManagementSystemConfigurationsProvider(BaseSensorProvider):
         return [
             {
                 "id": self.option_id.format(id_prefix=self.id_prefix, id=configuration["id"]),
-                "text": self._format_configuration_text(configuration["attributes"]),
+                "text": self._format_configuration_text(configuration["id"], configuration["attributes"]),
             }
             for configuration in json_data[:self.max_hits]
         ]
 
-    def _format_configuration_text(self, attrs: dict) -> str:
+    def _format_configuration_text(self, configuration_id: str, attrs: dict) -> str:
         project = f" [{attrs['project']}]" if attrs.get("project") else ""
         persistent_identifier = attrs.get("persistent_identifier")
         pid = f" ({persistent_identifier})" if persistent_identifier else ""
         return self.option_text.format(
             prefix=self.text_prefix,
+            id=configuration_id,
             label=attrs.get("label", ""),
             project=project,
             pid=pid,

@@ -4,7 +4,6 @@ from datetime import datetime, timezone as dt_timezone
 from urllib.parse import urljoin, urlsplit
 
 from django.utils import timezone as django_timezone
-from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, GenericSearchHandler, HandlerResult
@@ -94,9 +93,11 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                         project=instance.project,
                         catalog=instance.project.catalog,
                         scope_prefix=instance.set_prefix,
+                        source_set_index=instance.set_index,
                         selected_devices=selected_devices,
                         selected_devices_attribute_uri=self.member_sensors_attribute_uri,
                         device_collection_attribute_uri=device_collection_attribute_uri,
+                        configuration_search_attribute_uri=instance.attribute.uri,
                     )
                 )
 
@@ -275,17 +276,28 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
             member_sensor_values.append(
                 {
-                    "text": self._format_sensor_text(device.get("attributes", {})),
+                    "text": self._format_sensor_text(
+                        configuration_id=configuration_data.get("data", {}).get("id"),
+                        sensor_id=device["id"],
+                        attrs=device.get("attributes", {}),
+                    ),
                     "external_id": f"{sensor_id_prefix}:{device['id']}",
                 }
             )
 
         return member_sensor_values
 
-    def _format_sensor_text(self, attrs: dict) -> str:
+    def _format_sensor_text(
+        self,
+        configuration_id: str | None,
+        sensor_id: str,
+        attrs: dict,
+    ) -> str:
         name = attrs.get("long_name") or attrs.get("short_name", "")
         serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
-        return f"{name}{serial}"
+        sensor_text_prefix = getattr(self, "sensor_text_prefix", "SMS Sensor")
+        config_fragment = f" Config({configuration_id})" if configuration_id else ""
+        return f"{sensor_text_prefix}({sensor_id}){config_fragment}: {name}{serial}"
 
     def _get_mount_actions(self, configuration_data: dict, mount_action_data: dict) -> list[dict]:
         mount_actions = mount_action_data.get("data", [])
