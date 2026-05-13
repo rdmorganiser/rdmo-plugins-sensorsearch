@@ -27,6 +27,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     device_mount_actions_url = (
         "{base_url}/device-mount-actions?filter[configuration_id]={id}&include=device&page[size]={page_size}"
     )
+    mounting_action_timepoints_url = "{base_url}/configurations/{id}/mounting-action-timepoints"
     static_location_actions_url = (
         "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]={page_size}"
     )
@@ -98,6 +99,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                         selected_devices_attribute_uri=self.member_sensors_attribute_uri,
                         device_collection_attribute_uri=device_collection_attribute_uri,
                         configuration_search_attribute_uri=instance.attribute.uri,
+                        configuration_external_id=instance.external_id,
                     )
                 )
 

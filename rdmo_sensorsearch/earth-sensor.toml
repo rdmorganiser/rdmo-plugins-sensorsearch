@@ -27,6 +27,7 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "data.attributes.model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
 "data.attributes.serial_number" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 "data.attributes.persistent_identifier" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"data.links.self" = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
 "included[?type==`device_property`].attributes.label && included[?type==`device_property`].attributes.{label: label, property_name: property_name} | [].join(', ', [property_name, label][?@ != null]) || included[?type==`device_property`].attributes.property_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
 "included[?type==`device_property`].attributes.unit_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
 "included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"

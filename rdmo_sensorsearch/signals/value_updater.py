@@ -52,6 +52,152 @@ def clear_attribute_values(instance, attribute_uri: str) -> None:
         logger.info("Cleared values for attribute %s (%s rows)", attribute_uri, deleted_total)
 
 
+def update_scalar_value_across_scopes(
+    instance,
+    attribute_uri: str,
+    value: Any,
+    extra_scopes: list[tuple[str, int]] | None = None,
+) -> None:
+    try:
+        attribute = Attribute.objects.get(uri=attribute_uri)
+    except Attribute.DoesNotExist:
+        logger.warning("Scalar scope update target attribute not found: %s", attribute_uri)
+        return
+
+    scopes = _scalar_scopes(instance, attribute)
+    if not scopes:
+        scopes = [(_normalize_set_prefix(instance.set_prefix), instance.set_index)]
+    if extra_scopes:
+        scopes = _unique_scopes(scopes + extra_scopes, (_normalize_set_prefix(instance.set_prefix), instance.set_index))
+
+    with transaction.atomic(), mute_value_post_save():
+        if _is_blank_scalar(value):
+            deleted_total = 0
+            for set_prefix, set_index in scopes:
+                deleted, _ = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).delete()
+                deleted_total += deleted
+            logger.info("Cleared scalar values across scopes for attribute %s (%s rows)", attribute.uri, deleted_total)
+            return
+
+        normalized_value = _normalize_scalar(value)
+        for set_prefix, set_index in scopes:
+            queryset = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).order_by("id")
+            current = queryset.first()
+
+            if current is None:
+                _, created = Value.objects.update_or_create(
+                    project=instance.project,
+                    attribute=attribute,
+                    set_prefix=set_prefix,
+                    set_index=set_index,
+                    set_collection=False,
+                    defaults={"text": normalized_value},
+                )
+            else:
+                created = False
+                if current.text != normalized_value and getattr(current, "value", None) != normalized_value:
+                    current.text = normalized_value
+                    current.save(update_fields=["text"])
+
+                duplicate_ids = list(queryset.values_list("id", flat=True)[1:])
+                if duplicate_ids:
+                    deleted, _ = queryset.exclude(id=current.id).delete()
+                    logger.info(
+                        "Deleted duplicate scalar values for attribute %s (%s rows)",
+                        attribute.uri,
+                        deleted,
+                    )
+
+            logger.info(
+                "%s scalar value across scope for attribute %s (set_prefix=%s, set_index=%s): %r",
+                "Created" if created else "Updated",
+                attribute.uri,
+                set_prefix,
+                set_index,
+                normalized_value,
+            )
+
+
+def replace_scalar_value_in_scopes(
+    instance,
+    attribute_uri: str,
+    value: Any,
+    scopes_to_set: list[tuple[str, int]],
+    scopes_to_clear: list[tuple[str, int]] | None = None,
+) -> None:
+    try:
+        attribute = Attribute.objects.get(uri=attribute_uri)
+    except Attribute.DoesNotExist:
+        logger.warning("Scoped scalar update target attribute not found: %s", attribute_uri)
+        return
+
+    normalized_scopes_to_set = list(dict.fromkeys(scopes_to_set))
+    normalized_scopes_to_clear = list(dict.fromkeys(scopes_to_clear or []))
+
+    with transaction.atomic(), mute_value_post_save():
+        for set_prefix, set_index in normalized_scopes_to_clear:
+            deleted, _ = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).delete()
+            if deleted:
+                logger.info(
+                    "Cleared scoped scalar value for attribute %s (set_prefix=%s, set_index=%s, rows=%s)",
+                    attribute.uri,
+                    set_prefix,
+                    set_index,
+                    deleted,
+                )
+
+        if _is_blank_scalar(value):
+            for set_prefix, set_index in normalized_scopes_to_set:
+                deleted, _ = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).delete()
+                if deleted:
+                    logger.info(
+                        "Cleared scoped scalar value for attribute %s (set_prefix=%s, set_index=%s, rows=%s)",
+                        attribute.uri,
+                        set_prefix,
+                        set_index,
+                        deleted,
+                    )
+            return
+
+        normalized_value = _normalize_scalar(value)
+        for set_prefix, set_index in normalized_scopes_to_set:
+            queryset = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).order_by("id")
+            current = queryset.first()
+
+            if current is None:
+                _, created = Value.objects.update_or_create(
+                    project=instance.project,
+                    attribute=attribute,
+                    set_prefix=set_prefix,
+                    set_index=set_index,
+                    set_collection=False,
+                    defaults={"text": normalized_value},
+                )
+            else:
+                created = False
+                if current.text != normalized_value and getattr(current, "value", None) != normalized_value:
+                    current.text = normalized_value
+                    current.save(update_fields=["text"])
+
+                duplicate_ids = list(queryset.values_list("id", flat=True)[1:])
+                if duplicate_ids:
+                    deleted, _ = queryset.exclude(id=current.id).delete()
+                    logger.info(
+                        "Deleted duplicate scalar values for attribute %s (%s rows)",
+                        attribute.uri,
+                        deleted,
+                    )
+
+            logger.info(
+                "%s scoped scalar value for attribute %s (set_prefix=%s, set_index=%s): %r",
+                "Created" if created else "Updated",
+                attribute.uri,
+                set_prefix,
+                set_index,
+                normalized_value,
+            )
+
+
 def clear_collection_attribute(instance, attribute_uri: str) -> None:
     try:
         attribute = Attribute.objects.get(uri=attribute_uri)

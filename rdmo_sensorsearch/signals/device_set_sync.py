@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone as dt_timezone
 from types import SimpleNamespace
 from typing import Any, Iterable
 
@@ -8,9 +9,13 @@ from django.db.models import Q
 
 from rdmo.projects.models import Value
 
+from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.handler_sms import SensorManagementSystemHandler
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
-from rdmo_sensorsearch.signals.value_updater import update_values_from_mapped_data
+from rdmo_sensorsearch.signals.value_updater import (
+    replace_scalar_value_in_scopes,
+    update_values_from_mapped_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,12 +24,23 @@ DEVICE_DETAILS_PAGE_URI = "https://rdmo.nfdi4earth.de/terms/questions/instrument
 DEVICE_OPTIONAL_INFO_PAGE_URI = "https://rdmo.nfdi4earth.de/terms/questions/instruments/further-info"
 CONFIGURATION_SET_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
 DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
+DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
+INSTRUMENT_START_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
+INSTRUMENT_END_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
+SERIAL_NUMBER_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 
 
 @dataclass(frozen=True)
 class SelectedDevice:
     text: str
     external_id: str
+
+
+@dataclass(frozen=True)
+class ConfigurationContext:
+    key: str
+    label: str
+    external_id: str | None
 
 
 def sync_device_detail_blocks_from_values(
@@ -50,6 +66,12 @@ def sync_device_detail_blocks_from_values(
         selected_devices_attribute_uri=selected_devices_attribute_uri,
         device_collection_attribute_uri=device_collection_attribute_uri,
         configuration_search_attribute_uri=configuration_search_attribute_uri,
+        configuration_external_id=_resolve_configuration_external_id_from_values(
+            project=instance.project,
+            scope_prefix=scope_prefix,
+            source_set_index=source_set_index,
+            configuration_search_attribute_uri=configuration_search_attribute_uri,
+        ),
     )
 
 
@@ -62,6 +84,7 @@ def sync_device_detail_blocks_from_payload(
     selected_devices_attribute_uri: str,
     device_collection_attribute_uri: str,
     configuration_search_attribute_uri: str,
+    configuration_external_id: str | None = None,
 ) -> None:
     scope_prefix = scope_prefix or ""
     sync_device_detail_blocks(
@@ -73,6 +96,7 @@ def sync_device_detail_blocks_from_payload(
         selected_devices_attribute_uri=selected_devices_attribute_uri,
         device_collection_attribute_uri=device_collection_attribute_uri,
         configuration_search_attribute_uri=configuration_search_attribute_uri,
+        configuration_external_id=configuration_external_id,
     )
 
 
@@ -85,6 +109,7 @@ def sync_device_detail_blocks(
     selected_devices_attribute_uri: str,
     device_collection_attribute_uri: str,
     configuration_search_attribute_uri: str,
+    configuration_external_id: str | None = None,
 ) -> None:
     scope_prefix = scope_prefix or ""
     source_set_index = source_set_index or 0
@@ -94,6 +119,7 @@ def sync_device_detail_blocks(
         scope_prefix=scope_prefix,
         source_set_index=source_set_index,
         configuration_search_attribute_uri=configuration_search_attribute_uri,
+        configuration_external_id=configuration_external_id,
     )
     if config_context is None:
         logger.warning(
@@ -102,12 +128,12 @@ def sync_device_detail_blocks(
         )
         return
 
-    config_key, config_label = config_context
+    config_key = config_context.key
+    config_label = config_context.label
     desired_block_keys = {
         _compose_device_block_key(config_key, device.external_id)
         for device in selected_devices
     }
-
     root_attribute_ids = _device_detail_attribute_ids(catalog)
     if not root_attribute_ids:
         logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
@@ -143,16 +169,7 @@ def sync_device_detail_blocks(
             sensor_handler = sensor_candidate.handler
 
             if block is not None:
-                _upsert_root_device_value(
-                    project=project,
-                    attribute=root_attribute,
-                    scope_prefix=scope_prefix,
-                    set_index=block["set_index"],
-                    device=device,
-                    config_label=config_label,
-                    block_key=block_key,
-                )
-                continue
+                set_index = block["set_index"]
             else:
                 set_index = next_index
                 next_index += 1
@@ -183,6 +200,9 @@ def sync_device_detail_blocks(
                 device=device,
             )
 
+            if block is not None and not _device_block_needs_refresh(project, scope_prefix, set_index):
+                continue
+
             device_id = _parse_external_id(device.external_id)[1]
             if device_id is None:
                 logger.warning("Could not parse external ID %s", device.external_id)
@@ -194,7 +214,25 @@ def sync_device_detail_blocks(
                 continue
 
             if isinstance(mapped_data, dict):
+                _merge_mounting_period_values(
+                    mapped_data,
+                    device,
+                    sensor_candidate,
+                    config_context.external_id,
+                )
+                scoped_scalar_values = {
+                    INSTRUMENT_START_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
+                    INSTRUMENT_END_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_END_ATTRIBUTE_URI, ""),
+                }
                 update_values_from_mapped_data(block_instance, mapped_data)
+                for attribute_uri, value in scoped_scalar_values.items():
+                    replace_scalar_value_in_scopes(
+                        block_instance,
+                        attribute_uri,
+                        value,
+                        scopes_to_set=[_device_nested_questionset_scope(set_index)],
+                        scopes_to_clear=[("", set_index)],
+                    )
 
         _compact_device_detail_blocks(project, catalog, scope_prefix)
 
@@ -212,12 +250,29 @@ def _resolve_sensor_candidate(catalog_uri: str, external_id: str) -> Any | None:
     return None
 
 
+def _resolve_configuration_candidate(catalog_uri: str, external_id: str) -> Any | None:
+    id_prefix, _ = _parse_external_id(external_id)
+    if id_prefix is None:
+        return None
+
+    from rdmo_sensorsearch.handlers.handler_sms_configurations import (
+        SensorManagementSystemConfigurationsHandler,
+    )
+    from rdmo_sensorsearch.signals.handler_post_save import _get_handler_candidates
+
+    for candidate in _get_handler_candidates(catalog_uri):
+        if isinstance(candidate.handler, SensorManagementSystemConfigurationsHandler) and candidate.id_prefix == id_prefix:
+            return candidate
+    return None
+
+
 def _resolve_configuration_context(
     project,
     scope_prefix: str,
     source_set_index: int,
     configuration_search_attribute_uri: str,
-) -> tuple[str, str] | None:
+    configuration_external_id: str | None = None,
+) -> ConfigurationContext | None:
     if not configuration_search_attribute_uri:
         return None
 
@@ -230,7 +285,7 @@ def _resolve_configuration_context(
         )
         .exclude(text__isnull=True)
         .exclude(text__exact="")
-        .order_by("id")
+        .order_by("-id")
         .first()
     )
     configuration_set_value = (
@@ -250,7 +305,11 @@ def _resolve_configuration_context(
         return None
 
     config_key = _configuration_key(config_search_value, configuration_set_value, scope_prefix, source_set_index)
-    return config_key, _configuration_label(config_search_value, configuration_set_value, source_set_index)
+    return ConfigurationContext(
+        key=config_key,
+        label=_configuration_label(config_search_value, configuration_set_value, source_set_index),
+        external_id=configuration_external_id or _configuration_external_id(config_search_value),
+    )
 
 
 def _existing_device_blocks(project, root_attribute, scope_prefix: str, config_key: str) -> dict[str, dict]:
@@ -336,7 +395,7 @@ def _upsert_root_device_value(
         set_prefix=scope_prefix,
         set_index=set_index,
         defaults={
-            "text": f"{config_label}: {_base_device_text(device.text)}",
+            "text": device.text or f"{config_label}: {_base_device_text(device.text)}",
             "external_id": block_key,
         },
     )
@@ -466,6 +525,27 @@ def _get_attribute_by_uri(attribute_uri: str):
         return None
 
 
+def _device_block_needs_refresh(project, scope_prefix: str, set_index: int) -> bool:
+    return not (
+        _has_nonempty_scalar_value(project, DEVICE_LINK_ATTRIBUTE_URI, scope_prefix, set_index)
+        and _has_nonempty_scalar_value(project, INSTRUMENT_START_ATTRIBUTE_URI, scope_prefix, set_index)
+    )
+
+
+def _has_nonempty_scalar_value(project, attribute_uri: str, scope_prefix: str, set_index: int) -> bool:
+    return Value.objects.filter(
+        project=project,
+        attribute__uri=attribute_uri,
+        set_prefix=scope_prefix,
+        set_index=set_index,
+        set_collection=False,
+    ).exclude(text__isnull=True).exclude(text__exact="").exists()
+
+
+def _device_nested_questionset_scope(parent_set_index: int) -> tuple[str, int]:
+    return str(parent_set_index), 0
+
+
 def _parse_external_id(external_id: str) -> tuple[str | None, str | None]:
     if ":" not in external_id:
         return None, external_id or None
@@ -503,6 +583,40 @@ def _configuration_key(
     return f"{scope_prefix}:{source_set_index}"
 
 
+def _configuration_external_id(config_search_value: Value | None) -> str | None:
+    if config_search_value is None:
+        return None
+    if config_search_value.external_id:
+        return config_search_value.external_id
+    if isinstance(config_search_value.text, str) and ":" in config_search_value.text:
+        return config_search_value.text
+    return None
+
+
+def _resolve_configuration_external_id_from_values(
+    project,
+    scope_prefix: str,
+    source_set_index: int,
+    configuration_search_attribute_uri: str,
+) -> str | None:
+    if not configuration_search_attribute_uri:
+        return None
+
+    value = (
+        Value.objects.filter(
+            project=project,
+            attribute__uri=configuration_search_attribute_uri,
+            set_prefix=scope_prefix,
+            set_index=source_set_index,
+        )
+        .exclude(external_id__isnull=True)
+        .exclude(external_id__exact="")
+        .order_by("-id")
+        .first()
+    )
+    return value.external_id if value is not None else None
+
+
 def _configuration_label(
     config_search_value: Value | None,
     configuration_set_value: Value | None,
@@ -520,6 +634,119 @@ def _configuration_label(
     if isinstance(raw_label, str) and raw_label.strip():
         return raw_label.strip()
     return str(source_set_index)
+
+
+def _merge_mounting_period_values(
+    mapped_data: dict[str, Any],
+    device: SelectedDevice,
+    sensor_candidate: Any,
+    configuration_external_id: str | None,
+) -> None:
+    start_value, end_value = _resolve_mounting_period_values(
+        mapped_data,
+        device,
+        sensor_candidate,
+        configuration_external_id,
+    )
+    mapped_data[INSTRUMENT_START_ATTRIBUTE_URI] = start_value or ""
+    mapped_data[INSTRUMENT_END_ATTRIBUTE_URI] = end_value or ""
+
+
+def _resolve_mounting_period_values(
+    mapped_data: dict[str, Any],
+    device: SelectedDevice,
+    sensor_candidate: Any,
+    configuration_external_id: str | None,
+) -> tuple[str | None, str | None]:
+    if not configuration_external_id:
+        return None, None
+
+    _, configuration_id = _parse_external_id(configuration_external_id)
+    device_id = _parse_external_id(device.external_id)[1]
+    if configuration_id is None or device_id is None:
+        return None, None
+
+    mount_actions = _fetch_device_mount_actions(sensor_candidate, device_id)
+    if not mount_actions:
+        return None, None
+
+    serial_number = mapped_data.get(SERIAL_NUMBER_ATTRIBUTE_URI)
+    if not isinstance(serial_number, str) or not serial_number.strip():
+        serial_number = _serial_number_from_text(device.text)
+
+    matching_actions = []
+    normalized_serial = serial_number.strip().casefold() if isinstance(serial_number, str) and serial_number.strip() else None
+    for item in mount_actions:
+        relationships = item.get("relationships", {})
+        config_ref = relationships.get("configuration", {}).get("data", {})
+        if config_ref.get("id") != configuration_id:
+            continue
+
+        action_device_ref = relationships.get("device", {}).get("data", {})
+        if action_device_ref.get("id") != device_id:
+            continue
+
+        attrs = item.get("attributes", {})
+        action_serial = attrs.get("serial_number")
+        if normalized_serial and isinstance(action_serial, str):
+            if action_serial.strip().casefold() != normalized_serial:
+                continue
+
+        begin_date = _parse_timepoint(attrs.get("begin_date"))
+        if begin_date is None:
+            continue
+        end_date = _parse_timepoint(attrs.get("end_date"))
+        matching_actions.append((begin_date, end_date))
+
+    if not matching_actions:
+        return None, None
+
+    latest_start, latest_end = max(matching_actions, key=lambda item: item[0])
+    return _format_timepoint(latest_start), _format_timepoint(latest_end)
+
+
+def _fetch_device_mount_actions(sensor_candidate: Any, device_id: str) -> list[dict]:
+    url = (
+        f"{sensor_candidate.handler.base_url}/devices/{device_id}/device-mount-actions"
+        "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration"
+    )
+    action_data = fetch_json(url)
+    if isinstance(action_data, dict) and "errors" in action_data:
+        logger.warning(
+            "Could not fetch device mount actions for %s: %s",
+            device_id,
+            action_data["errors"],
+        )
+        return []
+    if not isinstance(action_data, dict):
+        return []
+    data = action_data.get("data", [])
+    return data if isinstance(data, list) else []
+
+
+def _parse_timepoint(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _format_timepoint(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=dt_timezone.utc)
+    return value.astimezone(dt_timezone.utc).strftime("%Y-%m-%d %H:%M")
+
+
+def _serial_number_from_text(text: str) -> str | None:
+    marker = "(s/n:"
+    if marker not in text:
+        return None
+    serial_fragment = text.split(marker, 1)[1]
+    return serial_fragment.split(")", 1)[0].strip() or None
 
 
 def _unique_selected_devices(selected_devices: Iterable[SelectedDevice]) -> list[SelectedDevice]:

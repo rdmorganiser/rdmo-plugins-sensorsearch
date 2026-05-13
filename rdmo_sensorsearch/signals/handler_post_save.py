@@ -1,11 +1,16 @@
 import logging
 
+from rdmo_sensorsearch.handlers.handler_sms import (
+    INSTRUMENT_END_ATTRIBUTE_URI,
+    INSTRUMENT_START_ATTRIBUTE_URI,
+)
 from rdmo_sensorsearch.handlers.base import HandlerResult
 from rdmo_sensorsearch.handlers.factory import WILDCARD_CATALOG_URI, build_handlers_by_catalog
 from rdmo_sensorsearch.signals.value_updater import (
     build_clear_payload,
     clear_attribute_values,
     clear_collection_attribute,
+    replace_scalar_value_in_scopes,
     update_values_from_handler_result,
     update_values_from_mapped_data,
 )
@@ -40,6 +45,28 @@ def _clear_handler_targets(instance, handler) -> None:
     member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
     if member_sensors_attribute_uri:
         clear_collection_attribute(instance, member_sensors_attribute_uri)
+
+
+def _device_nested_questionset_scope(instance) -> tuple[str, int]:
+    return str(instance.set_index), 0
+
+
+def _update_mapped_data(instance, mapped_data: dict) -> None:
+    scoped_scalar_values = {
+        INSTRUMENT_START_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
+        INSTRUMENT_END_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_END_ATTRIBUTE_URI, ""),
+    }
+    update_values_from_mapped_data(instance, mapped_data)
+    for attribute_uri, value in scoped_scalar_values.items():
+        if attribute_uri not in {INSTRUMENT_START_ATTRIBUTE_URI, INSTRUMENT_END_ATTRIBUTE_URI}:
+            continue
+        replace_scalar_value_in_scopes(
+            instance,
+            attribute_uri,
+            value,
+            scopes_to_set=[_device_nested_questionset_scope(instance)],
+            scopes_to_clear=[(instance.set_prefix or "", instance.set_index)],
+        )
 
 
 def handle_post_save(instance):
@@ -114,7 +141,7 @@ def handle_post_save(instance):
             if isinstance(mapped_data, HandlerResult):
                 update_values_from_handler_result(instance, mapped_data)
             else:
-                update_values_from_mapped_data(instance, mapped_data)
+                _update_mapped_data(instance, mapped_data)
 
     if not matched:
         logger.warning(
