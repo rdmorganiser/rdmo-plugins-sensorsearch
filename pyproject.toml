@@ -11,6 +11,7 @@ build-backend = "setuptools.build_meta"
 name = "rdmo-plugins-sensorsearch"
 authors = [
     {name = "Hannes Fuchs", email = "hannes.fuchs@gfz-potsdam.de"},
+    {name = "RDMO Community and individual contributors", email = "contact@rdmo.org"},
 ]
 maintainers = [
     {name = "Hannes Fuchs", email = "hannes.fuchs@gfz-potsdam.de"},
