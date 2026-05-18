@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone as dt_timezone
 
 import jmespath
 from jmespath.exceptions import JMESPathError
@@ -37,3 +38,10 @@ def map_jamespath_to_attribute_uri(attribute_mapping: dict, data: dict) -> dict:
         mapped_values.update({f"{attribute_uri}": value})
     logger.debug("mapped_values %s", mapped_values)
     return mapped_values
+
+
+def parse_datetime(value: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None

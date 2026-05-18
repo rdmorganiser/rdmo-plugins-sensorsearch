@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable
+from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
@@ -99,3 +100,8 @@ class GenericSearchHandler:
         if not isinstance(mapping, dict):
             raise TypeError("attribute_mapping must be a dictionary")
         self._attribute_mapping = mapping
+
+    @property
+    def base_url_origin(self) -> str:
+        parsed = urlsplit(self.base_url)
+        return f"{parsed.scheme}://{parsed.netloc}"

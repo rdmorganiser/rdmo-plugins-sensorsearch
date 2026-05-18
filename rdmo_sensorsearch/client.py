@@ -1,5 +1,4 @@
 import logging
-import sys
 from functools import cache
 
 from django.conf import settings
@@ -8,10 +7,6 @@ import requests
 
 from rdmo import __version__
 
-if sys.version_info >= (3, 11):
-    pass
-else:
-    pass
 
 
 logger = logging.getLogger(__name__)

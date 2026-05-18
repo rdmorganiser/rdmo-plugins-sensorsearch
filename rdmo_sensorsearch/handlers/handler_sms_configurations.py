@@ -1,17 +1,18 @@
 import logging
 from functools import partial
 from datetime import datetime, timezone as dt_timezone
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin
 
 from django.utils import timezone as django_timezone
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, GenericSearchHandler, HandlerResult
-from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
+from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri, parse_datetime
 from rdmo_sensorsearch.signals.device_set_sync import (
     SelectedDevice,
     sync_device_detail_blocks_from_payload,
 )
+from rdmo_sensorsearch.utils import get_project_value
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +111,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if not raw_self_link:
             return
 
-        api_link = self._to_absolute_link(raw_self_link)
+        api_link = urljoin(self.base_url_origin, raw_self_link)
 
         api_attribute_uri = getattr(self, "api_link_attribute_uri", None)
         if api_attribute_uri:
@@ -137,9 +138,6 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 return value
         return None
 
-    def _to_absolute_link(self, value: str) -> str:
-        return urljoin(self._base_origin(), value)
-
     def _to_frontend_link(self, api_link: str) -> str:
         if self.backend_link_marker in api_link:
             frontend_link = api_link.replace(self.backend_link_marker, "/", 1)
@@ -152,10 +150,6 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if frontend_link.endswith(self.frontend_link_suffix):
             return frontend_link
         return f"{frontend_link.rstrip('/')}{self.frontend_link_suffix}"
-
-    def _base_origin(self) -> str:
-        parsed = urlsplit(self.base_url)
-        return f"{parsed.scheme}://{parsed.netloc}"
 
     def _normalize_configuration_datetimes(self, mapped_values: dict[str, str | None]) -> None:
         datetime_paths = {
@@ -171,7 +165,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             if not isinstance(value, str) or not value:
                 continue
 
-            parsed_value = self._parse_datetime(value)
+            parsed_value = parse_datetime(value)
             if parsed_value is None:
                 continue
 
@@ -229,7 +223,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
         def parse_begin_timestamp(action: dict) -> float:
             begin_raw = action.get("attributes", {}).get("begin_date")
-            parsed = self._parse_datetime(begin_raw) if begin_raw else None
+            parsed = parse_datetime(begin_raw) if begin_raw else None
             if parsed is None:
                 return float("-inf")
             if parsed.tzinfo is None:
@@ -346,13 +340,13 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if not cfg_start_uri or not cfg_end_uri:
             return None
 
-        cfg_start = self._get_project_value(instance, cfg_start_uri)
-        cfg_end = self._get_project_value(instance, cfg_end_uri)
+        cfg_start = get_project_value(instance, cfg_start_uri)
+        cfg_end = get_project_value(instance, cfg_end_uri)
         if cfg_start is None or cfg_end is None:
             return None
 
-        start_dt = self._parse_datetime(cfg_start)
-        end_dt = self._parse_datetime(cfg_end)
+        start_dt = parse_datetime(cfg_start)
+        end_dt = parse_datetime(cfg_end)
         if start_dt is None or end_dt is None:
             logger.warning(
                 "Skipping configuration period filter because start or end date could not be parsed: %s, %s",
@@ -362,27 +356,6 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             return None
 
         return start_dt, end_dt
-
-    def _get_project_value(self, instance, attribute_uri: str) -> str | None:
-        query_variants = [
-            {"project": instance.project, "attribute__uri": attribute_uri, "set_prefix": instance.set_prefix, "set_index": instance.set_index},
-            {"project": instance.project, "attribute__uri": attribute_uri, "set_prefix": instance.set_prefix},
-            {"project": instance.project, "attribute__uri": attribute_uri, "set_index": instance.set_index},
-            {"project": instance.project, "attribute__uri": attribute_uri},
-        ]
-
-        for filters in query_variants:
-            queryset = Value.objects.filter(**filters).order_by("-id")
-            value = queryset.first()
-            if value is None:
-                continue
-
-            if value.text:
-                return value.text
-            if value.value:
-                return value.value
-
-        return None
 
     def _is_mount_action_in_period(
         self,
@@ -394,13 +367,13 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if not begin_date:
             return False
 
-        mount_start = self._parse_datetime(begin_date)
+        mount_start = parse_datetime(begin_date)
         if mount_start is None:
             return False
 
         end_date = attrs.get("end_date")
         if end_date:
-            mount_end = self._parse_datetime(end_date)
+            mount_end = parse_datetime(end_date)
             if mount_end is None:
                 return False
         else:
@@ -408,9 +381,3 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
         cfg_start, cfg_end = cfg_period
         return mount_start <= cfg_end and mount_end >= cfg_start
-
-    def _parse_datetime(self, value: str) -> datetime | None:
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            return None
