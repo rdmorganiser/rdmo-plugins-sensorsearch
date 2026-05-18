@@ -39,12 +39,30 @@ def _get_handler_candidates(catalog_uri: str) -> list:
 
 
 def _clear_handler_targets(instance, handler) -> None:
-    for attribute_uri_to_clear in getattr(handler, "reset_attribute_uris", []):
-        clear_attribute_values(instance, attribute_uri_to_clear)
-    update_values_from_mapped_data(instance, build_clear_payload(handler.attribute_mapping))
+    reset_attribute_uris = set(getattr(handler, "reset_attribute_uris", []))
     member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+
+    for attribute_uri_to_clear in getattr(handler, "reset_attribute_uris", []):
+        if attribute_uri_to_clear == member_sensors_attribute_uri:
+            continue
+        clear_attribute_values(instance, attribute_uri_to_clear)
+
+    clear_payload = {
+        attribute_uri: value
+        for attribute_uri, value in build_clear_payload(handler.attribute_mapping).items()
+        if attribute_uri not in reset_attribute_uris
+    }
+    update_values_from_mapped_data(instance, clear_payload)
+
     if member_sensors_attribute_uri:
         clear_collection_attribute(instance, member_sensors_attribute_uri)
+
+
+def _clear_handler_signature(handler) -> tuple:
+    reset_attribute_uris = tuple(sorted(getattr(handler, "reset_attribute_uris", [])))
+    mapped_attribute_uris = tuple(sorted(set(handler.attribute_mapping.values())))
+    member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+    return reset_attribute_uris, mapped_attribute_uris, member_sensors_attribute_uri
 
 
 def _device_nested_questionset_scope(instance) -> tuple[str, int]:
@@ -103,7 +121,12 @@ def handle_post_save(instance):
         return
 
     if not instance.external_id and getattr(instance, "is_empty", False):
+        cleared_signatures = set()
         for candidate in attribute_handler_candidates:
+            signature = _clear_handler_signature(candidate.handler)
+            if signature in cleared_signatures:
+                continue
+            cleared_signatures.add(signature)
             _clear_handler_targets(instance, candidate.handler)
         return
 
@@ -112,7 +135,7 @@ def handle_post_save(instance):
         return
 
     try:
-        id_prefix, external_id = instance.external_id.split(":")
+        id_prefix, external_id = instance.external_id.split(":", 1)
     except ValueError:
         logger.warning("Can not parse instance.external_id: %s", instance.external_id)
         return

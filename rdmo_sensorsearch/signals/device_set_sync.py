@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone as dt_timezone
 from types import SimpleNamespace
@@ -28,12 +29,15 @@ DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usa
 INSTRUMENT_START_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
 INSTRUMENT_END_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
 SERIAL_NUMBER_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+DEVICE_DETAIL_FETCH_WORKERS = 4
 
 
 @dataclass(frozen=True)
 class SelectedDevice:
     text: str
     external_id: str
+    instrument_start: str | None = None
+    instrument_end: str | None = None
 
 
 @dataclass(frozen=True)
@@ -41,6 +45,21 @@ class ConfigurationContext:
     key: str
     label: str
     external_id: str | None
+
+
+@dataclass(frozen=True)
+class DeviceBlockPlan:
+    device: SelectedDevice
+    block_key: str
+    set_index: int
+    sensor_candidate: Any
+    needs_refresh: bool
+
+
+@dataclass(frozen=True)
+class DeviceFetchResult:
+    mapped_data: dict[str, Any]
+    scoped_scalar_values: dict[str, Any]
 
 
 def sync_device_detail_blocks_from_values(
@@ -147,37 +166,53 @@ def sync_device_detail_blocks(
     existing_blocks = _existing_device_blocks(project, root_attribute, scope_prefix, config_key)
     next_index = _next_device_set_index(project, root_attribute, scope_prefix)
 
+    stale_blocks = [
+        block
+        for block_key, block in existing_blocks.items()
+        if block_key not in desired_block_keys
+    ]
+    existing_blocks = {
+        block_key: block
+        for block_key, block in existing_blocks.items()
+        if block_key in desired_block_keys
+    }
+
+    plans: list[DeviceBlockPlan] = []
+    for device in selected_devices:
+        block_key = _compose_device_block_key(config_key, device.external_id)
+        block = existing_blocks.get(block_key)
+        sensor_candidate = _resolve_sensor_candidate(project.catalog.uri, device.external_id)
+        if sensor_candidate is None:
+            logger.warning("No sensor handler found for selected device %s", device.external_id)
+            continue
+
+        if block is not None:
+            set_index = block["set_index"]
+        else:
+            set_index = next_index
+            next_index += 1
+
+        plans.append(
+            DeviceBlockPlan(
+                device=device,
+                block_key=block_key,
+                set_index=set_index,
+                sensor_candidate=sensor_candidate,
+                needs_refresh=block is None or _device_block_needs_refresh(project, scope_prefix, set_index),
+            )
+        )
+
+    fetched_payloads = _fetch_device_detail_payloads(plans, root_attribute.id, config_context.external_id)
+
     with transaction.atomic(), mute_value_post_save():
-        for block_key, block in list(existing_blocks.items()):
-            if block_key in desired_block_keys:
-                continue
+        for block in stale_blocks:
             _delete_device_block(project, scope_prefix, block["set_index"], root_attribute_ids)
 
-        existing_blocks = {
-            block_key: block
-            for block_key, block in existing_blocks.items()
-            if block_key in desired_block_keys
-        }
-
-        for device in selected_devices:
-            block_key = _compose_device_block_key(config_key, device.external_id)
-            block = existing_blocks.get(block_key)
-            sensor_candidate = _resolve_sensor_candidate(project.catalog.uri, device.external_id)
-            if sensor_candidate is None:
-                logger.warning("No sensor handler found for selected device %s", device.external_id)
-                continue
-            sensor_handler = sensor_candidate.handler
-
-            if block is not None:
-                set_index = block["set_index"]
-            else:
-                set_index = next_index
-                next_index += 1
-
+        for plan in plans:
             block_instance = SimpleNamespace(
                 project=project,
                 set_prefix=scope_prefix,
-                set_index=set_index,
+                set_index=plan.set_index,
                 attribute_id=root_attribute.id,
             )
 
@@ -185,56 +220,118 @@ def sync_device_detail_blocks(
                 project=project,
                 attribute=root_attribute,
                 scope_prefix=scope_prefix,
-                set_index=set_index,
-                device=device,
+                set_index=plan.set_index,
+                device=plan.device,
                 config_label=config_label,
-                block_key=block_key,
+                block_key=plan.block_key,
             )
 
-            search_attribute_uri = sensor_candidate.auto_complete_field_uri
+            search_attribute_uri = plan.sensor_candidate.auto_complete_field_uri
             _upsert_search_value(
                 project=project,
                 attribute_uri=search_attribute_uri,
                 scope_prefix=scope_prefix,
-                set_index=set_index,
-                device=device,
+                set_index=plan.set_index,
+                device=plan.device,
             )
 
-            if block is not None and not _device_block_needs_refresh(project, scope_prefix, set_index):
+            fetched_payload = fetched_payloads.get(plan.block_key)
+            if fetched_payload is None:
                 continue
 
-            device_id = _parse_external_id(device.external_id)[1]
-            if device_id is None:
-                logger.warning("Could not parse external ID %s", device.external_id)
-                continue
-
-            mapped_data = sensor_handler.handle(id_=device_id, instance=block_instance)
-            if isinstance(mapped_data, dict) and "errors" in mapped_data:
-                logger.error("Sensor handler returned errors for %s: %s", device.external_id, mapped_data["errors"])
-                continue
-
-            if isinstance(mapped_data, dict):
-                _merge_mounting_period_values(
-                    mapped_data,
-                    device,
-                    sensor_candidate,
-                    config_context.external_id,
+            update_values_from_mapped_data(block_instance, fetched_payload.mapped_data)
+            for attribute_uri, value in fetched_payload.scoped_scalar_values.items():
+                replace_scalar_value_in_scopes(
+                    block_instance,
+                    attribute_uri,
+                    value,
+                    scopes_to_set=[_device_nested_questionset_scope(plan.set_index)],
+                    scopes_to_clear=[("", plan.set_index)],
                 )
-                scoped_scalar_values = {
-                    INSTRUMENT_START_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
-                    INSTRUMENT_END_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_END_ATTRIBUTE_URI, ""),
-                }
-                update_values_from_mapped_data(block_instance, mapped_data)
-                for attribute_uri, value in scoped_scalar_values.items():
-                    replace_scalar_value_in_scopes(
-                        block_instance,
-                        attribute_uri,
-                        value,
-                        scopes_to_set=[_device_nested_questionset_scope(set_index)],
-                        scopes_to_clear=[("", set_index)],
-                    )
 
         _compact_device_detail_blocks(project, catalog, scope_prefix)
+
+
+def _fetch_device_detail_payloads(
+    plans: list[DeviceBlockPlan],
+    root_attribute_id: int,
+    configuration_external_id: str | None,
+) -> dict[str, DeviceFetchResult]:
+    refresh_plans = [plan for plan in plans if plan.needs_refresh]
+    if not refresh_plans:
+        return {}
+
+    max_workers = min(DEVICE_DETAIL_FETCH_WORKERS, len(refresh_plans))
+    results: dict[str, DeviceFetchResult] = {}
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_plan = {
+            executor.submit(
+                _fetch_device_detail_payload,
+                plan,
+                root_attribute_id,
+                configuration_external_id,
+            ): plan
+            for plan in refresh_plans
+        }
+
+        for future in as_completed(future_to_plan):
+            plan = future_to_plan[future]
+            try:
+                result = future.result()
+            except Exception:
+                logger.exception("Failed to fetch device detail payload for %s", plan.device.external_id)
+                continue
+
+            if result is not None:
+                results[plan.block_key] = result
+
+    return results
+
+
+def _fetch_device_detail_payload(
+    plan: DeviceBlockPlan,
+    root_attribute_id: int,
+    configuration_external_id: str | None,
+) -> DeviceFetchResult | None:
+    device_id = _parse_external_id(plan.device.external_id)[1]
+    if device_id is None:
+        logger.warning("Could not parse external ID %s", plan.device.external_id)
+        return None
+
+    fetch_instance = SimpleNamespace(
+        project=None,
+        set_prefix="",
+        set_index=plan.set_index,
+        attribute_id=root_attribute_id,
+    )
+    mapped_data = plan.sensor_candidate.handler.handle(id_=device_id, instance=fetch_instance)
+    if isinstance(mapped_data, dict) and "errors" in mapped_data:
+        logger.error("Sensor handler returned errors for %s: %s", plan.device.external_id, mapped_data["errors"])
+        return None
+    if not isinstance(mapped_data, dict):
+        logger.warning(
+            "Sensor handler returned unexpected payload for %s: %s",
+            plan.device.external_id,
+            type(mapped_data).__name__,
+        )
+        return None
+
+    mapped_data = dict(mapped_data)
+    _merge_mounting_period_values(
+        mapped_data,
+        plan.device,
+        plan.sensor_candidate,
+        configuration_external_id,
+    )
+    scoped_scalar_values = {
+        INSTRUMENT_START_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
+        INSTRUMENT_END_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_END_ATTRIBUTE_URI, ""),
+    }
+    return DeviceFetchResult(
+        mapped_data=mapped_data,
+        scoped_scalar_values=scoped_scalar_values,
+    )
 
 
 def _resolve_sensor_candidate(catalog_uri: str, external_id: str) -> Any | None:
@@ -642,6 +739,14 @@ def _merge_mounting_period_values(
     sensor_candidate: Any,
     configuration_external_id: str | None,
 ) -> None:
+    if INSTRUMENT_START_ATTRIBUTE_URI in mapped_data:
+        mapped_data.setdefault(INSTRUMENT_END_ATTRIBUTE_URI, "")
+        return
+    if device.instrument_start:
+        mapped_data[INSTRUMENT_START_ATTRIBUTE_URI] = device.instrument_start
+        mapped_data[INSTRUMENT_END_ATTRIBUTE_URI] = device.instrument_end or ""
+        return
+
     start_value, end_value = _resolve_mounting_period_values(
         mapped_data,
         device,

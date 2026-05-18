@@ -42,7 +42,11 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
     def handle(self, id_: str, instance=None) -> dict | HandlerResult:
         configuration_data = fetch_json(self.configuration_url.format(base_url=self.base_url, id=id_))
-        logger.debug("Fetched SMS configuration payload for ID %s: %s", id_, configuration_data)
+        logger.debug(
+            "Fetched SMS configuration payload for ID %s with top-level keys: %s",
+            id_,
+            sorted(configuration_data.keys()) if isinstance(configuration_data, dict) else type(configuration_data),
+        )
         if "errors" in configuration_data:
             logger.debug("Errors in configuration data returned for ID %s: %s", id_, configuration_data["errors"])
             return configuration_data
@@ -85,7 +89,12 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             device_collection_attribute_uri = getattr(self, "device_collection_attribute_uri", None)
             if instance is not None and device_collection_attribute_uri:
                 selected_devices = [
-                    SelectedDevice(text=value["text"], external_id=value["external_id"])
+                    SelectedDevice(
+                        text=value["text"],
+                        external_id=value["external_id"],
+                        instrument_start=value.get("instrument_start"),
+                        instrument_end=value.get("instrument_end"),
+                    )
                     for value in member_sensor_values
                     if value.get("external_id")
                 ]
@@ -270,6 +279,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                     logger.warning("Mounted device %s could not be resolved", device_ref["id"])
                     continue
 
+            attrs = mount_action.get("attributes", {})
             member_sensor_values.append(
                 {
                     "text": self._format_sensor_text(
@@ -278,6 +288,8 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                         attrs=device.get("attributes", {}),
                     ),
                     "external_id": f"{sensor_id_prefix}:{device['id']}",
+                    "instrument_start": self._format_mount_timepoint(attrs.get("begin_date")),
+                    "instrument_end": self._format_mount_timepoint(attrs.get("end_date")),
                 }
             )
 
@@ -294,6 +306,14 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         sensor_text_prefix = getattr(self, "sensor_text_prefix", "SMS Sensor")
         config_fragment = f" Config({configuration_id})" if configuration_id else ""
         return f"{sensor_text_prefix}({sensor_id}){config_fragment}: {name}{serial}"
+
+    def _format_mount_timepoint(self, value) -> str | None:
+        parsed = parse_datetime(value) if value else None
+        if parsed is None:
+            return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt_timezone.utc)
+        return parsed.astimezone(dt_timezone.utc).strftime("%Y-%m-%d %H:%M")
 
     def _get_mount_actions(self, configuration_data: dict, mount_action_data: dict) -> list[dict]:
         mount_actions = mount_action_data.get("data", [])

@@ -55,7 +55,7 @@ class BaseMetaProvider(Provider):
             )
             return []
 
-        logger.debug("Configuration: %s", configuration)
+        logger.debug("Configuration top-level keys: %s", sorted(configuration.keys()))
         logger.debug("Search term: %s", search)
 
         results = []
