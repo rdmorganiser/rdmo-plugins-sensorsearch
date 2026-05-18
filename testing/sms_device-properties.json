@@ -1,0 +1,74 @@
+{
+    "data": [
+        {
+            "type": "device_property",
+            "id": "518",
+            "attributes": {
+                "measuring_range_min": null,
+                "measuring_range_max": null,
+                "failure_value": null,
+                "accuracy": null,
+                "label": "soil heat flux",
+                "accuracy_unit_uri": "",
+                "accuracy_unit_name": "",
+                "unit_uri": "https://sms-cv.helmholtz.cloud/sms/cv/api/v1/units/60/",
+                "unit_name": "W/m\u00b2",
+                "compartment_uri": "https://sms-cv.helmholtz.cloud/sms/cv/api/v1/compartments/4/",
+                "compartment_name": "Pedosphere",
+                "property_uri": "https://sms-cv.helmholtz.cloud/sms/cv/api/v1/measuredquantities/224/",
+                "property_name": "Ground heat flux",
+                "sampling_media_uri": "https://sms-cv.helmholtz.cloud/sms/cv/api/v1/samplingmedia/6/",
+                "sampling_media_name": "Soil",
+                "resolution": null,
+                "resolution_unit_uri": "",
+                "resolution_unit_name": "",
+                "created_at": "2024-04-04T16:04:05.108670+00:00",
+                "updated_at": "2025-09-30T12:09:39.615041+00:00",
+                "aggregation_type_uri": "https://sms-cv.helmholtz.cloud/sms/cv/api/v1/aggregationtypes/1/",
+                "aggregation_type_name": "Average",
+                "description": ""
+            },
+            "relationships": {
+                "device": {
+                    "links": {
+                        "related": "/backend/api/v1/devices/360"
+                    },
+                    "data": {
+                        "type": "device",
+                        "id": "360"
+                    }
+                },
+                "created_by": {
+                    "links": {
+                        "related": "/backend/api/v1/users/13"
+                    },
+                    "data": {
+                        "type": "user",
+                        "id": "13"
+                    }
+                },
+                "updated_by": {
+                    "links": {
+                        "related": "/backend/api/v1/users/13"
+                    },
+                    "data": {
+                        "type": "user",
+                        "id": "13"
+                    }
+                }
+            },
+            "links": {
+                "self": "/backend/api/v1/device-properties/518"
+            }
+        }
+    ],
+    "links": {
+        "self": "https://sms.atmohub.kit.edu/backend/api/v1/device-properties?page%5Bsize%5D=10000&sort=created_at"
+    },
+    "meta": {
+        "count": 1
+    },
+    "jsonapi": {
+        "version": "1.0"
+    }
+}
