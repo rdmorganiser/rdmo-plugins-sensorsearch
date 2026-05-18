@@ -107,6 +107,7 @@ class BaseMetaProvider(Provider):
         prefixes: set[str] = set()
         values = (
             Value.objects.filter(project=project, attribute__uri=CONFIGURATION_SEARCH_ATTRIBUTE_URI)
+            .filter(snapshot=None)
             .exclude(external_id__isnull=True)
             .exclude(external_id__exact="")
             .values_list("external_id", flat=True)

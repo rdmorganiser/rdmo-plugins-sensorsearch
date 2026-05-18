@@ -92,6 +92,9 @@ def handle_post_save(instance):
     if not ALL_HANDLER_MAP:
         logger.warning("No handlers found for %s", __name__)
         return
+    if getattr(instance, "snapshot_id", None) is not None:
+        logger.debug("Skipping post_save handling for snapshot value %s", instance.pk)
+        return
 
     project = instance.project
     attribute = instance.attribute

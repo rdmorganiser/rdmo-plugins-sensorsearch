@@ -10,6 +10,7 @@ def get_project_value(instance, attribute_uri: str) -> str | None:
     ]
 
     for filters in query_variants:
+        filters["snapshot"] = None
         queryset = Value.objects.filter(**filters).order_by("-id")
         value = queryset.first()
         if value is None:

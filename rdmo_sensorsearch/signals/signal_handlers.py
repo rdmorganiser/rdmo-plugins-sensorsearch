@@ -13,11 +13,18 @@ from rdmo_sensorsearch.signals.utils import _is_muted
 logger = logging.getLogger(__name__)
 
 
+def _is_snapshot_value(instance) -> bool:
+    return getattr(instance, "snapshot_id", None) is not None
+
+
 @receiver(post_save, sender=Value)
 def post_save_project_values(sender, instance, **kwargs):
     if _is_muted():
         return
     if instance is None:
+        return
+    if _is_snapshot_value(instance):
+        logger.debug("Skipping sensorsearch post_save handling for snapshot value %s", instance.pk)
         return
     logger.debug("Triggering post_save_project_values")
     handle_post_save(instance)
@@ -27,6 +34,9 @@ def post_save_project_values(sender, instance, **kwargs):
 @receiver(post_delete, sender=Value)
 def sync_device_details_from_selected_devices(sender, instance, **kwargs):
     if _is_muted():
+        return
+    if _is_snapshot_value(instance):
+        logger.debug("Skipping sensorsearch selected-device sync for snapshot value %s", instance.pk)
         return
     if instance is None or instance.project is None or instance.attribute is None or instance.project.catalog is None:
         return
@@ -44,6 +54,7 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
         selected_values = (
             Value.objects.filter(
                 project=instance.project,
+                snapshot=None,
                 attribute__uri=selected_devices_attribute_uri,
                 set_collection=True,
                 set_prefix=instance.set_prefix or "",

@@ -36,6 +36,7 @@ class ProjectConfigurationSensorsProvider(Provider):
 
         values = (
             Value.objects.filter(project=project, attribute=attribute)
+            .filter(snapshot=None)
             .exclude(text__isnull=True)
             .exclude(text__exact="")
             .order_by("set_prefix", "set_index", "collection_index", "id")

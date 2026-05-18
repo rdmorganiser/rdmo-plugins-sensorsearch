@@ -376,6 +376,7 @@ def _resolve_configuration_context(
     config_search_value = (
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute__uri=configuration_search_attribute_uri,
             set_prefix=scope_prefix,
             set_index=source_set_index,
@@ -388,6 +389,7 @@ def _resolve_configuration_context(
     configuration_set_value = (
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute__uri=CONFIGURATION_SET_ATTRIBUTE_URI,
             set_collection=True,
             set_prefix=scope_prefix,
@@ -423,6 +425,7 @@ def _all_existing_device_blocks(project, root_attribute, scope_prefix: str) -> d
     queryset = (
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute=root_attribute,
             set_collection=True,
             set_prefix=scope_prefix,
@@ -449,6 +452,7 @@ def _next_device_set_index(project, root_attribute, scope_prefix: str) -> int:
     existing_indexes = list(
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute=root_attribute,
             set_collection=True,
             set_prefix=scope_prefix,
@@ -462,6 +466,7 @@ def _next_device_set_index(project, root_attribute, scope_prefix: str) -> int:
 def _delete_device_block(project, scope_prefix: str, set_index: int, attribute_ids: set[int]) -> None:
     deleted, _ = Value.objects.filter(
         project=project,
+        snapshot=None,
         attribute_id__in=attribute_ids,
     ).filter(
         Q(set_prefix=scope_prefix, set_index=set_index) |
@@ -488,6 +493,7 @@ def _upsert_root_device_value(
     _, created = Value.objects.update_or_create(
         project=project,
         attribute=attribute,
+        snapshot=None,
         set_collection=True,
         set_prefix=scope_prefix,
         set_index=set_index,
@@ -514,6 +520,7 @@ def _upsert_search_value(project, attribute_uri: str, scope_prefix: str, set_ind
     _, created = Value.objects.update_or_create(
         project=project,
         attribute=attribute,
+        snapshot=None,
         set_collection=False,
         set_prefix=scope_prefix,
         set_index=set_index,
@@ -556,6 +563,7 @@ def _compact_device_detail_blocks(project, catalog, scope_prefix: str) -> None:
     root_values = list(
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute=root_attribute,
             set_collection=True,
             set_prefix=scope_prefix,
@@ -576,12 +584,14 @@ def _compact_device_detail_blocks(project, catalog, scope_prefix: str) -> None:
         temp_index = old_index + temp_offset
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute_id__in=attribute_ids,
             set_prefix=scope_prefix,
             set_index=old_index,
         ).update(set_index=temp_index)
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute_id__in=attribute_ids,
             set_prefix=str(old_index),
         ).update(set_prefix=str(temp_index))
@@ -590,12 +600,14 @@ def _compact_device_detail_blocks(project, catalog, scope_prefix: str) -> None:
         temp_index = old_index + temp_offset
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute_id__in=attribute_ids,
             set_prefix=scope_prefix,
             set_index=temp_index,
         ).update(set_index=new_index)
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute_id__in=attribute_ids,
             set_prefix=str(temp_index),
         ).update(set_prefix=str(new_index))
@@ -632,6 +644,7 @@ def _device_block_needs_refresh(project, scope_prefix: str, set_index: int) -> b
 def _has_nonempty_scalar_value(project, attribute_uri: str, scope_prefix: str, set_index: int) -> bool:
     return Value.objects.filter(
         project=project,
+        snapshot=None,
         attribute__uri=attribute_uri,
         set_prefix=scope_prefix,
         set_index=set_index,
@@ -702,6 +715,7 @@ def _resolve_configuration_external_id_from_values(
     value = (
         Value.objects.filter(
             project=project,
+            snapshot=None,
             attribute__uri=configuration_search_attribute_uri,
             set_prefix=scope_prefix,
             set_index=source_set_index,

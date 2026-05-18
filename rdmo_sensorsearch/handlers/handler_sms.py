@@ -131,6 +131,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         root_value = (
             Value.objects.filter(
                 project=instance.project,
+                snapshot=None,
                 attribute__uri=DEVICE_COLLECTION_ATTRIBUTE_URI,
                 set_prefix=instance.set_prefix or "",
                 set_index=instance.set_index,

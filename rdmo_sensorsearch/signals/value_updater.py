@@ -88,6 +88,7 @@ def update_scalar_value_across_scopes(
                 _, created = Value.objects.update_or_create(
                     project=instance.project,
                     attribute=attribute,
+                    snapshot=None,
                     set_prefix=set_prefix,
                     set_index=set_index,
                     set_collection=False,
@@ -168,6 +169,7 @@ def replace_scalar_value_in_scopes(
                 _, created = Value.objects.update_or_create(
                     project=instance.project,
                     attribute=attribute,
+                    snapshot=None,
                     set_prefix=set_prefix,
                     set_index=set_index,
                     set_collection=False,
@@ -239,6 +241,7 @@ def _qs_scalar_for_scope(instance, attribute, set_prefix: str, set_index: int):
     queryset = Value.objects.filter(
         project=instance.project,
         attribute=attribute,
+        snapshot=None,
         set_index=set_index,
         set_collection=False,
         set_prefix=set_prefix,
@@ -251,12 +254,14 @@ def _qs_collection(instance, attribute, mode: str):
         return Value.objects.filter(
             project=instance.project,
             attribute=attribute,
+            snapshot=None,
             set_collection=True,
             set_index=instance.set_index,
         )
     return Value.objects.filter(
         project=instance.project,
         attribute=attribute,
+        snapshot=None,
         set_collection=True,
         set_prefix=instance.set_index,
     )
@@ -311,6 +316,7 @@ def update_values_from_mapped_data(instance, data: dict):
                 _, created = Value.objects.update_or_create(
                     project=instance.project,
                     attribute=attribute,
+                    snapshot=None,
                     set_prefix=primary_set_prefix,
                     set_index=primary_set_index,
                     set_collection=False,
@@ -360,12 +366,14 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
         Value.objects.filter(
             project=instance.project,
             attribute=attribute,
+            snapshot=None,
             set_collection=True,
             set_index=instance.set_index,
         ).delete()
         Value.objects.filter(
             project=instance.project,
             attribute=attribute,
+            snapshot=None,
             set_collection=True,
             set_prefix=instance.set_index,
         ).delete()
@@ -386,6 +394,7 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
             _, created = Value.objects.update_or_create(
                 project=instance.project,
                 attribute=attribute,
+                snapshot=None,
                 set_collection=True,
                 set_index=instance.set_index,
                 collection_index=index,
@@ -424,6 +433,7 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
             _, created = Value.objects.update_or_create(
                 project=instance.project,
                 attribute=attribute,
+                snapshot=None,
                 set_prefix=instance.set_index,
                 set_collection=True,
                 set_index=index,
@@ -512,6 +522,7 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
             _, created = Value.objects.update_or_create(
                 project=instance.project,
                 attribute=attribute,
+                snapshot=None,
                 set_collection=True,
                 set_index=instance.set_index,
                 collection_index=index,
@@ -528,6 +539,7 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
             _, created = Value.objects.update_or_create(
                 project=instance.project,
                 attribute=attribute,
+                snapshot=None,
                 set_prefix=instance.set_index,
                 set_collection=True,
                 set_index=index,
@@ -549,7 +561,7 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
 
 
 def _delete_existing_collection_values(instance, attribute, mode: str | None):
-    queryset = Value.objects.filter(project=instance.project, attribute=attribute)
+    queryset = Value.objects.filter(project=instance.project, attribute=attribute, snapshot=None)
 
     if mode == "question":
         queryset = queryset.filter(set_collection=True, set_index=instance.set_index)
