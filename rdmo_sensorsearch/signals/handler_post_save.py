@@ -121,7 +121,6 @@ def handle_post_save(instance):
     for candidate in attribute_handler_candidates:
         if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute_uri:
             try:
-                _clear_handler_targets(instance, candidate.handler)
                 mapped_data = candidate.handler.handle(id_=external_id, instance=instance)
             except Exception:
                 logger.exception(
@@ -137,6 +136,8 @@ def handle_post_save(instance):
             if isinstance(mapped_data, dict) and 'errors' in mapped_data:
                 logger.error("Handler %s returned errors: %s", candidate.id_prefix, mapped_data['errors'])
                 continue
+
+            _clear_handler_targets(instance, candidate.handler)
 
             if isinstance(mapped_data, HandlerResult):
                 update_values_from_handler_result(instance, mapped_data)
