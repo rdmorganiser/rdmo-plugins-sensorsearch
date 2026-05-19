@@ -1,5 +1,6 @@
 import logging
 
+from django.db import transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
@@ -51,24 +52,30 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
         if instance.attribute.uri != selected_devices_attribute_uri:
             continue
 
-        selected_values = (
-            Value.objects.filter(
-                project=instance.project,
-                snapshot=None,
-                attribute__uri=selected_devices_attribute_uri,
-                set_collection=True,
-                set_prefix=instance.set_prefix or "",
-                set_index=instance.set_index,
+        def sync_selected_devices():
+            selected_values = (
+                Value.objects.filter(
+                    project=instance.project,
+                    snapshot=None,
+                    attribute__uri=selected_devices_attribute_uri,
+                    set_collection=True,
+                    set_prefix=instance.set_prefix or "",
+                    set_index=instance.set_index,
+                )
+                .exclude(external_id__isnull=True)
+                .exclude(external_id__exact="")
+                .order_by("collection_index", "id")
             )
-            .exclude(external_id__isnull=True)
-            .exclude(external_id__exact="")
-            .order_by("collection_index", "id")
-        )
-        sync_device_detail_blocks_from_values(
-            instance,
-            selected_values,
-            selected_devices_attribute_uri=selected_devices_attribute_uri,
-            device_collection_attribute_uri=device_collection_attribute_uri,
-            configuration_search_attribute_uri=candidate.auto_complete_field_uri,
-        )
+            sync_device_detail_blocks_from_values(
+                instance,
+                selected_values,
+                selected_devices_attribute_uri=selected_devices_attribute_uri,
+                device_collection_attribute_uri=device_collection_attribute_uri,
+                configuration_search_attribute_uri=candidate.auto_complete_field_uri,
+            )
+
+        if kwargs.get("signal") is post_delete:
+            transaction.on_commit(sync_selected_devices)
+        else:
+            sync_selected_devices()
         break

@@ -153,10 +153,11 @@ def sync_device_detail_blocks(
         _compose_device_block_key(config_key, device.external_id)
         for device in selected_devices
     }
-    root_attribute_ids = _device_detail_attribute_ids(catalog)
-    if not root_attribute_ids:
+    device_detail_attribute_ids = _device_detail_attribute_ids(catalog)
+    if not device_detail_attribute_ids:
         logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
         return
+    related_attribute_ids = _device_detail_related_attribute_ids(catalog) or device_detail_attribute_ids
 
     root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
@@ -206,7 +207,7 @@ def sync_device_detail_blocks(
 
     with transaction.atomic(), mute_value_post_save():
         for block in stale_blocks:
-            _delete_device_block(project, scope_prefix, block["set_index"], root_attribute_ids)
+            _delete_device_block(project, scope_prefix, block["set_index"], related_attribute_ids)
 
         for plan in plans:
             block_instance = SimpleNamespace(
