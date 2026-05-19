@@ -11,7 +11,7 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
 "model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
 "serialNumber" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
-"citation" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"citation && join('', ['https://hdl.handle.net/', citation]) || 'NA'" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
 "parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
 "parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
 "contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"

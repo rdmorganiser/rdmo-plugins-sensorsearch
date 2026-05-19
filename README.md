@@ -118,6 +118,12 @@ id_prefix = "gfzcfg"
 text_prefix = "GFZ Configurations:"
 base_url = "https://sensors.gfz.de/backend/api/v1/configurations"
 
+[[ConfigurationsProvider.providers.O2ARegistryMissionsProvider]]
+id_prefix = "o2amission"
+text_prefix = "O2A Mission"
+base_url = "https://registry.o2a-data.de/rest/v2/missions"
+where_template = "name=ILIKE=\"*{query}*\""
+
 [handlers.SensorManagementSystemConfigurationsHandler]
 [[handlers.SensorManagementSystemConfigurationsHandler.backends]]
 id_prefix = "gfzcfg"
@@ -137,6 +143,20 @@ location_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/da
 "data.attributes.description" = "https://rdmorganiser.github.io/terms/domain/project/dataset/annotation"
 "data.links.self" = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
 [[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
+catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
+
+[handlers.O2ARegistryMissionsHandler]
+[handlers.O2ARegistryMissionsHandler.defaults]
+auto_complete_field_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
+member_sensors_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
+device_collection_attribute_uri = "http://example.com/terms/domain/instruments/id"
+item_id_prefix = "o2aregistry"
+item_text_template = "{prefix}({item_id}) Mission({mission_id}): {name}{serial}"
+[handlers.O2ARegistryMissionsHandler.defaults.attribute_mapping]
+"description" = "http://example.com/terms/domain/configuration-set/description"
+"startDate" = "http://example.com/terms/domain/configuration-set/start"
+"endDate" = "http://example.com/terms/domain/configuration-set/end"
+[[handlers.O2ARegistryMissionsHandler.catalogs]]
 catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
 ```
 
@@ -182,6 +202,11 @@ The `ProjectConfigurationSensorsProvider` is different. It does not query a
 remote backend, but reads project-local values which were materialized by a
 configuration handler after a configuration was selected.
 
+O2A Registry missions are exposed through `O2ARegistryMissionsProvider`. They
+follow the same configuration flow as SMS configurations: selecting a mission
+can materialize its items into the configured project-local sensor collection.
+The default search query uses the O2A RSQL form `name=ILIKE="*{query}*"`.
+
 ### Configuration: Handlers
 
 Handlers can be used to fill out questions automatically with the use of a
@@ -198,6 +223,8 @@ same autocomplete field.
 #id_prefix = "o2aregistry"
 [handlers.O2ARegistrySearchHandler.defaults]
 auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
+sync_device_detail_blocks = true
+device_link_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/device-link"
 [handlers.O2ARegistrySearchHandler.defaults.attribute_mapping]
 "longName" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
 "shortName" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
@@ -256,6 +283,10 @@ attributes of the catalog. It is possible to configure more than one catalog.
   selection changes or the search field is erased. This is useful for
   sensor-related fields which are not filled by every backend but must still
   be reset when replacing a sensor.
+- `sync_device_detail_blocks = true` marks an item/sensor handler as eligible
+  for configuration or mission based detail-block synchronization.
+- `supports_mount_action_period_lookup = true` enables the SMS-specific
+  fallback that resolves instrument start/end from device mount actions.
 
 The new `defaults` table is merged into every `catalogs` entry for the same
 handler. If `defaults` define `auto_complete_field_uri`, they also act as a

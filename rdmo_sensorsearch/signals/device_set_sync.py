@@ -11,7 +11,6 @@ from django.db.models import Q
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.handler_sms import SensorManagementSystemHandler
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
 from rdmo_sensorsearch.signals.value_updater import (
     _change_label,
@@ -272,7 +271,7 @@ def sync_device_detail_blocks(
                 )
 
         if stale_blocks:
-            _compact_device_detail_blocks(project, catalog, scope_prefix)
+            _compact_device_detail_blocks(project, catalog, scope_prefix, device_collection_attribute_uri)
 
 
 def _fetch_device_detail_payloads(
@@ -365,7 +364,7 @@ def _resolve_sensor_candidate(catalog_uri: str, external_id: str) -> Any | None:
     from rdmo_sensorsearch.signals.handler_post_save import _get_handler_candidates
 
     for candidate in _get_handler_candidates(catalog_uri):
-        if isinstance(candidate.handler, SensorManagementSystemHandler) and candidate.id_prefix == id_prefix:
+        if candidate.id_prefix == id_prefix and getattr(candidate.handler, "sync_device_detail_blocks", False):
             return candidate
     return None
 
@@ -597,8 +596,13 @@ def _device_detail_related_attribute_ids(catalog) -> set[int]:
     return attribute_ids
 
 
-def _compact_device_detail_blocks(project, catalog, scope_prefix: str) -> None:
-    root_attribute = _get_attribute_by_uri(DEVICE_COLLECTION_ATTRIBUTE_URI)
+def _compact_device_detail_blocks(
+    project,
+    catalog,
+    scope_prefix: str,
+    device_collection_attribute_uri: str = DEVICE_COLLECTION_ATTRIBUTE_URI,
+) -> None:
+    root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
         return
 
@@ -901,6 +905,9 @@ def _resolve_mounting_period_values(
     _, configuration_id = _parse_external_id(configuration_external_id)
     device_id = _parse_external_id(device.external_id)[1]
     if configuration_id is None or device_id is None:
+        return None, None
+
+    if not getattr(sensor_candidate.handler, "supports_mount_action_period_lookup", False):
         return None, None
 
     mount_actions = _fetch_device_mount_actions(sensor_candidate, device_id)

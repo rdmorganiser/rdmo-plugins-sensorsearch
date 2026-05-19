@@ -23,10 +23,14 @@ class SensorManagementSystemHandler(GenericSearchHandler):
     SMS API.
     """
     # id_prefix = "sms"
+    sync_device_detail_blocks = True
+    supports_mount_action_period_lookup = True
 
     # URL templates with placeholders
     device_url = "{base_url}/devices/{id}?include=device_properties"
     contact_url = "{base_url}/devices/{id}/device-contact-roles?include=contact"
+    backend_link_marker = "/backend/api/v1/"
+    device_link_attribute_uri = DEVICE_LINK_ATTRIBUTE_URI
 
     def handle(self, id_: str, instance=None) -> dict:
         """
@@ -74,10 +78,12 @@ class SensorManagementSystemHandler(GenericSearchHandler):
             return
 
         api_link = urljoin(self._base_origin(), raw_self_link)
-        mapped_data[DEVICE_LINK_ATTRIBUTE_URI] = self._to_frontend_link(api_link)
+        device_link_attribute_uri = getattr(self, "device_link_attribute_uri", DEVICE_LINK_ATTRIBUTE_URI)
+        if device_link_attribute_uri:
+            mapped_data[device_link_attribute_uri] = self._to_frontend_link(api_link)
 
     def _to_frontend_link(self, api_link: str) -> str:
-        backend_link_marker = "/backend/api/v1/"
+        backend_link_marker = getattr(self, "backend_link_marker", "/backend/api/v1/")
         if backend_link_marker in api_link:
             return api_link.replace(backend_link_marker, "/", 1)
         return api_link
@@ -151,8 +157,12 @@ class SensorManagementSystemHandler(GenericSearchHandler):
 
     def _fetch_device_mount_actions(self, device_id: str) -> list[dict]:
         url = (
-            f"{self.base_url}/devices/{device_id}/device-mount-actions"
-            "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration"
+            getattr(
+                self,
+                "device_mount_actions_url",
+                "{base_url}/devices/{id}/device-mount-actions"
+                "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration",
+            ).format(base_url=self.base_url, id=device_id)
         )
         action_data = fetch_json(url)
         if isinstance(action_data, dict) and "errors" in action_data:

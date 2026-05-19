@@ -24,11 +24,14 @@ class BaseSensorProvider(Provider):
         text_prefix: str | None = None,
         base_url: str | None = None,
         max_hits: int = 10,
+        **kwargs,
     ):
         self._id_prefix = id_prefix
         self._text_prefix = text_prefix
         self._base_url = base_url
         self._max_hits = max_hits
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     @property
     def id_prefix(self) -> str:
@@ -69,4 +72,3 @@ class BaseSensorProvider(Provider):
             f"{self.__class__.__name__}:id={self.id_prefix}, "
             f"text={self.text_prefix},max_hits={self.max_hits}, base_url={self.base_url}"
             )
-

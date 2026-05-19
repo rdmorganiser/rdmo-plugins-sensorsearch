@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import urlsplit
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import GenericSearchHandler
@@ -24,12 +25,16 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
     """
     id_prefix = "o2aregistry"
     base_url = "https://registry.o2a-data.de/rest/v2"
+    sync_device_detail_blocks = True
 
     # URL templates
     item_url = "{base_url}/items/{id}"
     contacts_url = "{base_url}/items/{id}/contacts"
     parameters_url = "{base_url}/items/{id}/parameters"
     units_url = "{base_url}/units"
+    item_api_link_template = "{base_url}/items/{id}"
+    item_frontend_link_template = "{base_url_origin}/items/{id}"
+    device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
 
 
     def __init__(self, attribute_mapping=None, id_prefix=None, base_url=None, **kwargs):
@@ -82,8 +87,35 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         # extend basic data with parameters
         self.add_parameters_to_data(data, parameters_data, units_data)
 
+        self.add_links_to_data(data, id_)
+
         logger.debug("data: %s", data)
-        return map_jamespath_to_attribute_uri(self.attribute_mapping, data)
+        mapped_data = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
+        self.set_item_link(mapped_data, data)
+        return mapped_data
+
+    @property
+    def base_url_origin(self) -> str:
+        parsed = urlsplit(self.base_url)
+        return f"{parsed.scheme}://{parsed.netloc}"
+
+    def add_links_to_data(self, data: dict, item_id: str) -> None:
+        values = {
+            "base_url": self.base_url,
+            "base_url_origin": self.base_url_origin,
+            "id": item_id,
+        }
+        data.setdefault("links", {})
+        data["links"]["api"] = self.item_api_link_template.format(**values)
+        data["links"]["frontend"] = self.item_frontend_link_template.format(**values)
+
+    def set_item_link(self, mapped_data: dict, data: dict) -> None:
+        device_link_attribute_uri = getattr(self, "device_link_attribute_uri", None)
+        if not device_link_attribute_uri:
+            return
+        frontend_link = data.get("links", {}).get("frontend")
+        if isinstance(frontend_link, str) and frontend_link:
+            mapped_data[device_link_attribute_uri] = frontend_link
 
     def add_contacts_to_data(self, data: dict, contacts_data: dict) -> None:
         contacts = []

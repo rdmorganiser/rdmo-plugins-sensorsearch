@@ -19,6 +19,11 @@ source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-se
 # Use defaults
 #[[handlers.O2ARegistrySearchHandler.backends]]
 #id_prefix = "o2aregistry"
+[handlers.O2ARegistrySearchHandler.defaults]
+sync_device_detail_blocks = true
+device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
+item_api_link_template = "{base_url}/items/{id}"
+item_frontend_link_template = "{base_url_origin}/items/{id}"
 # Example Catalog
 [[handlers.O2ARegistrySearchHandler.catalogs]]
 catalog_uri = "http://example.com/terms/questions/sensorsearch"
@@ -50,7 +55,7 @@ reset_attribute_uris = [
 "manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
 "model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
 "serialNumber" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
-"citation" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"citation && join('', ['https://hdl.handle.net/', citation]) || 'NA'" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
 "parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
 "parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
 "contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
@@ -76,13 +81,19 @@ reset_attribute_uris = [
 "manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
 "model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
 "serialNumber" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
-"citation" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
+"citation && join('', ['https://hdl.handle.net/', citation]) || 'NA'" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
 "parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
 "parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
 "contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
 
 [handlers.SensorManagementSystemHandler]
+[handlers.SensorManagementSystemHandler.defaults]
+sync_device_detail_blocks = true
+supports_mount_action_period_lookup = true
+backend_link_marker = "/backend/api/v1/"
+device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
+device_mount_actions_url = "{base_url}/devices/{id}/device-mount-actions?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration"
 
 [[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "gfzsms"
@@ -205,6 +216,40 @@ catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
 # cfg_end_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
 
 
+[handlers.O2ARegistryMissionsHandler]
+[handlers.O2ARegistryMissionsHandler.defaults]
+auto_complete_field_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
+member_sensors_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
+device_collection_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
+frontend_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link"
+mission_url = "{base_url}/missions/{id}"
+mission_items_url = "{base_url}/missions/{id}/items?offset=0&hits={page_size}"
+item_url = "{base_url}/items/{id}"
+mission_item_max_hits = 100
+item_id_prefix = "o2aregistry"
+item_text_prefix = "O2A Item"
+item_text_template = "{prefix}({item_id}) Mission({mission_id}): {name}{serial}"
+mission_start_date_path = "startDate"
+mission_end_date_path = "endDate"
+date_mapping_paths = ["startDate", "endDate"]
+api_link_template = "{base_url}/missions/{id}"
+frontend_link_template = "{base_url_origin}/missions/{id}"
+reset_attribute_uris = [
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime",
+]
+[handlers.O2ARegistryMissionsHandler.defaults.attribute_mapping]
+"description" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description"
+"startDate" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
+"endDate" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
+
+[[handlers.O2ARegistryMissionsHandler.catalogs]]
+catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+
+
 [handlers.GeophysicalInstrumentPoolPotsdamHandler]
 # Example Catalog
 [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
@@ -292,3 +337,11 @@ base_url = "https://sms.atmohub.kit.edu/backend/api/v1/configurations"
 id_prefix = "ufzcfg"
 text_prefix = "UFZ Config"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1/configurations"
+
+[[ConfigurationsProvider.providers.O2ARegistryMissionsProvider]]
+id_prefix = "o2amission"
+text_prefix = "O2A Mission"
+base_url = "https://registry.o2a-data.de/rest/v2/missions"
+query_url = "{base_url}?where={where}&sorts={sorts}&offset={offset}&hits={hits}"
+where_template = "name=ILIKE=\"*{query}*\""
+option_text = "{prefix}({id}): {name}"
