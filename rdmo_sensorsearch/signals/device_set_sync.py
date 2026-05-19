@@ -14,8 +14,10 @@ from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.handler_sms import SensorManagementSystemHandler
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
 from rdmo_sensorsearch.signals.value_updater import (
+    _change_label,
     replace_scalar_value_in_scopes,
     update_values_from_mapped_data,
+    upsert_value_if_changed,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,6 +28,7 @@ DEVICE_OPTIONAL_INFO_PAGE_URI = "https://rdmo.nfdi4earth.de/terms/questions/inst
 CONFIGURATION_SET_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
 DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
+USAGE_TECHNOLOGY_ATTRIBUTE_URI = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
 INSTRUMENT_START_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
 INSTRUMENT_END_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
 SERIAL_NUMBER_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
@@ -53,6 +56,7 @@ class DeviceBlockPlan:
     block_key: str
     set_index: int
     sensor_candidate: Any
+    needs_metadata_write: bool
     needs_refresh: bool
 
 
@@ -192,6 +196,17 @@ def sync_device_detail_blocks(
         else:
             set_index = next_index
             next_index += 1
+        search_attribute_uri = sensor_candidate.auto_complete_field_uri
+        needs_metadata_write = block is None or not _device_block_metadata_is_current(
+            project=project,
+            root_attribute=root_attribute,
+            search_attribute_uri=search_attribute_uri,
+            scope_prefix=scope_prefix,
+            set_index=set_index,
+            block_key=block_key,
+            device=device,
+            config_label=config_label,
+        )
 
         plans.append(
             DeviceBlockPlan(
@@ -199,7 +214,12 @@ def sync_device_detail_blocks(
                 block_key=block_key,
                 set_index=set_index,
                 sensor_candidate=sensor_candidate,
-                needs_refresh=block is None or _device_block_needs_refresh(project, scope_prefix, set_index),
+                needs_metadata_write=needs_metadata_write,
+                needs_refresh=block is None or _device_block_needs_refresh(
+                    project=project,
+                    scope_prefix=scope_prefix,
+                    set_index=set_index,
+                ),
             )
         )
 
@@ -217,24 +237,25 @@ def sync_device_detail_blocks(
                 attribute_id=root_attribute.id,
             )
 
-            _upsert_root_device_value(
-                project=project,
-                attribute=root_attribute,
-                scope_prefix=scope_prefix,
-                set_index=plan.set_index,
-                device=plan.device,
-                config_label=config_label,
-                block_key=plan.block_key,
-            )
+            if plan.needs_metadata_write:
+                _upsert_root_device_value(
+                    project=project,
+                    attribute=root_attribute,
+                    scope_prefix=scope_prefix,
+                    set_index=plan.set_index,
+                    device=plan.device,
+                    config_label=config_label,
+                    block_key=plan.block_key,
+                )
 
-            search_attribute_uri = plan.sensor_candidate.auto_complete_field_uri
-            _upsert_search_value(
-                project=project,
-                attribute_uri=search_attribute_uri,
-                scope_prefix=scope_prefix,
-                set_index=plan.set_index,
-                device=plan.device,
-            )
+                search_attribute_uri = plan.sensor_candidate.auto_complete_field_uri
+                _upsert_search_value(
+                    project=project,
+                    attribute_uri=search_attribute_uri,
+                    scope_prefix=scope_prefix,
+                    set_index=plan.set_index,
+                    device=plan.device,
+                )
 
             fetched_payload = fetched_payloads.get(plan.block_key)
             if fetched_payload is None:
@@ -250,7 +271,8 @@ def sync_device_detail_blocks(
                     scopes_to_clear=[("", plan.set_index)],
                 )
 
-        _compact_device_detail_blocks(project, catalog, scope_prefix)
+        if stale_blocks:
+            _compact_device_detail_blocks(project, catalog, scope_prefix)
 
 
 def _fetch_device_detail_payloads(
@@ -465,20 +487,35 @@ def _next_device_set_index(project, root_attribute, scope_prefix: str) -> int:
 
 
 def _delete_device_block(project, scope_prefix: str, set_index: int, attribute_ids: set[int]) -> None:
+    value_ids = list(
+        Value.objects.filter(
+            project=project,
+            snapshot=None,
+            attribute_id__in=attribute_ids,
+        )
+        .filter(
+            Q(set_prefix=scope_prefix, set_index=set_index) |
+            Q(set_prefix=str(set_index))
+        )
+        .order_by("id")
+        .values_list("id", flat=True)
+        .distinct()
+    )
+    if not value_ids:
+        return
+
     deleted, _ = Value.objects.filter(
         project=project,
         snapshot=None,
-        attribute_id__in=attribute_ids,
-    ).filter(
-        Q(set_prefix=scope_prefix, set_index=set_index) |
-        Q(set_prefix=str(set_index))
+        id__in=value_ids,
     ).delete()
     if deleted:
         logger.info(
-            "Deleted device detail block at set_prefix=%s set_index=%s (%s rows)",
+            "Deleted device detail block at set_prefix=%s set_index=%s (%s rows, ids=%s)",
             scope_prefix,
             set_index,
             deleted,
+            value_ids,
         )
 
 
@@ -491,21 +528,23 @@ def _upsert_root_device_value(
     config_label: str,
     block_key: str,
 ) -> None:
-    _, created = Value.objects.update_or_create(
-        project=project,
-        attribute=attribute,
-        snapshot=None,
-        set_collection=True,
-        set_prefix=scope_prefix,
-        set_index=set_index,
-        defaults={
-            "text": device.text or f"{config_label}: {_base_device_text(device.text)}",
+    _, created, changed = upsert_value_if_changed(
+        {
+            "project": project,
+            "attribute": attribute,
+            "snapshot": None,
+            "set_collection": True,
+            "set_prefix": scope_prefix,
+            "set_index": set_index,
+        },
+        {
+            "text": _device_root_text(config_label, device),
             "external_id": block_key,
         },
     )
     logger.info(
         "%s device block root for %s at set_prefix=%s set_index=%s",
-        "Created" if created else "Updated",
+        _change_label(created, changed),
         block_key,
         scope_prefix,
         set_index,
@@ -518,21 +557,23 @@ def _upsert_search_value(project, attribute_uri: str, scope_prefix: str, set_ind
         logger.warning("Search attribute not found: %s", attribute_uri)
         return
 
-    _, created = Value.objects.update_or_create(
-        project=project,
-        attribute=attribute,
-        snapshot=None,
-        set_collection=False,
-        set_prefix=scope_prefix,
-        set_index=set_index,
-        defaults={
+    _, created, changed = upsert_value_if_changed(
+        {
+            "project": project,
+            "attribute": attribute,
+            "snapshot": None,
+            "set_collection": False,
+            "set_prefix": scope_prefix,
+            "set_index": set_index,
+        },
+        {
             "text": _base_device_text(device.text),
             "external_id": device.external_id,
         },
     )
     logger.info(
         "%s device search value for %s at set_prefix=%s set_index=%s",
-        "Created" if created else "Updated",
+        _change_label(created, changed),
         device.external_id,
         scope_prefix,
         set_index,
@@ -635,11 +676,83 @@ def _get_attribute_by_uri(attribute_uri: str):
         return None
 
 
-def _device_block_needs_refresh(project, scope_prefix: str, set_index: int) -> bool:
+def _device_block_metadata_is_current(
+    project,
+    root_attribute,
+    search_attribute_uri: str,
+    scope_prefix: str,
+    set_index: int,
+    block_key: str,
+    device: SelectedDevice,
+    config_label: str,
+) -> bool:
+    return (
+        _has_matching_value(
+            project=project,
+            attribute=root_attribute,
+            scope_prefix=scope_prefix,
+            set_index=set_index,
+            set_collection=True,
+            text=_device_root_text(config_label, device),
+            external_id=block_key,
+        )
+        and _has_matching_value(
+            project=project,
+            attribute_uri=search_attribute_uri,
+            scope_prefix=scope_prefix,
+            set_index=set_index,
+            set_collection=False,
+            text=_base_device_text(device.text),
+            external_id=device.external_id,
+        )
+    )
+
+
+def _device_block_needs_refresh(
+    project,
+    scope_prefix: str,
+    set_index: int,
+) -> bool:
     return not (
         _has_nonempty_scalar_value(project, DEVICE_LINK_ATTRIBUTE_URI, scope_prefix, set_index)
-        and _has_nonempty_scalar_value(project, INSTRUMENT_START_ATTRIBUTE_URI, scope_prefix, set_index)
+        and _has_nonempty_scalar_value(project, USAGE_TECHNOLOGY_ATTRIBUTE_URI, scope_prefix, set_index)
+        and _has_nonempty_scalar_value(
+            project,
+            INSTRUMENT_START_ATTRIBUTE_URI,
+            *_device_nested_questionset_scope(set_index),
+        )
     )
+
+
+def _has_matching_value(
+    project,
+    scope_prefix: str,
+    set_index: int,
+    set_collection: bool,
+    attribute=None,
+    attribute_uri: str | None = None,
+    text: str | None = None,
+    external_id: str | None = None,
+) -> bool:
+    queryset = Value.objects.filter(
+        project=project,
+        snapshot=None,
+        set_prefix=scope_prefix,
+        set_index=set_index,
+        set_collection=set_collection,
+    )
+    if attribute is not None:
+        queryset = queryset.filter(attribute=attribute)
+    elif attribute_uri:
+        queryset = queryset.filter(attribute__uri=attribute_uri)
+    else:
+        return False
+
+    if text is not None:
+        queryset = queryset.filter(text=text)
+    if external_id is not None:
+        queryset = queryset.filter(external_id=external_id)
+    return queryset.exists()
 
 
 def _has_nonempty_scalar_value(project, attribute_uri: str, scope_prefix: str, set_index: int) -> bool:
@@ -673,6 +786,10 @@ def _parse_block_external_id(external_id: str) -> tuple[str | None, str | None]:
 
 def _compose_device_block_key(config_key: str, device_external_id: str) -> str:
     return f"{config_key}||{device_external_id}"
+
+
+def _device_root_text(config_label: str, device: SelectedDevice) -> str:
+    return device.text or f"{config_label}: {_base_device_text(device.text)}"
 
 
 def _base_device_text(text: str) -> str:

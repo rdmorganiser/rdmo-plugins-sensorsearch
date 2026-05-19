@@ -29,6 +29,43 @@ def _normalize_scalar(value: Any) -> Any:
     return value if value is None else str(value)
 
 
+def _field_matches(value: Value, field: str, expected: Any) -> bool:
+    # Use persisted fields for update decisions. RDMO's display properties
+    # (`value`, `label`, `value_and_unit`) can format dates, options, files, and
+    # booleans differently from the stored database value.
+    return getattr(value, field) == expected
+
+
+def update_value_if_changed(value: Value, **updates: Any) -> bool:
+    changed_fields = [
+        field
+        for field, expected in updates.items()
+        if not _field_matches(value, field, expected)
+    ]
+    if not changed_fields:
+        return False
+
+    for field in changed_fields:
+        setattr(value, field, updates[field])
+    value.save(update_fields=changed_fields)
+    return True
+
+
+def upsert_value_if_changed(lookup: dict[str, Any], defaults: dict[str, Any]) -> tuple[Value, bool, bool]:
+    value = Value.objects.filter(**lookup).order_by("id").first()
+    if value is None:
+        return Value.objects.create(**lookup, **defaults), True, True
+    return value, False, update_value_if_changed(value, **defaults)
+
+
+def _change_label(created: bool, changed: bool) -> str:
+    if created:
+        return "Created"
+    if changed:
+        return "Updated"
+    return "Unchanged"
+
+
 def build_clear_payload(attribute_mapping: Mapping[str, str]) -> dict[str, object]:
     clear = {}
     for path, attribute_uri in attribute_mapping.items():
@@ -85,20 +122,20 @@ def update_scalar_value_across_scopes(
             current = queryset.first()
 
             if current is None:
-                _, created = Value.objects.update_or_create(
-                    project=instance.project,
-                    attribute=attribute,
-                    snapshot=None,
-                    set_prefix=set_prefix,
-                    set_index=set_index,
-                    set_collection=False,
-                    defaults={"text": normalized_value},
+                _, created, changed = upsert_value_if_changed(
+                    {
+                        "project": instance.project,
+                        "attribute": attribute,
+                        "snapshot": None,
+                        "set_prefix": set_prefix,
+                        "set_index": set_index,
+                        "set_collection": False,
+                    },
+                    {"text": normalized_value},
                 )
             else:
                 created = False
-                if current.text != normalized_value and getattr(current, "value", None) != normalized_value:
-                    current.text = normalized_value
-                    current.save(update_fields=["text"])
+                changed = update_value_if_changed(current, text=normalized_value)
 
                 duplicate_ids = list(queryset.values_list("id", flat=True)[1:])
                 if duplicate_ids:
@@ -111,7 +148,7 @@ def update_scalar_value_across_scopes(
 
             logger.info(
                 "%s scalar value across scope for attribute %s (set_prefix=%s, set_index=%s): %r",
-                "Created" if created else "Updated",
+                _change_label(created, changed),
                 attribute.uri,
                 set_prefix,
                 set_index,
@@ -166,20 +203,20 @@ def replace_scalar_value_in_scopes(
             current = queryset.first()
 
             if current is None:
-                _, created = Value.objects.update_or_create(
-                    project=instance.project,
-                    attribute=attribute,
-                    snapshot=None,
-                    set_prefix=set_prefix,
-                    set_index=set_index,
-                    set_collection=False,
-                    defaults={"text": normalized_value},
+                _, created, changed = upsert_value_if_changed(
+                    {
+                        "project": instance.project,
+                        "attribute": attribute,
+                        "snapshot": None,
+                        "set_prefix": set_prefix,
+                        "set_index": set_index,
+                        "set_collection": False,
+                    },
+                    {"text": normalized_value},
                 )
             else:
                 created = False
-                if current.text != normalized_value and getattr(current, "value", None) != normalized_value:
-                    current.text = normalized_value
-                    current.save(update_fields=["text"])
+                changed = update_value_if_changed(current, text=normalized_value)
 
                 duplicate_ids = list(queryset.values_list("id", flat=True)[1:])
                 if duplicate_ids:
@@ -192,7 +229,7 @@ def replace_scalar_value_in_scopes(
 
             logger.info(
                 "%s scoped scalar value for attribute %s (set_prefix=%s, set_index=%s): %r",
-                "Created" if created else "Updated",
+                _change_label(created, changed),
                 attribute.uri,
                 set_prefix,
                 set_index,
@@ -313,20 +350,20 @@ def update_values_from_mapped_data(instance, data: dict):
             current = queryset.first()
 
             if current is None:
-                _, created = Value.objects.update_or_create(
-                    project=instance.project,
-                    attribute=attribute,
-                    snapshot=None,
-                    set_prefix=primary_set_prefix,
-                    set_index=primary_set_index,
-                    set_collection=False,
-                    defaults={"text": normalized_value},
+                _, created, changed = upsert_value_if_changed(
+                    {
+                        "project": instance.project,
+                        "attribute": attribute,
+                        "snapshot": None,
+                        "set_prefix": primary_set_prefix,
+                        "set_index": primary_set_index,
+                        "set_collection": False,
+                    },
+                    {"text": normalized_value},
                 )
             else:
                 created = False
-                if current.text != normalized_value and getattr(current, "value", None) != normalized_value:
-                    current.text = normalized_value
-                    current.save(update_fields=["text"])
+                changed = update_value_if_changed(current, text=normalized_value)
 
                 duplicate_ids = list(queryset.values_list("id", flat=True)[1:])
                 if duplicate_ids:
@@ -349,7 +386,7 @@ def update_values_from_mapped_data(instance, data: dict):
                     )
             logger.info(
                 "%s scalar value for attribute %s: %r",
-                "Created" if created else "Updated",
+                _change_label(created, changed),
                 attribute.uri,
                 normalized_value,
             )
@@ -391,18 +428,20 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
         existing = {value.collection_index: value for value in queryset.only("id", "collection_index", "text")}
 
         def upsert_at(index: int, text: Any):
-            _, created = Value.objects.update_or_create(
-                project=instance.project,
-                attribute=attribute,
-                snapshot=None,
-                set_collection=True,
-                set_index=instance.set_index,
-                collection_index=index,
-                defaults={"text": text},
+            _, created, changed = upsert_value_if_changed(
+                {
+                    "project": instance.project,
+                    "attribute": attribute,
+                    "snapshot": None,
+                    "set_collection": True,
+                    "set_index": instance.set_index,
+                    "collection_index": index,
+                },
+                {"text": text},
             )
             logger.info(
                 "%s collection value for attribute %s at collection_index=%s: %r",
-                "Created" if created else "Updated",
+                _change_label(created, changed),
                 attribute.uri,
                 index,
                 text,
@@ -430,18 +469,20 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
         existing = {value.set_index: value for value in queryset.only("id", "set_index", "text")}
 
         def upsert_at(index: int, text: Any):
-            _, created = Value.objects.update_or_create(
-                project=instance.project,
-                attribute=attribute,
-                snapshot=None,
-                set_prefix=instance.set_index,
-                set_collection=True,
-                set_index=index,
-                defaults={"text": text},
+            _, created, changed = upsert_value_if_changed(
+                {
+                    "project": instance.project,
+                    "attribute": attribute,
+                    "snapshot": None,
+                    "set_prefix": instance.set_index,
+                    "set_collection": True,
+                    "set_index": index,
+                },
+                {"text": text},
             )
             logger.info(
                 "%s collection value for attribute %s at set_index=%s: %r",
-                "Created" if created else "Updated",
+                _change_label(created, changed),
                 attribute.uri,
                 index,
                 text,
@@ -505,49 +546,52 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
         return
 
     mode = _collection_shape(instance, attribute)
-
-    if collection.replace_existing:
-        _delete_existing_collection_values(instance, attribute, mode)
+    desired_indexes = set()
 
     for index, value in enumerate(collection.values):
         if not isinstance(value, dict):
             logger.warning("Collection value must be a dictionary, got %s", type(value).__name__)
             continue
 
+        desired_indexes.add(index)
         defaults = {"text": value.get("text", "")}
         if "external_id" in value:
             defaults["external_id"] = value.get("external_id")
 
         if mode == "question":
-            _, created = Value.objects.update_or_create(
-                project=instance.project,
-                attribute=attribute,
-                snapshot=None,
-                set_collection=True,
-                set_index=instance.set_index,
-                collection_index=index,
-                defaults=defaults,
+            _, created, changed = upsert_value_if_changed(
+                {
+                    "project": instance.project,
+                    "attribute": attribute,
+                    "snapshot": None,
+                    "set_collection": True,
+                    "set_index": instance.set_index,
+                    "collection_index": index,
+                },
+                defaults,
             )
             logger.info(
                 "%s handler collection value for attribute %s at collection_index=%s: %r",
-                "Created" if created else "Updated",
+                _change_label(created, changed),
                 attribute.uri,
                 index,
                 defaults,
             )
         elif mode == "questionset":
-            _, created = Value.objects.update_or_create(
-                project=instance.project,
-                attribute=attribute,
-                snapshot=None,
-                set_prefix=instance.set_index,
-                set_collection=True,
-                set_index=index,
-                defaults=defaults,
+            _, created, changed = upsert_value_if_changed(
+                {
+                    "project": instance.project,
+                    "attribute": attribute,
+                    "snapshot": None,
+                    "set_prefix": instance.set_index,
+                    "set_collection": True,
+                    "set_index": index,
+                },
+                defaults,
             )
             logger.info(
                 "%s handler collection value for attribute %s at set_index=%s: %r",
-                "Created" if created else "Updated",
+                _change_label(created, changed),
                 attribute.uri,
                 index,
                 defaults,
@@ -559,24 +603,31 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
                 attribute,
             )
 
+    if collection.replace_existing:
+        _delete_surplus_collection_values(instance, attribute, mode, desired_indexes)
 
-def _delete_existing_collection_values(instance, attribute, mode: str | None):
+
+def _delete_surplus_collection_values(instance, attribute, mode: str | None, desired_indexes: set[int]):
     queryset = Value.objects.filter(project=instance.project, attribute=attribute, snapshot=None)
 
     if mode == "question":
         queryset = queryset.filter(set_collection=True, set_index=instance.set_index)
+        if desired_indexes:
+            queryset = queryset.exclude(collection_index__in=desired_indexes)
     elif mode == "questionset":
         queryset = queryset.filter(set_collection=True, set_prefix=instance.set_index)
+        if desired_indexes:
+            queryset = queryset.exclude(set_index__in=desired_indexes)
     else:
         logger.warning(
-            "Cannot determine collection deletion scope. Attribute: %s",
+            "Cannot determine surplus collection deletion scope. Attribute: %s",
             attribute,
         )
         return
 
     deleted, _ = queryset.delete()
     if deleted:
-        logger.info("Deleted existing collection values for attribute %s (%s rows)", attribute.uri, deleted)
+        logger.info("Deleted surplus collection values for attribute %s (%s rows)", attribute.uri, deleted)
 
 
 def _normalize_set_prefix(set_prefix: str | None) -> str:

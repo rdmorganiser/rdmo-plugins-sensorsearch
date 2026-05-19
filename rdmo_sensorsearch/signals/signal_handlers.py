@@ -27,8 +27,12 @@ def post_save_project_values(sender, instance, **kwargs):
     if _is_snapshot_value(instance):
         logger.debug("Skipping sensorsearch post_save handling for snapshot value %s", instance.pk)
         return
-    logger.debug("Triggering post_save_project_values")
-    handle_post_save(instance)
+
+    def handle_value_after_commit():
+        logger.debug("Triggering post_save_project_values")
+        handle_post_save(instance)
+
+    transaction.on_commit(handle_value_after_commit)
 
 
 @receiver(post_save, sender=Value)
@@ -74,8 +78,5 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
                 configuration_search_attribute_uri=candidate.auto_complete_field_uri,
             )
 
-        if kwargs.get("signal") is post_delete:
-            transaction.on_commit(sync_selected_devices)
-        else:
-            sync_selected_devices()
+        transaction.on_commit(sync_selected_devices)
         break
