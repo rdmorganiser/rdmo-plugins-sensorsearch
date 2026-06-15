@@ -9,17 +9,20 @@ from rdmo_sensorsearch.config import load_config
 logger = logging.getLogger(__name__)
 
 
-class ProjectConfigurationSensorsProvider(Provider):
+class BaseProjectAttributeOptionsProvider(Provider):
     """
-    Provides project-local sensor options that were materialized from a selected configuration.
+    Provides project-local options from values stored in a catalog-specific source attribute.
     """
 
     search = False
     refresh = True
 
-    config_key = "ProjectConfigurationSensorsProvider"
+    config_key: str | None = None
 
     def get_options(self, project, search=None, user=None, site=None):
+        if self.config_key is None:
+            raise NotImplementedError(f"{type(self).__name__} must define `config_key`")
+
         if project is None or project.catalog is None:
             return []
 
@@ -63,3 +66,19 @@ class ProjectConfigurationSensorsProvider(Provider):
                 return catalog.get("source_attribute_uri")
 
         return None
+
+
+class ProjectConfigurationSensorsProvider(BaseProjectAttributeOptionsProvider):
+    """
+    Provides project-local sensor options that were materialized from a selected configuration.
+    """
+
+    config_key = "ProjectConfigurationSensorsProvider"
+
+
+class ProjectDataCollectionDevicesProvider(BaseProjectAttributeOptionsProvider):
+    """
+    Provides project-local device options for data collection questions.
+    """
+
+    config_key = "ProjectDataCollectionDevicesProvider"

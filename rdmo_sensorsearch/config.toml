@@ -14,6 +14,11 @@
     catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
     source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
+    [ProjectDataCollectionDevicesProvider]
+    [[ProjectDataCollectionDevicesProvider.catalogs]]
+    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+    source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
+
     [handlers.O2ARegistrySearchHandler]
     # Use defaults
     #[[handlers.O2ARegistrySearchHandler.backends]]

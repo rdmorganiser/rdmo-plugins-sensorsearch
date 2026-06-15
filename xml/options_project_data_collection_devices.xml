@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2026 Hannes Fuchs (GFZ) <hannes.fuchs@gfz-potsdam.de>
+SPDX-FileCopyrightText: 2026 Helmholtz Centre Potsdam - GFZ German Research Centre for Geosciences
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
+<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-06-15T12:00:00+02:00" version="2.2.0+b1963de">
+	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/data-collection/devices/optionset">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>options/data-collection/devices/optionset</uri_path>
+		<dc:comment>Project-local devices selected in section 2 for data collection instrument questions.</dc:comment>
+		<provider_key>sensorssearch_project_data_collection_devices</provider_key>
+		<options/>
+		<conditions/>
+	</optionset>
+</rdmo>

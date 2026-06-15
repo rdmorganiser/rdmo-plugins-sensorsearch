@@ -48,6 +48,7 @@ OPTIONSET_PROVIDERS = [
     ('sensorssearch', _('Sensor Search'), 'rdmo_sensorsearch.providers.SensorsProvider'),
     ('sensorssearch_configurations', _('Configuration Search'), 'rdmo_sensorsearch.providers.ConfigurationsProvider'),
     ('sensorssearch_project_sensors', _('Project Configuration Sensors'), 'rdmo_sensorsearch.providers.ProjectConfigurationSensorsProvider'),
+    ('sensorssearch_project_data_collection_devices', _('Project Data Collection Devices'), 'rdmo_sensorsearch.providers.ProjectDataCollectionDevicesProvider'),
 ]
 ```
 
@@ -58,9 +59,11 @@ INSTALLED_APPS = ['rdmo_sensorsearch'] + INSTALLED_APPS
 ```
 
 After restarting RDMO, the `Sensor Search` should be selectable as a provider
-option for option sets. If you enable the second and third provider entries, a
-separate `Configuration Search` provider and a project-local reuse provider for
-mounted sensors are available as well.
+option for option sets. If you enable the additional provider entries, a
+separate `Configuration Search` provider, a project-local reuse provider for
+mounted sensors, and a data collection devices provider are available as well.
+The data collection devices provider uses the same project-local value source
+for data collection instrument selection questions.
 
 ## Configuration
 
@@ -93,6 +96,11 @@ min_search_len = 3
 [[ProjectConfigurationSensorsProvider.catalogs]]
 catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
 source_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
+
+[ProjectDataCollectionDevicesProvider]
+[[ProjectDataCollectionDevicesProvider.catalogs]]
+catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
@@ -198,9 +206,12 @@ These defaults are merged into every
 `[[SensorsProvider.providers.SensorManagementSystemProvider]]` entry. Any value
 declared on the concrete provider entry still overrides the default.
 
-The `ProjectConfigurationSensorsProvider` is different. It does not query a
-remote backend, but reads project-local values which were materialized by a
-configuration handler after a configuration was selected.
+The `ProjectConfigurationSensorsProvider` and
+`ProjectDataCollectionDevicesProvider` are different. They do not query a
+remote backend, but read project-local values which were materialized by a
+configuration handler after a configuration was selected. For the Earth-Sensor
+catalog, `ProjectDataCollectionDevicesProvider` reads the selected devices from
+`https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices`.
 
 O2A Registry missions are exposed through `O2ARegistryMissionsProvider`. They
 follow the same configuration flow as SMS configurations: selecting a mission
