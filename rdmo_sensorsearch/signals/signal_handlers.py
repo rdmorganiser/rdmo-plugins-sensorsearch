@@ -6,6 +6,11 @@ from django.dispatch import receiver
 
 from rdmo.projects.models import Value
 
+from rdmo_sensorsearch.signals.data_collection_variable_sync import (
+    DATA_COLLECTION_DEVICES_ATTRIBUTE_URI,
+    remove_stale_data_collection_variables,
+    sync_data_collection_variables_from_device_value,
+)
 from rdmo_sensorsearch.signals.device_set_sync import sync_device_detail_blocks_from_values
 from rdmo_sensorsearch.signals.handler_post_save import handle_post_save
 from rdmo_sensorsearch.signals.handler_post_save import _get_handler_candidates
@@ -80,3 +85,33 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
 
         transaction.on_commit(sync_selected_devices)
         break
+
+
+@receiver(post_save, sender=Value)
+def sync_data_collection_variables_from_selected_device(sender, instance, **kwargs):
+    if _is_muted():
+        return
+    if _is_snapshot_value(instance):
+        logger.debug("Skipping sensorsearch data collection variable sync for snapshot value %s", instance.pk)
+        return
+    if instance is None or instance.project is None or instance.attribute is None or instance.project.catalog is None:
+        return
+    if instance.attribute.uri != DATA_COLLECTION_DEVICES_ATTRIBUTE_URI:
+        return
+
+    transaction.on_commit(lambda: sync_data_collection_variables_from_device_value(instance))
+
+
+@receiver(post_delete, sender=Value)
+def remove_data_collection_variables_from_deleted_device(sender, instance, **kwargs):
+    if _is_muted():
+        return
+    if _is_snapshot_value(instance):
+        logger.debug("Skipping sensorsearch data collection variable cleanup for snapshot value %s", instance.pk)
+        return
+    if instance is None or instance.project is None or instance.attribute is None or instance.project.catalog is None:
+        return
+    if instance.attribute.uri != DATA_COLLECTION_DEVICES_ATTRIBUTE_URI:
+        return
+
+    transaction.on_commit(lambda: remove_stale_data_collection_variables(instance))
