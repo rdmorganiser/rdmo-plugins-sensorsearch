@@ -213,6 +213,23 @@ configuration handler after a configuration was selected. For the Earth-Sensor
 catalog, `ProjectDataCollectionDevicesProvider` reads the selected devices from
 `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices`.
 
+For the Earth-Sensor catalog, selected data collection devices also drive the
+parameter list of the following data collection question. When a device is
+selected in
+`https://rdmorganiser.github.io/terms/domain/project/dataset/collaboration_tools`,
+the plugin looks up the device detail values already materialized in section 2
+and appends missing parameter name/unit pairs to:
+
+- `https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-variable`
+- `https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-unit`
+
+Existing identical parameter name/unit pairs are not added again. Rows generated
+by this synchronization are marked with a `sensorsearch:dc-variable:` external
+ID. When a device is removed from the data collection device list, generated
+parameter rows are removed again if no remaining selected device still provides
+that parameter name/unit pair. Manually entered rows and older unmarked rows are
+left untouched.
+
 O2A Registry missions are exposed through `O2ARegistryMissionsProvider`. They
 follow the same configuration flow as SMS configurations: selecting a mission
 can materialize its items into the configured project-local sensor collection.
