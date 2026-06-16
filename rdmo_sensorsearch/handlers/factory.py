@@ -1,11 +1,13 @@
 import logging
 from dataclasses import dataclass
 
-from rdmo_sensorsearch.config import load_config
+from rdmo_sensorsearch.config import load_config, merge_config
 from rdmo_sensorsearch.handlers.base import GenericSearchHandler
 from rdmo_sensorsearch.handlers.registry import HANDLER_REGISTRY
 
 logger = logging.getLogger(__name__)
+
+WILDCARD_CATALOG_URI = "*"
 
 
 
@@ -23,17 +25,44 @@ def build_handlers_by_catalog() -> dict:
     handlers_by_catalog: dict = {}
 
     for handler_name, handler_cfg in handler_configs.items():
+        defaults = handler_cfg.get("defaults", {})
+        default_attribute_mapping = defaults.get("attribute_mapping", {})
+        default_catalog_kwargs = {
+            key: value
+            for key, value in defaults.items()
+            if key != "attribute_mapping"
+        }
+
         catalogs = handler_cfg.get("catalogs", [])
+        if not catalogs and defaults:
+            catalogs = [{}]
+
+        backend_defaults = handler_cfg.get("backend_defaults", {})
         backends = handler_cfg.get("backends")  # might be None or omitted
 
         for catalog in catalogs:
-            catalog_uri = catalog.get("catalog_uri")
-            auto_field_uri = catalog.get("auto_complete_field_uri")
-            attribute_mapping = catalog.get("attribute_mapping", {})
+            merged_catalog = merge_config(
+                {
+                    **default_catalog_kwargs,
+                    "attribute_mapping": default_attribute_mapping,
+                },
+                catalog,
+            )
 
-            if not catalog_uri or not auto_field_uri:
-                logger.warning("Skipping catalog with missing catalog_uri or"
-                               " auto_complete_field_uri for handler %s", handler_name)
+            catalog_uri = merged_catalog.get("catalog_uri") or WILDCARD_CATALOG_URI
+            auto_field_uri = merged_catalog.get("auto_complete_field_uri")
+            attribute_mapping = merged_catalog.get("attribute_mapping", {})
+            catalog_extra_kwargs = {
+                key: value
+                for key, value in merged_catalog.items()
+                if key not in {"catalog_uri", "auto_complete_field_uri", "attribute_mapping"}
+            }
+
+            if not auto_field_uri:
+                logger.warning(
+                    "Skipping handler config with missing auto_complete_field_uri for handler %s",
+                    handler_name,
+                )
                 continue
 
             handler_cls = HANDLER_REGISTRY.get(handler_name)
@@ -44,7 +73,10 @@ def build_handlers_by_catalog() -> dict:
             if not backends:
                 # No backends defined, single handler instance using class defaults
                 try:
-                    instance = handler_cls(attribute_mapping=attribute_mapping)
+                    instance = handler_cls(
+                        attribute_mapping=attribute_mapping,
+                        **catalog_extra_kwargs,
+                    )
                     hid = HandlerInstanceData(
                         id_prefix=instance.id_prefix,
                         handler=instance,
@@ -58,14 +90,22 @@ def build_handlers_by_catalog() -> dict:
 
             # One handler per backend
             for backend in backends:
-                id_prefix = backend.get("id_prefix")
-                base_url = backend.get("base_url")
+                merged_backend = merge_config(backend_defaults, backend)
+                id_prefix = merged_backend.get("id_prefix")
+                base_url = merged_backend.get("base_url")
+                backend_extra_kwargs = {
+                    key: value
+                    for key, value in merged_backend.items()
+                    if key not in {"id_prefix", "base_url"}
+                }
 
                 try:
                     instance = handler_cls(
                         attribute_mapping=attribute_mapping,
                         id_prefix=id_prefix,
-                        base_url=base_url
+                        base_url=base_url,
+                        **backend_extra_kwargs,
+                        **catalog_extra_kwargs,
                     )
                     hid = HandlerInstanceData(
                         id_prefix=instance.id_prefix,

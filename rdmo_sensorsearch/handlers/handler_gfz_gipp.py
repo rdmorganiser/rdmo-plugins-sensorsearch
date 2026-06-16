@@ -22,7 +22,7 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
 
     json_url = "{base_url}/{id}.json"
 
-    def handle(self, id_):
+    def handle(self, id_, instance=None):
         """
         Handles post_save for a specific instrument ID in GIPP.
 

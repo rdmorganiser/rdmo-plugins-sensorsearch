@@ -4,21 +4,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "rdmo-plugins-sensorsearch"
 authors = [
     {name = "Hannes Fuchs", email = "hannes.fuchs@gfz-potsdam.de"},
+    {name = "David Wallace", email = "david.wallace@tu-darmstadt.de"},
+    {name = "RDMO Community and individual contributors", email = "contact@rdmo.org"},
 ]
 maintainers = [
-    {name = "Hannes Fuchs", email = "hannes.fuchs@gfz-potsdam.de"},
+    {name = "David Wallace", email = "david.wallace@tu-darmstadt.de"},
 ]
 description = "Option set plugin to search through various sensor management systems"
 readme = "README.md"
-requires-python = ">=3.8"
-license = {file = "LICENSE"}
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 dependencies = [
     "jmespath>=1.0.1",
     "requests>=2.31",
@@ -29,11 +32,11 @@ dynamic = ["version"]
 [project.urls]
 repository = "https://github.com/rdmorganiser/rdmo-plugins-sensorsearch"
 
-[tool.setuptools]
-packages = ["rdmo_sensorsearch"]
+[tool.hatch.version]
+path = "rdmo_sensorsearch/__init__.py"
 
-[tool.setuptools.dynamic]
-version = {attr = "rdmo_sensorsearch.__version__"}
+[tool.hatch.build.targets.wheel]
+packages = ["rdmo_sensorsearch"]
 
 [tool.ruff]
 target-version = "py38"

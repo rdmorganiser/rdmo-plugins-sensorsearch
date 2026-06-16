@@ -8,6 +8,7 @@ import os
 import sys
 from functools import cache
 from pathlib import Path
+from typing import Any
 
 from django.conf import settings
 
@@ -18,6 +19,47 @@ else:
 
 
 logger = logging.getLogger(__name__)
+
+
+def merge_config(base: dict[str, Any] | None, override: dict[str, Any] | None) -> dict[str, Any]:
+    """Merge two TOML-derived dictionaries recursively.
+
+    Nested tables are merged, while scalar values and lists from ``override``
+    replace the corresponding values from ``base``.
+    """
+    if not base:
+        return dict(override or {})
+    if not override:
+        return dict(base)
+
+    merged: dict[str, Any] = dict(base)
+    for key, value in override.items():
+        current = merged.get(key)
+        if isinstance(current, dict) and isinstance(value, dict):
+            merged[key] = merge_config(current, value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def get_config_file_path() -> str:
+    try:
+        config_file_name = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME
+    except AttributeError:
+        config_file_name = "config.toml"
+
+    try:
+        config_file_path = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH
+    except AttributeError:
+        config_file_path = None
+
+    config_file_name = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME", config_file_name)
+    config_file_path = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH", config_file_path)
+
+    if config_file_path is None:
+        config_file_path = os.path.join(Path(__file__).parent, config_file_name)
+
+    return config_file_path
 
 
 @cache
@@ -43,29 +85,18 @@ def load_config():
                                     decoded as valid TOML.
 
     """
-    # load settings
-    try:
-        config_file_name = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME
-    except AttributeError:
-        config_file_name = "config.toml"
-
-    try:
-        config_file_path = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH
-    except AttributeError:
-        config_file_path = None
-
-    # override by environment variables or use defaults
-    config_file_name = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME", config_file_name)
-    config_file_path = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH", config_file_path)
-
-    if config_file_path is None:
-        config_file_path = os.path.join(Path(__file__).parent, config_file_name)
-
+    config_file_path = get_config_file_path()
     logger.debug("Try to open configuration file: %s", config_file_path)
 
     try:
         with open(config_file_path, "rb") as config_file:
-            return tomllib.load(config_file)
+            configuration = tomllib.load(config_file)
+            logger.debug(
+                "Loaded sensor search configuration from %s with top-level keys: %s",
+                config_file_path,
+                sorted(configuration.keys()),
+            )
+            return configuration
     except (FileNotFoundError, PermissionError) as e:
         logger.error("Cannot open configuration file: %s", config_file_path)
         raise e from e
