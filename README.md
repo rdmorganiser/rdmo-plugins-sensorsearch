@@ -1,7 +1,7 @@
 <!--
 SPDX-FileCopyrightText: 2023 - 2024 Hannes Fuchs (GFZ) <hfuchs@gfz-potsdam.de>
 SPDX-FileCopyrightText: 2023 - 2024 Helmholtz Centre Potsdam - GFZ German Research Centre for Geosciences
-
+SPDX-FileCopyrightText: 2025 - 2026 RDMO Community and individual contributors
 SPDX-License-Identifier: Apache-2.0
 -->
 
@@ -326,3 +326,9 @@ With `catalogs.attribute_mapping` the mapping from the APIs JSON response is
 mapped to attributes of the specified catalog. On the left a
 [JMESPath](https://jmespath.org/) for the value from the API and on the right
 the uri to the attribute in the catalog.
+
+# Acknowledgements
+
+As of 2026, this plugin has been further developed and maintained through the [DMP4NFDI](https://dmp.services.base4nfdi.de/) project, as an Incubator for the NFDI4Earth consortium.
+
+DMP4NFDI is a Basic Service of Base4NFDI, funded by the German Research Foundation (DFG) under project [521453681](https://gepris.dfg.de/gepris/projekt/521453681). NFDI4Earth is funded by the DFG under project [460036893](https://gepris.dfg.de/gepris/projekt/460036893). Both projects are part of the German National Research Data Infrastructure (NFDI).
