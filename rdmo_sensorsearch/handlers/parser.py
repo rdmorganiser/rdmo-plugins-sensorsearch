@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime
 
 import jmespath
 from jmespath.exceptions import JMESPathError

@@ -44,7 +44,7 @@ class SensorManagementSystemConfigurationsProvider(BaseSensorProvider):
                 "id": self.option_id.format(id_prefix=self.id_prefix, id=configuration["id"]),
                 "text": self._format_configuration_text(configuration["id"], configuration["attributes"]),
             }
-            for configuration in json_data[:self.max_hits]
+            for configuration in json_data[: self.max_hits]
         ]
 
     def _format_configuration_text(self, configuration_id: str, attrs: dict) -> str:

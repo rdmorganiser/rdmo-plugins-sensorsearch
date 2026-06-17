@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime
+from datetime import timezone as dt_timezone
 from urllib.parse import urljoin, urlsplit
 
 from rdmo.projects.models import Value
@@ -15,6 +16,7 @@ DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usa
 INSTRUMENT_START_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
 INSTRUMENT_END_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
 
+
 class SensorManagementSystemHandler(GenericSearchHandler):
     """
     Handles the Sensor Management System (SMS) to gather sensor information.
@@ -22,6 +24,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
     This handler fetches device information, including properties, from the
     SMS API.
     """
+
     # id_prefix = "sms"
     sync_device_detail_blocks = True
     supports_mount_action_period_lookup = True
@@ -46,19 +49,15 @@ class SensorManagementSystemHandler(GenericSearchHandler):
 
         data = fetch_json(self.device_url.format(base_url=self.base_url, id=id_))
 
-        if 'errors' in data:
-            logger.debug("Errors in data returned for ID %s, %s", id_, ", ".join(data['errors']))
+        if "errors" in data:
+            logger.debug("Errors in data returned for ID %s, %s", id_, ", ".join(data["errors"]))
             return data
-
 
         # contacts can not be included in the first request with the include parameter
         contact_data = fetch_json(self.contact_url.format(base_url=self.base_url, id=id_))
 
         # add the included contact data to the data
-        data["included"] = [
-            *data.get("included", []),
-            *contact_data.get("included", [])
-        ]
+        data["included"] = [*data.get("included", []), *contact_data.get("included", [])]
 
         if not data:
             logger.debug("Empty data returned for ID %s", id_)
@@ -69,11 +68,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         return mapped_data
 
     def _set_frontend_device_link(self, mapped_data: dict, device_data: dict) -> None:
-        raw_self_link = (
-            device_data.get("data", {})
-            .get("links", {})
-            .get("self")
-        )
+        raw_self_link = device_data.get("data", {}).get("links", {}).get("self")
         if not isinstance(raw_self_link, str) or not raw_self_link:
             return
 
@@ -156,14 +151,12 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         return configuration_external_id or None
 
     def _fetch_device_mount_actions(self, device_id: str) -> list[dict]:
-        url = (
-            getattr(
-                self,
-                "device_mount_actions_url",
-                "{base_url}/devices/{id}/device-mount-actions"
-                "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration",
-            ).format(base_url=self.base_url, id=device_id)
-        )
+        url = getattr(
+            self,
+            "device_mount_actions_url",
+            "{base_url}/devices/{id}/device-mount-actions"
+            "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration",
+        ).format(base_url=self.base_url, id=device_id)
         action_data = fetch_json(url)
         if isinstance(action_data, dict) and "errors" in action_data:
             logger.warning(

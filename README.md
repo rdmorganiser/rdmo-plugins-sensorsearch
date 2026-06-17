@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 # RDMO Sensor Search option set plugin
 
 This option set plugin allows you to query several sensor registries at the
-same time. Additional questions can be filled in automatically with informations
+same time. Additional questions can be filled in automatically with information
 from the sensor registries. To use this feature an attribute mapping must be
 configured.
 
@@ -84,7 +84,7 @@ name.
 
 ```toml
 [SensorsProvider]
-min_search_len = 3 
+min_search_len = 3
 
 [SensorsProvider.provider_defaults.SensorManagementSystemProvider]
 max_hits = 20
@@ -105,8 +105,8 @@ source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-se
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
-id_prefix = "gfzsms" 
-text_prefix = "GFZ Sensors:" 
+id_prefix = "gfzsms"
+text_prefix = "GFZ Sensors:"
 base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/devices"
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
@@ -264,7 +264,7 @@ catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
 
 [handlers.SensorManagementSystemHandler]
 [[handlers.SensorManagementSystemHandler.backends]]
-id_prefix = "gfzsms" 
+id_prefix = "gfzsms"
 base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
 [[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "kitsms"

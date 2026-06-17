@@ -62,8 +62,7 @@ class BaseMetaProvider(Provider):
 
         with ThreadPoolExecutor(max_workers=4) as executor:
             future_to_provider = {
-                executor.submit(provider.get_options, project, search, user, site): provider
-                for provider in providers
+                executor.submit(provider.get_options, project, search, user, site): provider for provider in providers
             }
 
             for future in as_completed(future_to_provider):

@@ -12,8 +12,7 @@ from rdmo_sensorsearch.signals.data_collection_variable_sync import (
     sync_data_collection_variables_from_device_value,
 )
 from rdmo_sensorsearch.signals.device_set_sync import sync_device_detail_blocks_from_values
-from rdmo_sensorsearch.signals.handler_post_save import handle_post_save
-from rdmo_sensorsearch.signals.handler_post_save import _get_handler_candidates
+from rdmo_sensorsearch.signals.handler_post_save import _get_handler_candidates, handle_post_save
 from rdmo_sensorsearch.signals.utils import _is_muted
 
 logger = logging.getLogger(__name__)
@@ -61,7 +60,13 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
         if instance.attribute.uri != selected_devices_attribute_uri:
             continue
 
-        def sync_selected_devices():
+        configuration_search_attribute_uri = candidate.auto_complete_field_uri
+
+        def sync_selected_devices(
+            selected_devices_attribute_uri=selected_devices_attribute_uri,
+            device_collection_attribute_uri=device_collection_attribute_uri,
+            configuration_search_attribute_uri=configuration_search_attribute_uri,
+        ):
             selected_values = (
                 Value.objects.filter(
                     project=instance.project,
@@ -80,7 +85,7 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
                 selected_values,
                 selected_devices_attribute_uri=selected_devices_attribute_uri,
                 device_collection_attribute_uri=device_collection_attribute_uri,
-                configuration_search_attribute_uri=candidate.auto_complete_field_uri,
+                configuration_search_attribute_uri=configuration_search_attribute_uri,
             )
 
         transaction.on_commit(sync_selected_devices)

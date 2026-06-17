@@ -1,6 +1,7 @@
 import logging
+from datetime import datetime
+from datetime import timezone as dt_timezone
 from functools import partial
-from datetime import datetime, timezone as dt_timezone
 from urllib.parse import urljoin
 
 from django.utils import timezone as django_timezone
@@ -29,9 +30,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         "{base_url}/device-mount-actions?filter[configuration_id]={id}&include=device&page[size]={page_size}"
     )
     mounting_action_timepoints_url = "{base_url}/configurations/{id}/mounting-action-timepoints"
-    static_location_actions_url = (
-        "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]={page_size}"
-    )
+    static_location_actions_url = "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]={page_size}"
     mounted_sensor_max_hits = 100
     static_location_max_hits = 100
     configuration_self_link_path = "data.links.self"
@@ -131,11 +130,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             mapped_values[frontend_attribute_uri] = self._to_frontend_link(api_link)
 
     def _get_configuration_self_link(self, configuration_data: dict) -> str | None:
-        direct_self_link = (
-            configuration_data.get("data", {})
-            .get("links", {})
-            .get("self")
-        )
+        direct_self_link = configuration_data.get("data", {}).get("links", {}).get("self")
         if isinstance(direct_self_link, str) and direct_self_link:
             return direct_self_link
 
@@ -239,10 +234,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 parsed = parsed.replace(tzinfo=dt_timezone.utc)
             return parsed.timestamp()
 
-        active_actions = [
-            action for action in actions
-            if not action.get("attributes", {}).get("end_date")
-        ]
+        active_actions = [action for action in actions if not action.get("attributes", {}).get("end_date")]
         if active_actions:
             return max(active_actions, key=parse_begin_timestamp)
         return max(actions, key=parse_begin_timestamp)
@@ -253,11 +245,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         mount_action_data: dict,
         cfg_period: tuple[datetime, datetime] | None = None,
     ) -> list[dict[str, str]]:
-        included_devices = {
-            item["id"]: item
-            for item in mount_action_data.get("included", [])
-            if item.get("type") == "device"
-        }
+        included_devices = {item["id"]: item for item in mount_action_data.get("included", []) if item.get("type") == "device"}
 
         sensor_id_prefix = getattr(self, "sensor_id_prefix", self.id_prefix)
         member_sensor_values = []
@@ -321,10 +309,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             return mount_actions
 
         relationship_actions = (
-            configuration_data.get("data", {})
-            .get("relationships", {})
-            .get("device_mount_actions", {})
-            .get("data", [])
+            configuration_data.get("data", {}).get("relationships", {}).get("device_mount_actions", {}).get("data", [])
         )
 
         resolved_mount_actions = []

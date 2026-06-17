@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 WILDCARD_CATALOG_URI = "*"
 
 
-
 @dataclass
 class HandlerInstanceData:
     id_prefix: str
@@ -27,11 +26,7 @@ def build_handlers_by_catalog() -> dict:
     for handler_name, handler_cfg in handler_configs.items():
         defaults = handler_cfg.get("defaults", {})
         default_attribute_mapping = defaults.get("attribute_mapping", {})
-        default_catalog_kwargs = {
-            key: value
-            for key, value in defaults.items()
-            if key != "attribute_mapping"
-        }
+        default_catalog_kwargs = {key: value for key, value in defaults.items() if key != "attribute_mapping"}
 
         catalogs = handler_cfg.get("catalogs", [])
         if not catalogs and defaults:
@@ -81,7 +76,7 @@ def build_handlers_by_catalog() -> dict:
                         id_prefix=instance.id_prefix,
                         handler=instance,
                         catalog_uri=catalog_uri,
-                        auto_complete_field_uri=auto_field_uri
+                        auto_complete_field_uri=auto_field_uri,
                     )
                     handlers_by_catalog.setdefault(catalog_uri, []).append(hid)
                 except Exception as e:
@@ -94,9 +89,7 @@ def build_handlers_by_catalog() -> dict:
                 id_prefix = merged_backend.get("id_prefix")
                 base_url = merged_backend.get("base_url")
                 backend_extra_kwargs = {
-                    key: value
-                    for key, value in merged_backend.items()
-                    if key not in {"id_prefix", "base_url"}
+                    key: value for key, value in merged_backend.items() if key not in {"id_prefix", "base_url"}
                 }
 
                 try:
@@ -111,13 +104,10 @@ def build_handlers_by_catalog() -> dict:
                         id_prefix=instance.id_prefix,
                         handler=instance,
                         catalog_uri=catalog_uri,
-                        auto_complete_field_uri=auto_field_uri
+                        auto_complete_field_uri=auto_field_uri,
                     )
                     handlers_by_catalog.setdefault(catalog_uri, []).append(hid)
                 except Exception as e:
-                    logger.error(
-                        "Failed to instantiate handler %s with id_prefix=%s: %s",
-                        handler_name, id_prefix, e
-                    )
+                    logger.error("Failed to instantiate handler %s with id_prefix=%s: %s", handler_name, id_prefix, e)
 
     return handlers_by_catalog

@@ -71,4 +71,4 @@ class BaseSensorProvider(Provider):
         return (
             f"{self.__class__.__name__}:id={self.id_prefix}, "
             f"text={self.text_prefix},max_hits={self.max_hits}, base_url={self.base_url}"
-            )
+        )

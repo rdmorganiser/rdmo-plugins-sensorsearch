@@ -1,9 +1,11 @@
 import logging
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from datetime import datetime, timezone as dt_timezone
+from datetime import datetime
+from datetime import timezone as dt_timezone
 from types import SimpleNamespace
-from typing import Any, Iterable
+from typing import Any
 
 from django.db import transaction
 from django.db.models import Q
@@ -75,9 +77,7 @@ def sync_device_detail_blocks_from_values(
     scope_prefix = instance.set_prefix or ""
     source_set_index = instance.set_index
     selected_devices = [
-        SelectedDevice(text=value.text or "", external_id=value.external_id)
-        for value in selected_values
-        if value.external_id
+        SelectedDevice(text=value.text or "", external_id=value.external_id) for value in selected_values if value.external_id
     ]
     sync_device_detail_blocks(
         project=instance.project,
@@ -152,10 +152,7 @@ def sync_device_detail_blocks(
 
     config_key = config_context.key
     config_label = config_context.label
-    desired_block_keys = {
-        _compose_device_block_key(config_key, device.external_id)
-        for device in selected_devices
-    }
+    desired_block_keys = {_compose_device_block_key(config_key, device.external_id) for device in selected_devices}
     device_detail_attribute_ids = _device_detail_attribute_ids(catalog)
     if not device_detail_attribute_ids:
         logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
@@ -170,16 +167,8 @@ def sync_device_detail_blocks(
     existing_blocks = _existing_device_blocks(project, root_attribute, scope_prefix, config_key)
     next_index = _next_device_set_index(project, root_attribute, scope_prefix)
 
-    stale_blocks = [
-        block
-        for block_key, block in existing_blocks.items()
-        if block_key not in desired_block_keys
-    ]
-    existing_blocks = {
-        block_key: block
-        for block_key, block in existing_blocks.items()
-        if block_key in desired_block_keys
-    }
+    stale_blocks = [block for block_key, block in existing_blocks.items() if block_key not in desired_block_keys]
+    existing_blocks = {block_key: block for block_key, block in existing_blocks.items() if block_key in desired_block_keys}
 
     plans: list[DeviceBlockPlan] = []
     for device in selected_devices:
@@ -214,7 +203,8 @@ def sync_device_detail_blocks(
                 set_index=set_index,
                 sensor_candidate=sensor_candidate,
                 needs_metadata_write=needs_metadata_write,
-                needs_refresh=block is None or _device_block_needs_refresh(
+                needs_refresh=block is None
+                or _device_block_needs_refresh(
                     project=project,
                     scope_prefix=scope_prefix,
                     set_index=set_index,
@@ -435,11 +425,7 @@ def _resolve_configuration_context(
 
 def _existing_device_blocks(project, root_attribute, scope_prefix: str, config_key: str) -> dict[str, dict]:
     all_blocks = _all_existing_device_blocks(project, root_attribute, scope_prefix)
-    return {
-        block_key: block
-        for block_key, block in all_blocks.items()
-        if _parse_block_external_id(block_key)[0] == config_key
-    }
+    return {block_key: block for block_key, block in all_blocks.items() if _parse_block_external_id(block_key)[0] == config_key}
 
 
 def _all_existing_device_blocks(project, root_attribute, scope_prefix: str) -> dict[str, dict]:
@@ -492,10 +478,7 @@ def _delete_device_block(project, scope_prefix: str, set_index: int, attribute_i
             snapshot=None,
             attribute_id__in=attribute_ids,
         )
-        .filter(
-            Q(set_prefix=scope_prefix, set_index=set_index) |
-            Q(set_prefix=str(set_index))
-        )
+        .filter(Q(set_prefix=scope_prefix, set_index=set_index) | Q(set_prefix=str(set_index)))
         .order_by("id")
         .values_list("id", flat=True)
         .distinct()
@@ -690,25 +673,22 @@ def _device_block_metadata_is_current(
     device: SelectedDevice,
     config_label: str,
 ) -> bool:
-    return (
-        _has_matching_value(
-            project=project,
-            attribute=root_attribute,
-            scope_prefix=scope_prefix,
-            set_index=set_index,
-            set_collection=True,
-            text=_device_root_text(config_label, device),
-            external_id=block_key,
-        )
-        and _has_matching_value(
-            project=project,
-            attribute_uri=search_attribute_uri,
-            scope_prefix=scope_prefix,
-            set_index=set_index,
-            set_collection=False,
-            text=_base_device_text(device.text),
-            external_id=device.external_id,
-        )
+    return _has_matching_value(
+        project=project,
+        attribute=root_attribute,
+        scope_prefix=scope_prefix,
+        set_index=set_index,
+        set_collection=True,
+        text=_device_root_text(config_label, device),
+        external_id=block_key,
+    ) and _has_matching_value(
+        project=project,
+        attribute_uri=search_attribute_uri,
+        scope_prefix=scope_prefix,
+        set_index=set_index,
+        set_collection=False,
+        text=_base_device_text(device.text),
+        external_id=device.external_id,
     )
 
 
@@ -760,14 +740,19 @@ def _has_matching_value(
 
 
 def _has_nonempty_scalar_value(project, attribute_uri: str, scope_prefix: str, set_index: int) -> bool:
-    return Value.objects.filter(
-        project=project,
-        snapshot=None,
-        attribute__uri=attribute_uri,
-        set_prefix=scope_prefix,
-        set_index=set_index,
-        set_collection=False,
-    ).exclude(text__isnull=True).exclude(text__exact="").exists()
+    return (
+        Value.objects.filter(
+            project=project,
+            snapshot=None,
+            attribute__uri=attribute_uri,
+            set_prefix=scope_prefix,
+            set_index=set_index,
+            set_collection=False,
+        )
+        .exclude(text__isnull=True)
+        .exclude(text__exact="")
+        .exists()
+    )
 
 
 def _device_nested_questionset_scope(parent_set_index: int) -> tuple[str, int]:

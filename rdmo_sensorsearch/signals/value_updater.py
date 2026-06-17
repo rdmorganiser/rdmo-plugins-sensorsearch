@@ -37,11 +37,7 @@ def _field_matches(value: Value, field: str, expected: Any) -> bool:
 
 
 def update_value_if_changed(value: Value, **updates: Any) -> bool:
-    changed_fields = [
-        field
-        for field, expected in updates.items()
-        if not _field_matches(value, field, expected)
-    ]
+    changed_fields = [field for field, expected in updates.items() if not _field_matches(value, field, expected)]
     if not changed_fields:
         return False
 
@@ -598,8 +594,7 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
             )
         else:
             logger.warning(
-                "Collection assignment found, but no matching Question or QuestionSet with is_collection flag. "
-                "Attribute: %s",
+                "Collection assignment found, but no matching Question or QuestionSet with is_collection flag. Attribute: %s",
                 attribute,
             )
 
@@ -660,9 +655,7 @@ def _scalar_scopes_via_answer_tree(instance, attribute) -> list[tuple[str, int]]
             if base_scope not in trigger_scopes:
                 continue
 
-            discovered_scopes.extend(
-                _collect_question_scopes(answer_tree, page, page_set, attribute.id)
-            )
+            discovered_scopes.extend(_collect_question_scopes(answer_tree, page, page_set, attribute.id))
 
     return _unique_scopes(discovered_scopes, base_scope)
 

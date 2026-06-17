@@ -1,5 +1,4 @@
-
 from .meta_provider import ConfigurationsProvider as ConfigurationsProvider
 from .meta_provider import SensorsProvider as SensorsProvider
-from .provider_project_sensors import ProjectDataCollectionDevicesProvider as ProjectDataCollectionDevicesProvider
 from .provider_project_sensors import ProjectConfigurationSensorsProvider as ProjectConfigurationSensorsProvider
+from .provider_project_sensors import ProjectDataCollectionDevicesProvider as ProjectDataCollectionDevicesProvider

@@ -7,6 +7,7 @@ from .parser import map_jamespath_to_attribute_uri
 
 logger = logging.getLogger(__name__)
 
+
 class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
     """
     Handles for the Geophysical Instrument Pool Potsdam (GIPP).
@@ -17,6 +18,7 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
                                                 to GIPP. Defaults to
                                                 'https://gipp.gfz-potsdam.de/instruments/rest'.
     """
+
     id_prefix = "gfzgipp"
     base_url = "https://gipp.gfz-potsdam.de/instruments/rest"
 

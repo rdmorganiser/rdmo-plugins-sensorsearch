@@ -8,9 +8,9 @@ from rdmo_sensorsearch.providers.provider_sms_configurations import (
 
 # dict of known sensor data provider
 PROVIDER_REGISTRY = {
-            "O2ARegistrySearchProvider": O2ARegistrySearchProvider,
-            "O2ARegistryMissionsProvider": O2ARegistryMissionsProvider,
-            "SensorManagementSystemProvider": SensorManagementSystemProvider,
-            "SensorManagementSystemConfigurationsProvider": SensorManagementSystemConfigurationsProvider,
-            "GeophysicalInstrumentPoolPotsdamProvider": GeophysicalInstrumentPoolPotsdamProvider,
-        }
+    "O2ARegistrySearchProvider": O2ARegistrySearchProvider,
+    "O2ARegistryMissionsProvider": O2ARegistryMissionsProvider,
+    "SensorManagementSystemProvider": SensorManagementSystemProvider,
+    "SensorManagementSystemConfigurationsProvider": SensorManagementSystemConfigurationsProvider,
+    "GeophysicalInstrumentPoolPotsdamProvider": GeophysicalInstrumentPoolPotsdamProvider,
+}

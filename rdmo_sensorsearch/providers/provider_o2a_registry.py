@@ -27,6 +27,7 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
         base_url (str):     Base URL for the O2A Registry API endpoint.
                             Defaults to "https://registry.o2a-data.de/index/rest/search/sensor-v2".
     """
+
     # max_hits = 10 from base provider
 
     id_prefix = "o2aregistry"
@@ -56,13 +57,10 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
 
         optionset: list[dict[str, str]] = []
 
-        #keep alphanumerics(and Unicode characters) and spaces
+        # keep alphanumerics(and Unicode characters) and spaces
         search = "".join(c for c in search if c.isalnum() or c.isspace())
 
-        query = (
-            f"(title:({search}*)^2 OR id:(/{search}/)^20 OR "
-            f"({search}*)^0) AND (states.itemState:(public devicestore)^0)"
-        )
+        query = f"(title:({search}*)^2 OR id:(/{search}/)^20 OR ({search}*)^0) AND (states.itemState:(public devicestore)^0)"
         url = f"{self.base_url}?hits={self.max_hits}&q={quote(query)}"
         json_data = fetch_json(url)
 
@@ -93,7 +91,4 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
         else:
             text = f"{self.text_prefix} {title} (id: {registry_id})"
 
-        return {
-            "id": f"{self.id_prefix}:{unique_id}",
-            "text": text
-        }
+        return {"id": f"{self.id_prefix}:{unique_id}", "text": text}

@@ -15,18 +15,10 @@ from rdmo_sensorsearch.signals.value_updater import _change_label, upsert_value_
 logger = logging.getLogger(__name__)
 
 
-DATA_COLLECTION_DEVICES_ATTRIBUTE_URI = (
-    "https://rdmorganiser.github.io/terms/domain/project/dataset/collaboration_tools"
-)
-DEVICE_PARAMETER_NAME_ATTRIBUTE_URI = (
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
-)
-DEVICE_PARAMETER_UNIT_ATTRIBUTE_URI = (
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
-)
-DATA_COLLECTION_VARIABLE_ATTRIBUTE_URI = (
-    "https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-variable"
-)
+DATA_COLLECTION_DEVICES_ATTRIBUTE_URI = "https://rdmorganiser.github.io/terms/domain/project/dataset/collaboration_tools"
+DEVICE_PARAMETER_NAME_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+DEVICE_PARAMETER_UNIT_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+DATA_COLLECTION_VARIABLE_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-variable"
 DATA_COLLECTION_UNIT_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-unit"
 AUTO_VARIABLE_EXTERNAL_ID_PREFIX = "sensorsearch:dc-variable:"
 
@@ -166,11 +158,7 @@ def _values_by_set_index(instance: Value, attribute: Attribute, set_prefix: str)
         .exclude(text__isnull=True)
         .order_by("set_index", "id")
     )
-    return {
-        value.set_index: value.text or ""
-        for value in values
-        if value.text or value.text == ""
-    }
+    return {value.set_index: value.text or "" for value in values if value.text or value.text == ""}
 
 
 def _append_missing_data_collection_parameters(

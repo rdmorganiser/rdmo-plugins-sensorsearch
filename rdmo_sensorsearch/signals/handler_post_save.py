@@ -1,11 +1,11 @@
 import logging
 
+from rdmo_sensorsearch.handlers.base import HandlerResult
+from rdmo_sensorsearch.handlers.factory import WILDCARD_CATALOG_URI, build_handlers_by_catalog
 from rdmo_sensorsearch.handlers.handler_sms import (
     INSTRUMENT_END_ATTRIBUTE_URI,
     INSTRUMENT_START_ATTRIBUTE_URI,
 )
-from rdmo_sensorsearch.handlers.base import HandlerResult
-from rdmo_sensorsearch.handlers.factory import WILDCARD_CATALOG_URI, build_handlers_by_catalog
 from rdmo_sensorsearch.signals.value_updater import (
     build_clear_payload,
     clear_attribute_values,
@@ -25,8 +25,7 @@ def _get_handler_candidates(catalog_uri: str) -> list:
     wildcard_candidates = ALL_HANDLER_MAP.get(WILDCARD_CATALOG_URI, [])
 
     seen = {
-        (candidate.id_prefix, candidate.auto_complete_field_uri, type(candidate.handler))
-        for candidate in specific_candidates
+        (candidate.id_prefix, candidate.auto_complete_field_uri, type(candidate.handler)) for candidate in specific_candidates
     }
 
     merged_candidates = list(specific_candidates)
@@ -159,8 +158,8 @@ def handle_post_save(instance):
 
             matched = True
 
-            if isinstance(mapped_data, dict) and 'errors' in mapped_data:
-                logger.error("Handler %s returned errors: %s", candidate.id_prefix, mapped_data['errors'])
+            if isinstance(mapped_data, dict) and "errors" in mapped_data:
+                logger.error("Handler %s returned errors: %s", candidate.id_prefix, mapped_data["errors"])
                 continue
 
             _clear_handler_targets(instance, candidate.handler)
@@ -173,5 +172,7 @@ def handle_post_save(instance):
     if not matched:
         logger.warning(
             "No matching handlers found for id_prefix=%s and attribute_uri=%s in catalog=%s",
-            id_prefix, attribute_uri, catalog_uri
+            id_prefix,
+            attribute_uri,
+            catalog_uri,
         )

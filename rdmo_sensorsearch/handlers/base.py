@@ -1,6 +1,7 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
@@ -29,12 +30,13 @@ class GenericSearchHandler:
     JMESPath.
     """
 
-    def __init__(self,
-                 attribute_mapping=None,
-                 id_prefix=None,
-                 base_url=None,
-                 **kwargs,
-        ):
+    def __init__(
+        self,
+        attribute_mapping=None,
+        id_prefix=None,
+        base_url=None,
+        **kwargs,
+    ):
         """
         Initializes the GenericSearchHandler.
 
@@ -60,13 +62,13 @@ class GenericSearchHandler:
     @property
     def id_prefix(self) -> str:
         """
-          Return the default id_prefix of the handler.
+        Return the default id_prefix of the handler.
 
-          This should be the same as defined as default in the provider classes
-          and can be set to use more than one instance of a provider.
+        This should be the same as defined as default in the provider classes
+        and can be set to use more than one instance of a provider.
 
-          Raises:
-              NotImplementedError: If not set in subclass.
+        Raises:
+            NotImplementedError: If not set in subclass.
         """
         value = self._id_prefix or getattr(type(self), "id_prefix", None)
         if value is None:
@@ -90,9 +92,7 @@ class GenericSearchHandler:
     def attribute_mapping(self) -> dict:
         value = self._attribute_mapping or getattr(type(self), "attribute_mapping", None)
         if value is None:
-            raise ValueError(
-                f"{self.__class__.__name__} requires `attribute_mapping` to be set before use."
-            )
+            raise ValueError(f"{self.__class__.__name__} requires `attribute_mapping` to be set before use.")
         return value
 
     @attribute_mapping.setter

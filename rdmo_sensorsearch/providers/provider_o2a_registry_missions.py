@@ -53,7 +53,7 @@ class O2ARegistryMissionsProvider(BaseSensorProvider):
                 "id": self.option_id.format(id_prefix=self.id_prefix, id=mission.get("id", "")),
                 "text": self._format_mission_text(mission),
             }
-            for mission in records[:self.max_hits]
+            for mission in records[: self.max_hits]
             if mission.get("id") is not None
         ]
 

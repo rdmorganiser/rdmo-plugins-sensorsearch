@@ -7,12 +7,10 @@ import requests
 
 from rdmo import __version__
 
-
-
 logger = logging.getLogger(__name__)
 
 
-def fetch_json(url: str) -> dict| list:
+def fetch_json(url: str) -> dict | list:
     timeout = get_request_timeout()
     logger.debug("Requesting JSON from %s with timeout=%s", url, timeout)
     try:
@@ -40,8 +38,7 @@ def fetch_json(url: str) -> dict| list:
         return {"errors": [str(e)]}
     except requests.exceptions.RequestException as e:
         logger.error("Request failed for %s: %s", url, e)
-        return {'errors': [str(e)]}
-
+        return {"errors": [str(e)]}
 
 
 @cache

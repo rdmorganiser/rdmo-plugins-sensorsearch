@@ -28,6 +28,7 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
         base_url (str):     Base URL for the GIPP API endpoint. Defaults to
                             "https://gipp.gfz-potsdam.de/instruments".
     """
+
     # max_hits = 10 from base provider
 
     id_prefix = "gfzgipp"
@@ -37,7 +38,6 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
 
     option_id = "{prefix}:{id}"
     option_text = "{prefix} {code}"
-
 
     def get_options(self, project, search=None, user=None, site=None):
         """
@@ -78,7 +78,6 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
                 break
 
         return optionset
-
 
     def extract_option_for_instrument(self, instrument: dict, search: str) -> dict | None:
         try:

@@ -35,12 +35,10 @@ class SensorManagementSystemProvider(BaseSensorProvider):
     # base_url is set by config
     # max_hits = 10 from base provider
 
-
     query_url = "{base_url}?q={query}"
 
     option_id = "{id_prefix}:{id}"
     option_text = "{prefix}({id}): {name}{serial}"
-
 
     def get_options(self, project, search=None, user=None, site=None):
         """
@@ -73,7 +71,7 @@ class SensorManagementSystemProvider(BaseSensorProvider):
 
         optionset = []
 
-        for sensor in json_data[:self.max_hits]:
+        for sensor in json_data[: self.max_hits]:
             optionset.append(
                 {
                     "id": self.option_id.format(id_prefix=self.id_prefix, id=sensor["id"]),

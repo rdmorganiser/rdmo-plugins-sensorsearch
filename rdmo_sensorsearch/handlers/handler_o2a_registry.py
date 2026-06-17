@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class O2ARegistrySearchHandler(GenericSearchHandler):
     """
-    Handles the O2A Registry to gather additional informations about a sensor.
+    Handles the O2A Registry to gather additional information about a sensor.
 
     To fetch additional data from the O2A REGISTRY at least three API calls
     must be made:
@@ -23,6 +23,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
                                                 to the O2A Registry. Defaults
                                                 to 'https://registry.o2a-data.de/rest/v2'.
     """
+
     id_prefix = "o2aregistry"
     base_url = "https://registry.o2a-data.de/rest/v2"
     sync_device_detail_blocks = True
@@ -35,7 +36,6 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
     item_api_link_template = "{base_url}/items/{id}"
     item_frontend_link_template = "{base_url_origin}/items/{id}"
     device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
-
 
     def __init__(self, attribute_mapping=None, id_prefix=None, base_url=None, **kwargs):
         """
@@ -80,7 +80,6 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         # units
         units_data = fetch_json(self.units_url.format(base_url=base_url))
 
-
         # extend basic data with contacts
         self.add_contacts_to_data(data, contacts_data)
 
@@ -123,11 +122,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
             contact_data = contact.get("contact")
             # only add data if it is not a reference
             if contact_data and isinstance(contact_data, dict):
-                simplified = {
-                    key: contact_data[key]
-                    for key in ("firstName", "lastName", "email")
-                    if key in contact_data
-                }
+                simplified = {key: contact_data[key] for key in ("firstName", "lastName", "email") if key in contact_data}
                 contacts.append(simplified)
         data["contacts"] = contacts
 
@@ -136,11 +131,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         # the unit is provided. Therefore it must be looked up on another
         # endpoint (`units_data`).
         parameters = []
-        unit_lookup = {
-            u["@uuid"]: u.get("code")
-            for u in units_data.get("records", [])
-            if "@uuid" in u
-        }
+        unit_lookup = {u["@uuid"]: u.get("code") for u in units_data.get("records", []) if "@uuid" in u}
 
         for parameter in parameters_data.get("records", []):
             name = parameter.get("name", "")
