@@ -82,3 +82,11 @@ class ProjectDataCollectionDevicesProvider(BaseProjectAttributeOptionsProvider):
     """
 
     config_key = "ProjectDataCollectionDevicesProvider"
+
+
+class ProjectDeviceRefreshProvider(BaseProjectAttributeOptionsProvider):
+    """
+    Provides project-local device detail blocks that can be refreshed from their backend.
+    """
+
+    config_key = "ProjectDeviceRefreshProvider"

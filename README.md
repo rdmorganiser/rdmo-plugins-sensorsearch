@@ -49,6 +49,7 @@ OPTIONSET_PROVIDERS = [
     ('sensorssearch_configurations', _('Configuration Search'), 'rdmo_sensorsearch.providers.ConfigurationsProvider'),
     ('sensorssearch_project_sensors', _('Project Configuration Sensors'), 'rdmo_sensorsearch.providers.ProjectConfigurationSensorsProvider'),
     ('sensorssearch_project_data_collection_devices', _('Project Data Collection Devices'), 'rdmo_sensorsearch.providers.ProjectDataCollectionDevicesProvider'),
+    ('sensorssearch_project_device_refresh', _('Project Device Refresh'), 'rdmo_sensorsearch.providers.ProjectDeviceRefreshProvider'),
 ]
 ```
 
@@ -72,9 +73,11 @@ MIDDLEWARE = [
 After restarting RDMO, the `Sensor Search` should be selectable as a provider
 option for option sets. If you enable the additional provider entries, a
 separate `Configuration Search` provider, a project-local reuse provider for
-mounted sensors, and a data collection devices provider are available as well.
-The data collection devices provider uses the same project-local value source
-for data collection instrument selection questions.
+mounted sensors, a data collection devices provider, and a device refresh
+provider are available as well. The data collection devices provider uses the
+same project-local value source for data collection instrument selection
+questions. The device refresh provider lists already materialized device
+detail blocks so an interview question can trigger backend refreshes.
 
 ## Configuration
 
@@ -116,6 +119,12 @@ source_attribute_uri = "http://example.com/terms/domain/configuration-set/member
 [[ProjectDataCollectionDevicesProvider.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
 source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
+
+[ProjectDeviceRefreshProvider]
+[[ProjectDeviceRefreshProvider.catalogs]]
+catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
@@ -262,6 +271,27 @@ remote backend, but read project-local values which were materialized by a
 configuration handler after a configuration was selected. For the Earth-Sensor
 catalog, `ProjectDataCollectionDevicesProvider` reads the selected devices from
 `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices`.
+
+`ProjectDeviceRefreshProvider` is also project-local. It should be connected to
+a checkbox or select question whose attribute URI matches the configured
+`trigger_attribute_uri`. For the Earth-Sensor catalog the default trigger
+attribute is
+`https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`,
+and the options are read from the materialized device detail blocks in
+`https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id`. Saving
+one of these trigger values refreshes the corresponding device detail block
+from the original backend and then clears the trigger value, so the same device
+can be refreshed again later.
+
+A minimal Earth-Sensor catalog question for this trigger can use:
+
+- attribute:
+  `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`
+- widget/value type: checkbox / option
+- option set:
+  `https://rdmo.nfdi4earth.de/terms/options/device-refresh/optionset`
+- provider key:
+  `sensorssearch_project_device_refresh`
 
 For the Earth-Sensor catalog, selected data collection devices also drive the
 parameter list of the following data collection question. When a device is
