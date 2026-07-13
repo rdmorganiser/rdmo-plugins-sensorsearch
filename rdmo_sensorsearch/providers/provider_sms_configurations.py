@@ -1,6 +1,7 @@
 import logging
 from urllib.parse import quote
 
+from rdmo_sensorsearch.auth import get_sms_auth_token
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.providers.base import BaseSensorProvider
 
@@ -22,6 +23,7 @@ class SensorManagementSystemConfigurationsProvider(BaseSensorProvider):
         "{base_url}?page[size]={page_size}&page[number]=1&include=created_by.contact"
         "&filter=[]&q={query}&sort=label&hide_archived=false"
     )
+    uses_auth_token = True
 
     option_id = "{id_prefix}:{id}"
     option_text = "{prefix}({id}): {label}{project}{pid}"
@@ -32,7 +34,7 @@ class SensorManagementSystemConfigurationsProvider(BaseSensorProvider):
 
         query = quote(search)
         url = self.query_url.format(base_url=self.base_url, query=query, page_size=self.max_hits)
-        json_fetched = fetch_json(url)
+        json_fetched = fetch_json(url, auth_token=getattr(self, "auth_token", None) or get_sms_auth_token(user=user))
 
         json_data = json_fetched.get("data", [])
         if not json_data:

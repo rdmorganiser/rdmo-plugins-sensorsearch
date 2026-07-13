@@ -73,6 +73,7 @@ def sync_device_detail_blocks_from_values(
     selected_devices_attribute_uri: str,
     device_collection_attribute_uri: str,
     configuration_search_attribute_uri: str,
+    auth_token: str | None = None,
 ) -> None:
     scope_prefix = instance.set_prefix or ""
     source_set_index = instance.set_index
@@ -94,6 +95,7 @@ def sync_device_detail_blocks_from_values(
             source_set_index=source_set_index,
             configuration_search_attribute_uri=configuration_search_attribute_uri,
         ),
+        auth_token=auth_token,
     )
 
 
@@ -107,6 +109,7 @@ def sync_device_detail_blocks_from_payload(
     device_collection_attribute_uri: str,
     configuration_search_attribute_uri: str,
     configuration_external_id: str | None = None,
+    auth_token: str | None = None,
 ) -> None:
     scope_prefix = scope_prefix or ""
     sync_device_detail_blocks(
@@ -119,6 +122,7 @@ def sync_device_detail_blocks_from_payload(
         device_collection_attribute_uri=device_collection_attribute_uri,
         configuration_search_attribute_uri=configuration_search_attribute_uri,
         configuration_external_id=configuration_external_id,
+        auth_token=auth_token,
     )
 
 
@@ -132,6 +136,7 @@ def sync_device_detail_blocks(
     device_collection_attribute_uri: str,
     configuration_search_attribute_uri: str,
     configuration_external_id: str | None = None,
+    auth_token: str | None = None,
 ) -> None:
     scope_prefix = scope_prefix or ""
     source_set_index = source_set_index or 0
@@ -212,7 +217,12 @@ def sync_device_detail_blocks(
             )
         )
 
-    fetched_payloads = _fetch_device_detail_payloads(plans, root_attribute.id, config_context.external_id)
+    fetched_payloads = _fetch_device_detail_payloads(
+        plans,
+        root_attribute.id,
+        config_context.external_id,
+        auth_token=auth_token,
+    )
 
     with transaction.atomic(), mute_value_post_save():
         for block in stale_blocks:
@@ -268,6 +278,7 @@ def _fetch_device_detail_payloads(
     plans: list[DeviceBlockPlan],
     root_attribute_id: int,
     configuration_external_id: str | None,
+    auth_token: str | None = None,
 ) -> dict[str, DeviceFetchResult]:
     refresh_plans = [plan for plan in plans if plan.needs_refresh]
     if not refresh_plans:
@@ -283,6 +294,7 @@ def _fetch_device_detail_payloads(
                 plan,
                 root_attribute_id,
                 configuration_external_id,
+                auth_token,
             ): plan
             for plan in refresh_plans
         }
@@ -305,6 +317,7 @@ def _fetch_device_detail_payload(
     plan: DeviceBlockPlan,
     root_attribute_id: int,
     configuration_external_id: str | None,
+    auth_token: str | None = None,
 ) -> DeviceFetchResult | None:
     device_id = _parse_external_id(plan.device.external_id)[1]
     if device_id is None:
@@ -317,7 +330,14 @@ def _fetch_device_detail_payload(
         set_index=plan.set_index,
         attribute_id=root_attribute_id,
     )
-    mapped_data = plan.sensor_candidate.handler.handle(id_=device_id, instance=fetch_instance)
+    if getattr(plan.sensor_candidate.handler, "uses_auth_token", False):
+        mapped_data = plan.sensor_candidate.handler.handle(
+            id_=device_id,
+            instance=fetch_instance,
+            auth_token=auth_token,
+        )
+    else:
+        mapped_data = plan.sensor_candidate.handler.handle(id_=device_id, instance=fetch_instance)
     if isinstance(mapped_data, dict) and "errors" in mapped_data:
         logger.error("Sensor handler returned errors for %s: %s", plan.device.external_id, mapped_data["errors"])
         return None
@@ -335,6 +355,7 @@ def _fetch_device_detail_payload(
         plan.device,
         plan.sensor_candidate,
         configuration_external_id,
+        auth_token=auth_token,
     )
     scoped_scalar_values = {
         INSTRUMENT_START_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
@@ -859,6 +880,7 @@ def _merge_mounting_period_values(
     device: SelectedDevice,
     sensor_candidate: Any,
     configuration_external_id: str | None,
+    auth_token: str | None = None,
 ) -> None:
     if INSTRUMENT_START_ATTRIBUTE_URI in mapped_data:
         mapped_data.setdefault(INSTRUMENT_END_ATTRIBUTE_URI, "")
@@ -873,6 +895,7 @@ def _merge_mounting_period_values(
         device,
         sensor_candidate,
         configuration_external_id,
+        auth_token=auth_token,
     )
     mapped_data[INSTRUMENT_START_ATTRIBUTE_URI] = start_value or ""
     mapped_data[INSTRUMENT_END_ATTRIBUTE_URI] = end_value or ""
@@ -883,6 +906,7 @@ def _resolve_mounting_period_values(
     device: SelectedDevice,
     sensor_candidate: Any,
     configuration_external_id: str | None,
+    auth_token: str | None = None,
 ) -> tuple[str | None, str | None]:
     if not configuration_external_id:
         return None, None
@@ -895,7 +919,7 @@ def _resolve_mounting_period_values(
     if not getattr(sensor_candidate.handler, "supports_mount_action_period_lookup", False):
         return None, None
 
-    mount_actions = _fetch_device_mount_actions(sensor_candidate, device_id)
+    mount_actions = _fetch_device_mount_actions(sensor_candidate, device_id, auth_token=auth_token)
     if not mount_actions:
         return None, None
 
@@ -934,12 +958,12 @@ def _resolve_mounting_period_values(
     return _format_timepoint(latest_start), _format_timepoint(latest_end)
 
 
-def _fetch_device_mount_actions(sensor_candidate: Any, device_id: str) -> list[dict]:
+def _fetch_device_mount_actions(sensor_candidate: Any, device_id: str, auth_token: str | None = None) -> list[dict]:
     url = (
         f"{sensor_candidate.handler.base_url}/devices/{device_id}/device-mount-actions"
         "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration"
     )
-    action_data = fetch_json(url)
+    action_data = fetch_json(url, auth_token=auth_token)
     if isinstance(action_data, dict) and "errors" in action_data:
         logger.warning(
             "Could not fetch device mount actions for %s: %s",

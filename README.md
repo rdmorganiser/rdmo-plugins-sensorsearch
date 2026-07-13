@@ -58,6 +58,17 @@ Add the plugin to the `INSTALLED_APPS` in `config/settings/local.py`:
 INSTALLED_APPS = ['rdmo_sensorsearch'] + INSTALLED_APPS
 ```
 
+If SMS requests should reuse the currently logged-in user's access token in
+post-save synchronization, add the auth context middleware after Django's
+session and authentication middleware:
+
+```python
+MIDDLEWARE = [
+    # ...
+    'rdmo_sensorsearch.auth.SensorSearchAuthContextMiddleware',
+]
+```
+
 After restarting RDMO, the `Sensor Search` should be selectable as a provider
 option for option sets. If you enable the additional provider entries, a
 separate `Configuration Search` provider, a project-local reuse provider for
@@ -85,6 +96,10 @@ name.
 ```toml
 [SensorsProvider]
 min_search_len = 3
+# Optional: restrict SMS device searches to the SMS backend that matches a
+# selected configuration in the current project. Leave false for manual
+# instrument searches that should query all configured SMS instances.
+filter_sms_by_selected_configuration = false
 
 [SensorsProvider.provider_defaults.SensorManagementSystemProvider]
 max_hits = 20
@@ -171,6 +186,12 @@ catalog_uri = "http://example.com/terms/questions/example-configurations-earth-s
 This configures all available providers with three SMS instances to query. The
 `SensorsProvider` will only query the configured providers if at least three
 characters are entered.
+By default, SMS device search is not restricted by configurations already
+selected in the project, so manual instrument searches query all configured SMS
+instances. Set `filter_sms_by_selected_configuration = true` in
+`[SensorsProvider]` only if device searches should be narrowed to the SMS
+backend corresponding to an already selected configuration, such as
+`kitcfg -> kitsms`.
 
 The `O2ARegistrySearchProvider` and `GeophysicalInstrumentPoolPotsdamProvider`
 uses their default values for `id_prefix`, `text_prefix`, `base_url` and
@@ -205,6 +226,35 @@ max_hits = 20
 These defaults are merged into every
 `[[SensorsProvider.providers.SensorManagementSystemProvider]]` entry. Any value
 declared on the concrete provider entry still overrides the default.
+
+### Configuration: SMS authentication
+
+SMS device and configuration providers, plus the corresponding handlers, reuse
+an available bearer token for SMS backend requests. The token is sent as:
+
+```text
+Authorization: Bearer <access-token>
+```
+
+Token resolution is intentionally conservative:
+
+- If `SENSORS_SEARCH_AUTH_TOKEN_RESOLVER` is configured, it is used first. The
+  resolver can be a callable or dotted import path accepting `user` and
+  `request` keyword arguments.
+- If the auth context middleware is enabled, session keys from
+  `SENSORS_SEARCH_AUTH_SESSION_TOKEN_KEYS` are checked next. Without explicit
+  keys, a single unambiguous `access_token` or `*.access_token` session value is
+  used.
+- If django-allauth social tokens are available for the user, a single
+  unexpired token is used. If several social tokens exist, configure
+  `SENSORS_SEARCH_AUTH_SOCIALACCOUNT_PROVIDERS`, for example:
+
+```python
+SENSORS_SEARCH_AUTH_SOCIALACCOUNT_PROVIDERS = ['helmholtz-aai']
+```
+
+If no unambiguous token can be resolved, the plugin keeps making public SMS
+requests without an `Authorization` header.
 
 The `ProjectConfigurationSensorsProvider` and
 `ProjectDataCollectionDevicesProvider` are different. They do not query a

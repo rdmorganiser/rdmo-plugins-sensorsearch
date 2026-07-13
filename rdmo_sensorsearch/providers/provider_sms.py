@@ -1,6 +1,8 @@
 import logging
+from html import escape
 from urllib.parse import quote
 
+from rdmo_sensorsearch.auth import get_sms_auth_token
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.providers.base import BaseSensorProvider
 
@@ -36,6 +38,7 @@ class SensorManagementSystemProvider(BaseSensorProvider):
     # max_hits = 10 from base provider
 
     query_url = "{base_url}?q={query}"
+    uses_auth_token = True
 
     option_id = "{id_prefix}:{id}"
     option_text = "{prefix}({id}): {name}{serial}"
@@ -62,7 +65,7 @@ class SensorManagementSystemProvider(BaseSensorProvider):
 
         query = quote(search)
         url = self.query_url.format(base_url=self.base_url, query=query)
-        json_fetched = fetch_json(url)
+        json_fetched = fetch_json(url, auth_token=getattr(self, "auth_token", None) or get_sms_auth_token(user=user))
 
         json_data = json_fetched.get("data", [])
         if not json_data:
@@ -76,6 +79,7 @@ class SensorManagementSystemProvider(BaseSensorProvider):
                 {
                     "id": self.option_id.format(id_prefix=self.id_prefix, id=sensor["id"]),
                     "text": self._format_sensor_text(sensor["id"], sensor["attributes"]),
+                    "help": self._format_sensor_help(sensor["attributes"]),
                 }
             )
         return optionset
@@ -84,3 +88,52 @@ class SensorManagementSystemProvider(BaseSensorProvider):
         name = attrs.get("long_name") or attrs.get("short_name", "")
         serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
         return self.option_text.format(prefix=self.text_prefix, id=sensor_id, name=name, serial=serial)
+
+    def _format_sensor_help(self, attrs: dict) -> str:
+        parts = [
+            self._format_status(attrs),
+            self._format_visibility(attrs),
+            self._format_permission_groups(attrs),
+        ]
+        return " | ".join(escape(part) for part in parts if part)
+
+    def _format_status(self, attrs: dict) -> str | None:
+        return self._as_text(attrs.get("status_name") or attrs.get("status"))
+
+    def _format_visibility(self, attrs: dict) -> str | None:
+        if attrs.get("is_public") is True:
+            return "Public"
+        if attrs.get("is_internal") is True:
+            return "Internal"
+        if attrs.get("is_public") is False or attrs.get("is_internal") is False:
+            return "Private"
+        return None
+
+    def _format_permission_groups(self, attrs: dict) -> str | None:
+        groups = (
+            attrs.get("permission_group_names")
+            or attrs.get("permission_groups")
+            or attrs.get("group_names")
+            or attrs.get("cfg_permission_group")
+        )
+        if groups is None:
+            return None
+        if isinstance(groups, str):
+            return groups
+        if isinstance(groups, list):
+            group_names = []
+            for group in groups:
+                if isinstance(group, str):
+                    group_names.append(group)
+                elif isinstance(group, dict):
+                    name = group.get("name") or group.get("label")
+                    if name:
+                        group_names.append(str(name))
+            return ", ".join(group_names) or None
+        return None
+
+    def _as_text(self, value) -> str | None:
+        if value is None:
+            return None
+        value = str(value).strip()
+        return value or None

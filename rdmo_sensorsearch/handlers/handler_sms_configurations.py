@@ -38,9 +38,13 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     configuration_end_date_path = "data.attributes.end_date"
     frontend_link_suffix = None  # redirects to "/basic"
     backend_link_marker = "/backend/api/v1/"
+    uses_auth_token = True
 
-    def handle(self, id_: str, instance=None) -> dict | HandlerResult:
-        configuration_data = fetch_json(self.configuration_url.format(base_url=self.base_url, id=id_))
+    def handle(self, id_: str, instance=None, auth_token: str | None = None) -> dict | HandlerResult:
+        configuration_data = fetch_json(
+            self.configuration_url.format(base_url=self.base_url, id=id_),
+            auth_token=auth_token,
+        )
         logger.debug(
             "Fetched SMS configuration payload for ID %s with top-level keys: %s",
             id_,
@@ -55,7 +59,8 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 base_url=self.base_url,
                 id=id_,
                 page_size=self.mounted_sensor_max_hits,
-            )
+            ),
+            auth_token=auth_token,
         )
         if "errors" in mount_action_data:
             logger.debug("Errors in device mount action data returned for ID %s: %s", id_, mount_action_data["errors"])
@@ -64,7 +69,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, configuration_data)
         self._set_configuration_links(mapped_values, configuration_data)
         self._normalize_configuration_datetimes(mapped_values)
-        self._set_configuration_location(mapped_values, id_)
+        self._set_configuration_location(mapped_values, id_, auth_token=auth_token)
 
         result = HandlerResult(
             mapped_values=mapped_values,
@@ -77,6 +82,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 configuration_data=configuration_data,
                 mount_action_data=mount_action_data,
                 cfg_period=cfg_period,
+                auth_token=auth_token,
             )
             result.collections.append(
                 CollectionAssignment(
@@ -109,6 +115,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                         device_collection_attribute_uri=device_collection_attribute_uri,
                         configuration_search_attribute_uri=instance.attribute.uri,
                         configuration_external_id=instance.external_id,
+                        auth_token=auth_token,
                     )
                 )
 
@@ -180,7 +187,12 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
             mapped_values[attribute_uri] = utc_value.strftime("%Y-%m-%d %H:%M")
 
-    def _set_configuration_location(self, mapped_values: dict[str, str | None], configuration_id: str) -> None:
+    def _set_configuration_location(
+        self,
+        mapped_values: dict[str, str | None],
+        configuration_id: str,
+        auth_token: str | None = None,
+    ) -> None:
         location_attribute_uri = getattr(self, "location_attribute_uri", None)
         latitude_attribute_uri = getattr(self, "latitude_attribute_uri", None)
         longitude_attribute_uri = getattr(self, "longitude_attribute_uri", None)
@@ -192,7 +204,8 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 base_url=self.base_url,
                 id=configuration_id,
                 page_size=self.static_location_max_hits,
-            )
+            ),
+            auth_token=auth_token,
         )
         if "errors" in location_actions_data:
             logger.debug(
@@ -244,13 +257,14 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         configuration_data: dict,
         mount_action_data: dict,
         cfg_period: tuple[datetime, datetime] | None = None,
+        auth_token: str | None = None,
     ) -> list[dict[str, str]]:
         included_devices = {item["id"]: item for item in mount_action_data.get("included", []) if item.get("type") == "device"}
 
         sensor_id_prefix = getattr(self, "sensor_id_prefix", self.id_prefix)
         member_sensor_values = []
 
-        mount_actions = self._get_mount_actions(configuration_data, mount_action_data)
+        mount_actions = self._get_mount_actions(configuration_data, mount_action_data, auth_token=auth_token)
 
         for mount_action in mount_actions:
             if cfg_period is not None and not self._is_mount_action_in_period(mount_action, cfg_period):
@@ -262,7 +276,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
             device = included_devices.get(device_ref["id"])
             if device is None:
-                device = self._fetch_device(device_ref["id"])
+                device = self._fetch_device(device_ref["id"], auth_token=auth_token)
                 if device is None:
                     logger.warning("Mounted device %s could not be resolved", device_ref["id"])
                     continue
@@ -303,7 +317,12 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             parsed = parsed.replace(tzinfo=dt_timezone.utc)
         return parsed.astimezone(dt_timezone.utc).strftime("%Y-%m-%d %H:%M")
 
-    def _get_mount_actions(self, configuration_data: dict, mount_action_data: dict) -> list[dict]:
+    def _get_mount_actions(
+        self,
+        configuration_data: dict,
+        mount_action_data: dict,
+        auth_token: str | None = None,
+    ) -> list[dict]:
         mount_actions = mount_action_data.get("data", [])
         if mount_actions:
             return mount_actions
@@ -318,7 +337,10 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             if not action_id:
                 continue
 
-            action_data = fetch_json(self.device_mount_action_url.format(base_url=self.base_url, id=action_id))
+            action_data = fetch_json(
+                self.device_mount_action_url.format(base_url=self.base_url, id=action_id),
+                auth_token=auth_token,
+            )
             if "errors" in action_data:
                 logger.warning("Could not fetch mount action %s: %s", action_id, action_data["errors"])
                 continue
@@ -329,8 +351,8 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
         return resolved_mount_actions
 
-    def _fetch_device(self, device_id: str) -> dict | None:
-        device_data = fetch_json(self.device_url.format(base_url=self.base_url, id=device_id))
+    def _fetch_device(self, device_id: str, auth_token: str | None = None) -> dict | None:
+        device_data = fetch_json(self.device_url.format(base_url=self.base_url, id=device_id), auth_token=auth_token)
         if "errors" in device_data:
             logger.warning("Could not fetch device %s: %s", device_id, device_data["errors"])
             return None

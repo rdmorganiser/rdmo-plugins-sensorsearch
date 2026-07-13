@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from rdmo.options.providers import Provider
 from rdmo.projects.models import Value
 
+from rdmo_sensorsearch.auth import get_sms_auth_token
 from rdmo_sensorsearch.config import get_config_file_path, load_config
 from rdmo_sensorsearch.providers.factory import build_provider_instances
 
@@ -26,9 +27,15 @@ class BaseMetaProvider(Provider):
             raise NotImplementedError(f"{type(self).__name__} must define `config_key`")
 
         configuration = load_config()
-        min_search_len = configuration.get(self.config_key, {}).get("min_search_len", 3)
+        section_config = configuration.get(self.config_key, {})
+        min_search_len = section_config.get("min_search_len", 3)
         providers = build_provider_instances(self.config_key)
-        providers = self._filter_providers_for_project(project, providers)
+        if section_config.get("filter_sms_by_selected_configuration", False):
+            providers = self._filter_providers_for_project(project, providers)
+        auth_token = get_sms_auth_token(user=user)
+        for provider in providers:
+            if getattr(provider, "uses_auth_token", False):
+                provider.auth_token = auth_token
 
         logger.debug(
             "%s.get_options called with search=%r, min_search_len=%s, config_path=%s, providers=%s",
@@ -58,23 +65,55 @@ class BaseMetaProvider(Provider):
         logger.debug("Configuration top-level keys: %s", sorted(configuration.keys()))
         logger.debug("Search term: %s", search)
 
-        results = []
+        if len(providers) == 1:
+            results = self._get_provider_options(providers[0], project, search, user, site)
+            logger.debug("Results: %s", results)
+            return results
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        try:
+            results = self._get_parallel_provider_options(providers, project, search, user, site)
+        except RuntimeError as e:
+            if "cannot schedule new futures after interpreter shutdown" not in str(e):
+                raise
+            logger.warning(
+                "%s could not schedule provider workers because the interpreter is shutting down; "
+                "falling back to sequential provider queries",
+                type(self).__name__,
+            )
+            results = self._get_sequential_provider_options(providers, project, search, user, site)
+
+        logger.debug("Results: %s", results)
+        return results
+
+    def _get_parallel_provider_options(self, providers, project, search, user, site) -> list[dict]:
+        results = []
+        max_workers = min(4, len(providers))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_provider = {
                 executor.submit(provider.get_options, project, search, user, site): provider for provider in providers
             }
 
             for future in as_completed(future_to_provider):
+                provider = future_to_provider[future]
                 try:
                     result = future.result()
                     results.extend(result)
                 except Exception as e:
-                    provider = future_to_provider[future]
                     logger.warning("Provider %s failed with exception: %s", provider.__class__.__name__, e)
-
-        logger.debug("Results: %s", results)
         return results
+
+    def _get_sequential_provider_options(self, providers, project, search, user, site) -> list[dict]:
+        results = []
+        for provider in providers:
+            results.extend(self._get_provider_options(provider, project, search, user, site))
+        return results
+
+    def _get_provider_options(self, provider, project, search, user, site) -> list[dict]:
+        try:
+            return provider.get_options(project, search, user, site)
+        except Exception as e:
+            logger.warning("Provider %s failed with exception: %s", provider.__class__.__name__, e)
+            return []
 
     def _filter_providers_for_project(self, project, providers: list[Provider]) -> list[Provider]:
         if self.config_key != SENSORSPROVIDER_CONFIG_KEY or project is None:

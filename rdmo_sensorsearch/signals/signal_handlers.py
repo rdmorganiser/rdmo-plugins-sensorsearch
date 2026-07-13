@@ -6,6 +6,7 @@ from django.dispatch import receiver
 
 from rdmo.projects.models import Value
 
+from rdmo_sensorsearch.auth import get_sms_auth_token
 from rdmo_sensorsearch.signals.data_collection_variable_sync import (
     DATA_COLLECTION_DEVICES_ATTRIBUTE_URI,
     remove_stale_data_collection_variables,
@@ -32,9 +33,11 @@ def post_save_project_values(sender, instance, **kwargs):
         logger.debug("Skipping sensorsearch post_save handling for snapshot value %s", instance.pk)
         return
 
+    auth_token = get_sms_auth_token()
+
     def handle_value_after_commit():
         logger.debug("Triggering post_save_project_values")
-        handle_post_save(instance)
+        handle_post_save(instance, auth_token=auth_token)
 
     transaction.on_commit(handle_value_after_commit)
 
@@ -62,10 +65,13 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
 
         configuration_search_attribute_uri = candidate.auto_complete_field_uri
 
+        auth_token = get_sms_auth_token()
+
         def sync_selected_devices(
             selected_devices_attribute_uri=selected_devices_attribute_uri,
             device_collection_attribute_uri=device_collection_attribute_uri,
             configuration_search_attribute_uri=configuration_search_attribute_uri,
+            auth_token=auth_token,
         ):
             selected_values = (
                 Value.objects.filter(
@@ -86,6 +92,7 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
                 selected_devices_attribute_uri=selected_devices_attribute_uri,
                 device_collection_attribute_uri=device_collection_attribute_uri,
                 configuration_search_attribute_uri=configuration_search_attribute_uri,
+                auth_token=auth_token,
             )
 
         transaction.on_commit(sync_selected_devices)

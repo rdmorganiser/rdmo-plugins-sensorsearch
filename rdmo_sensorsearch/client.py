@@ -10,13 +10,17 @@ from rdmo import __version__
 logger = logging.getLogger(__name__)
 
 
-def fetch_json(url: str) -> dict | list:
+def fetch_json(url: str, auth_token: str | None = None) -> dict | list:
     timeout = get_request_timeout()
     logger.debug("Requesting JSON from %s with timeout=%s", url, timeout)
+    headers = {"User-Agent": get_user_agent()}
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
+
     try:
         response = requests.get(
             url,
-            headers={"User-Agent": get_user_agent()},
+            headers=headers,
             timeout=timeout,
         )
         response.raise_for_status()

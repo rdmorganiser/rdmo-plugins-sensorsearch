@@ -34,8 +34,9 @@ class SensorManagementSystemHandler(GenericSearchHandler):
     contact_url = "{base_url}/devices/{id}/device-contact-roles?include=contact"
     backend_link_marker = "/backend/api/v1/"
     device_link_attribute_uri = DEVICE_LINK_ATTRIBUTE_URI
+    uses_auth_token = True
 
-    def handle(self, id_: str, instance=None) -> dict:
+    def handle(self, id_: str, instance=None, auth_token: str | None = None) -> dict:
         """
         Handles post_save for a specific device ID in the SMS.
 
@@ -47,14 +48,14 @@ class SensorManagementSystemHandler(GenericSearchHandler):
                   response.
         """
 
-        data = fetch_json(self.device_url.format(base_url=self.base_url, id=id_))
+        data = fetch_json(self.device_url.format(base_url=self.base_url, id=id_), auth_token=auth_token)
 
         if "errors" in data:
             logger.debug("Errors in data returned for ID %s, %s", id_, ", ".join(data["errors"]))
             return data
 
         # contacts can not be included in the first request with the include parameter
-        contact_data = fetch_json(self.contact_url.format(base_url=self.base_url, id=id_))
+        contact_data = fetch_json(self.contact_url.format(base_url=self.base_url, id=id_), auth_token=auth_token)
 
         # add the included contact data to the data
         data["included"] = [*data.get("included", []), *contact_data.get("included", [])]
@@ -64,7 +65,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
 
         mapped_data = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
         self._set_frontend_device_link(mapped_data, data)
-        self._set_mount_period(mapped_data, id_, instance)
+        self._set_mount_period(mapped_data, id_, instance, auth_token=auth_token)
         return mapped_data
 
     def _set_frontend_device_link(self, mapped_data: dict, device_data: dict) -> None:
@@ -87,7 +88,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         parsed = urlsplit(self.base_url)
         return f"{parsed.scheme}://{parsed.netloc}"
 
-    def _set_mount_period(self, mapped_data: dict, device_id: str, instance=None) -> None:
+    def _set_mount_period(self, mapped_data: dict, device_id: str, instance=None, auth_token: str | None = None) -> None:
         configuration_external_id = self._resolve_configuration_external_id(instance)
         if not configuration_external_id:
             return
@@ -96,7 +97,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         if not configuration_id:
             return
 
-        mount_actions = self._fetch_device_mount_actions(device_id)
+        mount_actions = self._fetch_device_mount_actions(device_id, auth_token=auth_token)
         if not mount_actions:
             return
 
@@ -150,14 +151,14 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         configuration_external_id, _ = root_value.external_id.split("||", 1)
         return configuration_external_id or None
 
-    def _fetch_device_mount_actions(self, device_id: str) -> list[dict]:
+    def _fetch_device_mount_actions(self, device_id: str, auth_token: str | None = None) -> list[dict]:
         url = getattr(
             self,
             "device_mount_actions_url",
             "{base_url}/devices/{id}/device-mount-actions"
             "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration",
         ).format(base_url=self.base_url, id=device_id)
-        action_data = fetch_json(url)
+        action_data = fetch_json(url, auth_token=auth_token)
         if isinstance(action_data, dict) and "errors" in action_data:
             logger.warning(
                 "Could not fetch device mount actions for %s: %s",

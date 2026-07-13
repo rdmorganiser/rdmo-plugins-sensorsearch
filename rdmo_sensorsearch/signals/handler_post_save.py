@@ -86,7 +86,7 @@ def _update_mapped_data(instance, mapped_data: dict) -> None:
         )
 
 
-def handle_post_save(instance):
+def handle_post_save(instance, auth_token: str | None = None):
 
     if not ALL_HANDLER_MAP:
         logger.warning("No handlers found for %s", __name__)
@@ -146,7 +146,10 @@ def handle_post_save(instance):
     for candidate in attribute_handler_candidates:
         if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute_uri:
             try:
-                mapped_data = candidate.handler.handle(id_=external_id, instance=instance)
+                if getattr(candidate.handler, "uses_auth_token", False):
+                    mapped_data = candidate.handler.handle(id_=external_id, instance=instance, auth_token=auth_token)
+                else:
+                    mapped_data = candidate.handler.handle(id_=external_id, instance=instance)
             except Exception:
                 logger.exception(
                     "Handler %s failed while processing external_id=%s for catalog=%s",
