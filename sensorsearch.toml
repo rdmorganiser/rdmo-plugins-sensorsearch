@@ -28,6 +28,10 @@ catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
 source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
 clear_trigger_value = false
+# Optional attributes for interview-visible refresh feedback.
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
+error_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-error"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
 
 [handlers.O2ARegistrySearchHandler]
 # Use defaults

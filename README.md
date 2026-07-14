@@ -126,6 +126,10 @@ catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
 source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
 clear_trigger_value = false
+# Optional attributes for interview-visible refresh feedback.
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
+error_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-error"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
@@ -284,6 +288,13 @@ one of these trigger values refreshes the corresponding device detail block
 from the original backend. By default the trigger value is kept, which avoids a
 race with the RDMO interview frontend. To refresh the same device again, remove
 the trigger row and select it again.
+
+Refresh backend errors happen after RDMO has already saved the trigger value.
+To make these failures visible in the interview, configure
+`status_attribute_uri`, `error_attribute_uri`, and optionally
+`timestamp_attribute_uri` to point to scalar catalog questions in the same
+interview scope. The plugin then stores `success` or `failed`, a short error
+message, and the refresh timestamp as normal RDMO values.
 
 Do not use a provider-backed checkbox for this trigger in standard RDMO. RDMO's
 checkbox conflict validation compares regular option values by `option`, while

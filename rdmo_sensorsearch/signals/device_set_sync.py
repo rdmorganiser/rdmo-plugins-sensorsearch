@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
 from datetime import timezone as dt_timezone
-from types import SimpleNamespace
 from typing import Any
 
 from django.db import transaction
@@ -64,9 +63,41 @@ class DeviceBlockPlan:
 
 
 @dataclass(frozen=True)
+class DeviceBlockInstance:
+    project: Any
+    set_prefix: str
+    set_index: int
+    attribute_id: int
+
+
+@dataclass(frozen=True)
 class DeviceFetchResult:
     mapped_data: dict[str, Any]
     scoped_scalar_values: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class DeviceRefreshError:
+    external_id: str
+    message: str
+
+
+@dataclass(frozen=True)
+class DeviceRefreshResult:
+    requested_count: int
+    refreshed_count: int
+    errors: tuple[DeviceRefreshError, ...] = ()
+
+
+@dataclass(frozen=True)
+class DeviceFetchFailure:
+    message: str
+
+
+@dataclass(frozen=True)
+class DeviceFetchBatchResult:
+    payloads: dict[str, DeviceFetchResult]
+    errors: tuple[DeviceRefreshError, ...] = ()
 
 
 def sync_device_detail_blocks_from_values(
@@ -221,24 +252,20 @@ def sync_device_detail_blocks(
             )
         )
 
-    fetched_payloads = _fetch_device_detail_payloads(
+    fetch_batch = _fetch_device_detail_payloads(
         plans,
         root_attribute.id,
         config_context.external_id,
         auth_token=auth_token,
     )
+    fetched_payloads = fetch_batch.payloads
 
     with transaction.atomic(), mute_value_post_save():
         for block in stale_blocks:
             _delete_device_block(project, scope_prefix, block["set_index"], related_attribute_ids)
 
         for plan in plans:
-            block_instance = SimpleNamespace(
-                project=project,
-                set_prefix=scope_prefix,
-                set_index=plan.set_index,
-                attribute_id=root_attribute.id,
-            )
+            block_instance = _device_block_instance(project, root_attribute.id, scope_prefix, plan.set_index)
 
             if plan.needs_metadata_write:
                 _upsert_root_device_value(
@@ -264,15 +291,7 @@ def sync_device_detail_blocks(
             if fetched_payload is None:
                 continue
 
-            update_values_from_mapped_data(block_instance, fetched_payload.mapped_data)
-            for attribute_uri, value in fetched_payload.scoped_scalar_values.items():
-                replace_scalar_value_in_scopes(
-                    block_instance,
-                    attribute_uri,
-                    value,
-                    scopes_to_set=[_device_nested_questionset_scope(plan.set_index)],
-                    scopes_to_clear=[(scope_prefix, plan.set_index)],
-                )
+            _write_device_fetch_payload(block_instance, fetched_payload, scope_prefix, plan.set_index)
 
         if stale_blocks:
             _compact_device_detail_blocks(project, catalog, scope_prefix, device_collection_attribute_uri)
@@ -285,14 +304,39 @@ def refresh_device_detail_blocks(
     device_collection_attribute_uri: str = DEVICE_COLLECTION_ATTRIBUTE_URI,
     auth_token: str | None = None,
 ) -> int:
+    return refresh_device_detail_blocks_with_result(
+        project=project,
+        catalog=catalog,
+        block_external_ids=block_external_ids,
+        device_collection_attribute_uri=device_collection_attribute_uri,
+        auth_token=auth_token,
+    ).refreshed_count
+
+
+def refresh_device_detail_blocks_with_result(
+    project,
+    catalog,
+    block_external_ids: Iterable[str],
+    device_collection_attribute_uri: str = DEVICE_COLLECTION_ATTRIBUTE_URI,
+    auth_token: str | None = None,
+) -> DeviceRefreshResult:
     block_external_ids = {external_id for external_id in block_external_ids if external_id}
     if not block_external_ids:
-        return 0
+        return _device_refresh_result(block_external_ids)
 
     root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
-        return 0
+        return _device_refresh_result(
+            block_external_ids,
+            errors=[
+                DeviceRefreshError(
+                    external_id=external_id,
+                    message=f"Device collection root attribute not found: {device_collection_attribute_uri}",
+                )
+                for external_id in sorted(block_external_ids)
+            ],
+        )
 
     root_values = list(
         Value.objects.filter(
@@ -303,9 +347,14 @@ def refresh_device_detail_blocks(
             external_id__in=block_external_ids,
         ).order_by("set_prefix", "set_index", "id")
     )
+    found_external_ids = {value.external_id for value in root_values if value.external_id}
+    errors = [
+        DeviceRefreshError(external_id=external_id, message="No device detail block found for refresh ID.")
+        for external_id in sorted(block_external_ids - found_external_ids)
+    ]
     if not root_values:
         logger.warning("No device detail blocks found for refresh IDs: %s", sorted(block_external_ids))
-        return 0
+        return _device_refresh_result(block_external_ids, errors=errors)
 
     plans: list[DeviceBlockPlan] = []
     for root_value in root_values:
@@ -313,11 +362,13 @@ def refresh_device_detail_blocks(
         configuration_external_id, device_external_id = _parse_block_external_id(block_key)
         if not configuration_external_id or not device_external_id:
             logger.warning("Skipping refresh for invalid device block external_id=%s", block_key)
+            errors.append(DeviceRefreshError(external_id=block_key, message="Invalid device block refresh ID."))
             continue
 
         sensor_candidate = _resolve_sensor_candidate(catalog.uri, device_external_id)
         if sensor_candidate is None:
             logger.warning("No sensor handler found for refresh device %s", device_external_id)
+            errors.append(DeviceRefreshError(external_id=block_key, message="No sensor handler found for refresh device."))
             continue
 
         plans.append(
@@ -333,9 +384,15 @@ def refresh_device_detail_blocks(
             )
         )
 
-    fetched_payloads = _fetch_device_detail_payloads(plans, root_attribute.id, auth_token=auth_token)
+    fetch_batch = _fetch_device_detail_payloads(
+        plans,
+        root_attribute.id,
+        auth_token=auth_token,
+    )
+    fetched_payloads = fetch_batch.payloads
+    errors.extend(fetch_batch.errors)
     if not fetched_payloads:
-        return 0
+        return _device_refresh_result(block_external_ids, errors=errors)
 
     refreshed_count = 0
     with transaction.atomic(), mute_value_post_save():
@@ -344,25 +401,50 @@ def refresh_device_detail_blocks(
             if fetched_payload is None:
                 continue
 
-            block_instance = SimpleNamespace(
-                project=project,
-                set_prefix=plan.set_prefix,
-                set_index=plan.set_index,
-                attribute_id=root_attribute.id,
-            )
+            block_instance = _device_block_instance(project, root_attribute.id, plan.set_prefix, plan.set_index)
             _clear_device_refresh_targets(block_instance, plan.sensor_candidate.handler)
-            update_values_from_mapped_data(block_instance, fetched_payload.mapped_data)
-            for attribute_uri, value in fetched_payload.scoped_scalar_values.items():
-                replace_scalar_value_in_scopes(
-                    block_instance,
-                    attribute_uri,
-                    value,
-                    scopes_to_set=[_device_nested_questionset_scope(plan.set_index)],
-                    scopes_to_clear=[(plan.set_prefix, plan.set_index)],
-                )
+            _write_device_fetch_payload(block_instance, fetched_payload, plan.set_prefix, plan.set_index)
             refreshed_count += 1
 
-    return refreshed_count
+    return _device_refresh_result(block_external_ids, refreshed_count=refreshed_count, errors=errors)
+
+
+def _device_refresh_result(
+    block_external_ids: set[str],
+    refreshed_count: int = 0,
+    errors: Iterable[DeviceRefreshError] = (),
+) -> DeviceRefreshResult:
+    return DeviceRefreshResult(
+        requested_count=len(block_external_ids),
+        refreshed_count=refreshed_count,
+        errors=tuple(errors),
+    )
+
+
+def _device_block_instance(project, root_attribute_id: int, set_prefix: str, set_index: int) -> DeviceBlockInstance:
+    return DeviceBlockInstance(
+        project=project,
+        set_prefix=set_prefix,
+        set_index=set_index,
+        attribute_id=root_attribute_id,
+    )
+
+
+def _write_device_fetch_payload(
+    block_instance,
+    fetched_payload: DeviceFetchResult,
+    scope_prefix: str,
+    set_index: int,
+) -> None:
+    update_values_from_mapped_data(block_instance, fetched_payload.mapped_data)
+    for attribute_uri, value in fetched_payload.scoped_scalar_values.items():
+        replace_scalar_value_in_scopes(
+            block_instance,
+            attribute_uri,
+            value,
+            scopes_to_set=[_device_nested_questionset_scope(set_index)],
+            scopes_to_clear=[(scope_prefix, set_index)],
+        )
 
 
 def _fetch_device_detail_payloads(
@@ -370,13 +452,14 @@ def _fetch_device_detail_payloads(
     root_attribute_id: int,
     configuration_external_id: str | None = None,
     auth_token: str | None = None,
-) -> dict[str, DeviceFetchResult]:
+) -> DeviceFetchBatchResult:
     refresh_plans = [plan for plan in plans if plan.needs_refresh]
     if not refresh_plans:
-        return {}
+        return DeviceFetchBatchResult(payloads={})
 
     max_workers = min(DEVICE_DETAIL_FETCH_WORKERS, len(refresh_plans))
     results: dict[str, DeviceFetchResult] = {}
+    errors: list[DeviceRefreshError] = []
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_plan = {
@@ -394,14 +477,18 @@ def _fetch_device_detail_payloads(
             plan = future_to_plan[future]
             try:
                 result = future.result()
-            except Exception:
+            except Exception as e:
+                message = str(e) or e.__class__.__name__
                 logger.exception("Failed to fetch device detail payload for %s", plan.device.external_id)
+                errors.append(DeviceRefreshError(external_id=plan.block_key, message=message))
                 continue
 
-            if result is not None:
+            if isinstance(result, DeviceFetchFailure):
+                errors.append(DeviceRefreshError(external_id=plan.block_key, message=result.message))
+            elif result is not None:
                 results[plan.block_key] = result
 
-    return results
+    return DeviceFetchBatchResult(payloads=results, errors=tuple(errors))
 
 
 def _fetch_device_detail_payload(
@@ -409,18 +496,13 @@ def _fetch_device_detail_payload(
     root_attribute_id: int,
     configuration_external_id: str | None,
     auth_token: str | None = None,
-) -> DeviceFetchResult | None:
+) -> DeviceFetchResult | DeviceFetchFailure | None:
     device_id = _parse_external_id(plan.device.external_id)[1]
     if device_id is None:
         logger.warning("Could not parse external ID %s", plan.device.external_id)
-        return None
+        return DeviceFetchFailure(message="Could not parse external device ID.")
 
-    fetch_instance = SimpleNamespace(
-        project=None,
-        set_prefix="",
-        set_index=plan.set_index,
-        attribute_id=root_attribute_id,
-    )
+    fetch_instance = _device_block_instance(None, root_attribute_id, "", plan.set_index)
     if getattr(plan.sensor_candidate.handler, "uses_auth_token", False):
         mapped_data = plan.sensor_candidate.handler.handle(
             id_=device_id,
@@ -431,14 +513,15 @@ def _fetch_device_detail_payload(
         mapped_data = plan.sensor_candidate.handler.handle(id_=device_id, instance=fetch_instance)
     if isinstance(mapped_data, dict) and "errors" in mapped_data:
         logger.error("Sensor handler returned errors for %s: %s", plan.device.external_id, mapped_data["errors"])
-        return None
+        return DeviceFetchFailure(message=_format_handler_errors(mapped_data["errors"]))
     if not isinstance(mapped_data, dict):
+        message = f"Sensor handler returned unexpected payload type: {type(mapped_data).__name__}."
         logger.warning(
             "Sensor handler returned unexpected payload for %s: %s",
             plan.device.external_id,
             type(mapped_data).__name__,
         )
-        return None
+        return DeviceFetchFailure(message=message)
 
     mapped_data = dict(mapped_data)
     _merge_mounting_period_values(
@@ -456,6 +539,12 @@ def _fetch_device_detail_payload(
         mapped_data=mapped_data,
         scoped_scalar_values=scoped_scalar_values,
     )
+
+
+def _format_handler_errors(errors: Any) -> str:
+    if isinstance(errors, list):
+        return "; ".join(str(error) for error in errors)
+    return str(errors)
 
 
 def _selected_device_from_block_value(

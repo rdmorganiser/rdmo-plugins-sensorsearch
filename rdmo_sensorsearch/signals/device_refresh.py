@@ -2,15 +2,18 @@ import logging
 from dataclasses import dataclass
 
 from django.db import transaction
+from django.utils import timezone
 
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.config import load_config
 from rdmo_sensorsearch.signals.device_set_sync import (
     DEVICE_COLLECTION_ATTRIBUTE_URI,
-    refresh_device_detail_blocks,
+    DeviceRefreshResult,
+    refresh_device_detail_blocks_with_result,
 )
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
+from rdmo_sensorsearch.signals.value_updater import update_values_from_mapped_data
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,9 @@ class DeviceRefreshConfig:
     trigger_attribute_uri: str
     source_attribute_uri: str = DEVICE_COLLECTION_ATTRIBUTE_URI
     clear_trigger_value: bool = False
+    status_attribute_uri: str | None = None
+    error_attribute_uri: str | None = None
+    timestamp_attribute_uri: str | None = None
 
 
 def get_device_refresh_config(catalog_uri: str, attribute_uri: str) -> DeviceRefreshConfig | None:
@@ -40,6 +46,9 @@ def get_device_refresh_config(catalog_uri: str, attribute_uri: str) -> DeviceRef
             trigger_attribute_uri=trigger_attribute_uri,
             source_attribute_uri=catalog.get("source_attribute_uri", DEVICE_COLLECTION_ATTRIBUTE_URI),
             clear_trigger_value=catalog.get("clear_trigger_value", False),
+            status_attribute_uri=catalog.get("status_attribute_uri"),
+            error_attribute_uri=catalog.get("error_attribute_uri"),
+            timestamp_attribute_uri=catalog.get("timestamp_attribute_uri"),
         )
 
     return None
@@ -57,7 +66,7 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
         logger.debug("Skipping device refresh trigger without external_id for value %s", instance.pk)
         return
 
-    refreshed_count = refresh_device_detail_blocks(
+    result = refresh_device_detail_blocks_with_result(
         project=instance.project,
         catalog=instance.project.catalog,
         block_external_ids=[instance.external_id],
@@ -65,10 +74,12 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
         auth_token=auth_token,
     )
     logger.info(
-        "Device refresh trigger %s refreshed %s device detail block(s)",
+        "Device refresh trigger %s refreshed %s of %s device detail block(s)",
         instance.pk,
-        refreshed_count,
+        result.refreshed_count,
+        result.requested_count,
     )
+    _store_refresh_result(instance, refresh_config, result)
 
     if refresh_config.clear_trigger_value:
         _clear_trigger_value(instance)
@@ -77,3 +88,33 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
 def _clear_trigger_value(instance: Value) -> None:
     with transaction.atomic(), mute_value_post_save():
         Value.objects.filter(pk=instance.pk).delete()
+
+
+def _store_refresh_result(instance: Value, refresh_config: DeviceRefreshConfig, result: DeviceRefreshResult) -> None:
+    payload = {}
+    if refresh_config.status_attribute_uri:
+        payload[refresh_config.status_attribute_uri] = "failed" if result.errors else "success"
+    if refresh_config.error_attribute_uri:
+        payload[refresh_config.error_attribute_uri] = _format_refresh_errors(result)
+    if refresh_config.timestamp_attribute_uri:
+        payload[refresh_config.timestamp_attribute_uri] = timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")
+
+    if payload:
+        update_values_from_mapped_data(instance, payload)
+
+
+def _format_refresh_errors(result: DeviceRefreshResult) -> str:
+    if not result.errors:
+        return ""
+
+    prefix = f"Refresh failed ({result.refreshed_count}/{result.requested_count} device detail blocks refreshed)."
+    details = "; ".join(
+        f"{error.external_id}: {error.message}" if error.external_id else error.message for error in result.errors
+    )
+    return _truncate_refresh_error(f"{prefix} {details}")
+
+
+def _truncate_refresh_error(message: str, max_length: int = 1000) -> str:
+    if len(message) <= max_length:
+        return message
+    return f"{message[: max_length - 3]}..."
