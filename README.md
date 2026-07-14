@@ -125,6 +125,7 @@ source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-se
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
 source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
+clear_trigger_value = false
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
@@ -273,21 +274,29 @@ catalog, `ProjectDataCollectionDevicesProvider` reads the selected devices from
 `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices`.
 
 `ProjectDeviceRefreshProvider` is also project-local. It should be connected to
-a checkbox or select question whose attribute URI matches the configured
+a collection select question whose attribute URI matches the configured
 `trigger_attribute_uri`. For the Earth-Sensor catalog the default trigger
 attribute is
 `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`,
 and the options are read from the materialized device detail blocks in
 `https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id`. Saving
 one of these trigger values refreshes the corresponding device detail block
-from the original backend and then clears the trigger value, so the same device
-can be refreshed again later.
+from the original backend. By default the trigger value is kept, which avoids a
+race with the RDMO interview frontend. To refresh the same device again, remove
+the trigger row and select it again.
+
+Do not use a provider-backed checkbox for this trigger in standard RDMO. RDMO's
+checkbox conflict validation compares regular option values by `option`, while
+dynamic provider values are stored with `external_id` and `option=None`. This
+means multiple dynamic checkbox selections for the same question can collide
+before the sensorsearch refresh signal is reached.
 
 A minimal Earth-Sensor catalog question for this trigger can use:
 
 - attribute:
   `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`
-- widget/value type: checkbox / option
+- widget/value type: select / option
+- collection: true
 - option set:
   `https://rdmo.nfdi4earth.de/terms/options/device-refresh/optionset`
 - provider key:

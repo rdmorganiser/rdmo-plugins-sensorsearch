@@ -6,7 +6,7 @@ SPDX-FileCopyrightText: 2026 RDMO Community and individual contributors
 SPDX-License-Identifier: Apache-2.0
 -->
 
-<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-06-15T12:00:00+02:00" version="2.2.0+b1963de">
+<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-06-15T12:00:00+02:00" required="2.1.0" version="2.4.4">
 	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/data-collection/devices/optionset">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>options/data-collection/devices/optionset</uri_path>

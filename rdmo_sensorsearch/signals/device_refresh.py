@@ -21,7 +21,7 @@ DEFAULT_REFRESH_TRIGGER_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain
 class DeviceRefreshConfig:
     trigger_attribute_uri: str
     source_attribute_uri: str = DEVICE_COLLECTION_ATTRIBUTE_URI
-    clear_trigger_value: bool = True
+    clear_trigger_value: bool = False
 
 
 def get_device_refresh_config(catalog_uri: str, attribute_uri: str) -> DeviceRefreshConfig | None:
@@ -39,7 +39,7 @@ def get_device_refresh_config(catalog_uri: str, attribute_uri: str) -> DeviceRef
         return DeviceRefreshConfig(
             trigger_attribute_uri=trigger_attribute_uri,
             source_attribute_uri=catalog.get("source_attribute_uri", DEVICE_COLLECTION_ATTRIBUTE_URI),
-            clear_trigger_value=catalog.get("clear_trigger_value", True),
+            clear_trigger_value=catalog.get("clear_trigger_value", False),
         )
 
     return None

@@ -27,6 +27,7 @@ source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-se
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
 source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
+clear_trigger_value = false
 
 [handlers.O2ARegistrySearchHandler]
 # Use defaults
