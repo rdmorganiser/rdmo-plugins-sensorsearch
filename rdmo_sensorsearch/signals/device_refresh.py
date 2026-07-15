@@ -8,12 +8,16 @@ from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.config import load_config
 from rdmo_sensorsearch.signals.device_set_sync import (
+    CONFIGURATION_SEARCH_ATTRIBUTE_URI,
     DEVICE_COLLECTION_ATTRIBUTE_URI,
+    SELECTED_DEVICES_ATTRIBUTE_URI,
+    DeviceRefreshError,
     DeviceRefreshResult,
     refresh_device_detail_blocks_with_result,
+    resolve_refresh_target_from_selected_device_row,
 )
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
-from rdmo_sensorsearch.signals.value_updater import update_values_from_mapped_data
+from rdmo_sensorsearch.signals.value_updater import replace_scalar_value_in_scopes
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,8 @@ DEFAULT_REFRESH_TRIGGER_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain
 class DeviceRefreshConfig:
     trigger_attribute_uri: str
     source_attribute_uri: str = DEVICE_COLLECTION_ATTRIBUTE_URI
+    selected_devices_attribute_uri: str = SELECTED_DEVICES_ATTRIBUTE_URI
+    configuration_search_attribute_uri: str = CONFIGURATION_SEARCH_ATTRIBUTE_URI
     clear_trigger_value: bool = False
     status_attribute_uri: str | None = None
     error_attribute_uri: str | None = None
@@ -45,6 +51,11 @@ def get_device_refresh_config(catalog_uri: str, attribute_uri: str) -> DeviceRef
         return DeviceRefreshConfig(
             trigger_attribute_uri=trigger_attribute_uri,
             source_attribute_uri=catalog.get("source_attribute_uri", DEVICE_COLLECTION_ATTRIBUTE_URI),
+            selected_devices_attribute_uri=catalog.get("selected_devices_attribute_uri", SELECTED_DEVICES_ATTRIBUTE_URI),
+            configuration_search_attribute_uri=catalog.get(
+                "configuration_search_attribute_uri",
+                CONFIGURATION_SEARCH_ATTRIBUTE_URI,
+            ),
             clear_trigger_value=catalog.get("clear_trigger_value", False),
             status_attribute_uri=catalog.get("status_attribute_uri"),
             error_attribute_uri=catalog.get("error_attribute_uri"),
@@ -62,14 +73,22 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
     if refresh_config is None:
         return
 
-    if not instance.external_id:
-        logger.debug("Skipping device refresh trigger without external_id for value %s", instance.pk)
+    if not instance.external_id and not _is_row_local_refresh_trigger_enabled(instance):
+        logger.debug("Skipping inactive row-local device refresh trigger %s", instance.pk)
+        return
+
+    block_external_id = _resolve_refresh_block_external_id(instance, refresh_config)
+    if block_external_id is None:
+        result = _failed_refresh_result(instance, "Could not resolve selected device for this refresh trigger.")
+        _store_refresh_result(instance, refresh_config, result)
+        if refresh_config.clear_trigger_value:
+            _clear_trigger_value(instance)
         return
 
     result = refresh_device_detail_blocks_with_result(
         project=instance.project,
         catalog=instance.project.catalog,
-        block_external_ids=[instance.external_id],
+        block_external_ids=[block_external_id],
         device_collection_attribute_uri=refresh_config.source_attribute_uri,
         auth_token=auth_token,
     )
@@ -90,6 +109,41 @@ def _clear_trigger_value(instance: Value) -> None:
         Value.objects.filter(pk=instance.pk).delete()
 
 
+def _resolve_refresh_block_external_id(instance: Value, refresh_config: DeviceRefreshConfig) -> str | None:
+    if instance.external_id:
+        return instance.external_id
+
+    target = resolve_refresh_target_from_selected_device_row(
+        instance,
+        selected_devices_attribute_uri=refresh_config.selected_devices_attribute_uri,
+        configuration_search_attribute_uri=refresh_config.configuration_search_attribute_uri,
+    )
+    return target.block_external_id if target is not None else None
+
+
+def _is_row_local_refresh_trigger_enabled(instance: Value) -> bool:
+    if instance.option_id is not None:
+        return True
+    if instance.external_id:
+        return True
+    if instance.text is None:
+        return False
+    return instance.text.strip().lower() not in {"", "0", "false", "no"}
+
+
+def _failed_refresh_result(instance: Value, message: str) -> DeviceRefreshResult:
+    return DeviceRefreshResult(
+        requested_count=1,
+        refreshed_count=0,
+        errors=(
+            DeviceRefreshError(
+                external_id=f"value:{instance.pk}",
+                message=message,
+            ),
+        ),
+    )
+
+
 def _store_refresh_result(instance: Value, refresh_config: DeviceRefreshConfig, result: DeviceRefreshResult) -> None:
     payload = {}
     if refresh_config.status_attribute_uri:
@@ -100,7 +154,20 @@ def _store_refresh_result(instance: Value, refresh_config: DeviceRefreshConfig, 
         payload[refresh_config.timestamp_attribute_uri] = timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")
 
     if payload:
-        update_values_from_mapped_data(instance, payload)
+        _write_refresh_feedback_values(instance, payload)
+
+
+def _write_refresh_feedback_values(instance: Value, payload: dict[str, str]) -> None:
+    target_scope = (instance.set_prefix or "", instance.set_index)
+    logger.info(
+        "Writing refresh feedback for trigger %s to set_prefix=%r, set_index=%s",
+        instance.pk,
+        target_scope[0],
+        target_scope[1],
+    )
+
+    for attribute_uri, text in payload.items():
+        replace_scalar_value_in_scopes(instance, attribute_uri, text, scopes_to_set=[target_scope])
 
 
 def _format_refresh_errors(result: DeviceRefreshResult) -> str:

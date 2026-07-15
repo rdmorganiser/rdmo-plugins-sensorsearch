@@ -27,6 +27,8 @@ source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-se
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
 source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
+selected_devices_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
+configuration_search_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
 clear_trigger_value = false
 # Optional attributes for interview-visible refresh feedback.
 status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"

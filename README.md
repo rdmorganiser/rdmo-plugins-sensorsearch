@@ -50,6 +50,7 @@ OPTIONSET_PROVIDERS = [
     ('sensorssearch_project_sensors', _('Project Configuration Sensors'), 'rdmo_sensorsearch.providers.ProjectConfigurationSensorsProvider'),
     ('sensorssearch_project_data_collection_devices', _('Project Data Collection Devices'), 'rdmo_sensorsearch.providers.ProjectDataCollectionDevicesProvider'),
     ('sensorssearch_project_device_refresh', _('Project Device Refresh'), 'rdmo_sensorsearch.providers.ProjectDeviceRefreshProvider'),
+    ('sensorssearch_refresh_values', _('Refresh Values'), 'rdmo_sensorsearch.providers.ProjectValueRefreshProvider'),
 ]
 ```
 
@@ -125,6 +126,8 @@ source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-se
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
 source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
+selected_devices_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
+configuration_search_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
 clear_trigger_value = false
 # Optional attributes for interview-visible refresh feedback.
 status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
@@ -277,17 +280,21 @@ configuration handler after a configuration was selected. For the Earth-Sensor
 catalog, `ProjectDataCollectionDevicesProvider` reads the selected devices from
 `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices`.
 
-`ProjectDeviceRefreshProvider` is also project-local. It should be connected to
-a collection select question whose attribute URI matches the configured
-`trigger_attribute_uri`. For the Earth-Sensor catalog the default trigger
-attribute is
+`ProjectDeviceRefreshProvider` is also project-local. The preferred
+Earth-Sensor catalog layout uses a collection question set for selected devices
+inside the configuration page. Each row contains the selected device and a
+row-local refresh trigger whose attribute URI matches the configured
+`trigger_attribute_uri`, by default
 `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`,
-and the options are read from the materialized device detail blocks in
-`https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id`. Saving
-one of these trigger values refreshes the corresponding device detail block
-from the original backend. By default the trigger value is kept, which avoids a
-race with the RDMO interview frontend. To refresh the same device again, remove
-the trigger row and select it again.
+and the selected device attribute configured by `selected_devices_attribute_uri`.
+When the trigger value has no provider `external_id`, the plugin resolves the
+selected device from the same question set row and refreshes the corresponding
+materialized device detail block in
+`https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id`.
+
+The older provider-select trigger remains supported: if the saved trigger value
+has an `external_id`, it is treated as the materialized device detail block id
+and refreshed directly.
 
 Refresh backend errors happen after RDMO has already saved the trigger value.
 To make these failures visible in the interview, configure
@@ -302,7 +309,30 @@ dynamic provider values are stored with `external_id` and `option=None`. This
 means multiple dynamic checkbox selections for the same question can collide
 before the sensorsearch refresh signal is reached.
 
-A minimal Earth-Sensor catalog question for this trigger can use:
+A minimal row-local Earth-Sensor catalog layout can use:
+
+- page:
+  `https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set`
+  with `is_collection=true`
+- child question set:
+  `https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/devices`
+  with `is_collection=true`
+- selected-device question inside that question set:
+  `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices`
+  as a scalar text value with the selected device `external_id`
+- refresh trigger question inside that same question set:
+  `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`
+  as a Yes/No row-local action trigger
+- optional refresh optionset on that trigger question:
+  an optionset with provider key `sensorssearch_refresh_values`
+
+`sensorssearch_refresh_values` intentionally returns no options. It exists only
+to use RDMO's release-compatible `optionset.has_refresh` hook, which refetches
+the current page values after the trigger is saved. This makes sibling feedback
+values, such as refresh status and timestamp, visible without a manual browser
+refresh in RDMO versions that support the `fetchValues(page)` refresh branch.
+
+The older provider-select trigger question can use:
 
 - attribute:
   `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`

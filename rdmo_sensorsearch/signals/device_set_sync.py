@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 DEVICE_DETAILS_PAGE_URI = "https://rdmo.nfdi4earth.de/terms/questions/instruments_general"
 DEVICE_OPTIONAL_INFO_PAGE_URI = "https://rdmo.nfdi4earth.de/terms/questions/instruments/further-info"
 CONFIGURATION_SET_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
+CONFIGURATION_SEARCH_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
+SELECTED_DEVICES_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
 USAGE_TECHNOLOGY_ATTRIBUTE_URI = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
@@ -100,6 +102,12 @@ class DeviceFetchBatchResult:
     errors: tuple[DeviceRefreshError, ...] = ()
 
 
+@dataclass(frozen=True)
+class DeviceBlockRefreshTarget:
+    block_external_id: str
+    selected_device_external_id: str
+
+
 def sync_device_detail_blocks_from_values(
     instance,
     selected_values: Iterable[Value],
@@ -108,14 +116,36 @@ def sync_device_detail_blocks_from_values(
     configuration_search_attribute_uri: str,
     auth_token: str | None = None,
 ) -> None:
-    scope_prefix = instance.set_prefix or ""
-    source_set_index = instance.set_index
+    sync_device_detail_blocks_from_configuration_values(
+        project=instance.project,
+        catalog=instance.project.catalog,
+        scope_prefix=instance.set_prefix or "",
+        source_set_index=instance.set_index,
+        selected_values=selected_values,
+        selected_devices_attribute_uri=selected_devices_attribute_uri,
+        device_collection_attribute_uri=device_collection_attribute_uri,
+        configuration_search_attribute_uri=configuration_search_attribute_uri,
+        auth_token=auth_token,
+    )
+
+
+def sync_device_detail_blocks_from_configuration_values(
+    project,
+    catalog,
+    scope_prefix: str,
+    source_set_index: int,
+    selected_values: Iterable[Value],
+    selected_devices_attribute_uri: str,
+    device_collection_attribute_uri: str,
+    configuration_search_attribute_uri: str,
+    auth_token: str | None = None,
+) -> None:
     selected_devices = [
         SelectedDevice(text=value.text or "", external_id=value.external_id) for value in selected_values if value.external_id
     ]
     sync_device_detail_blocks(
-        project=instance.project,
-        catalog=instance.project.catalog,
+        project=project,
+        catalog=catalog,
         scope_prefix=scope_prefix,
         source_set_index=source_set_index,
         selected_devices=selected_devices,
@@ -123,7 +153,7 @@ def sync_device_detail_blocks_from_values(
         device_collection_attribute_uri=device_collection_attribute_uri,
         configuration_search_attribute_uri=configuration_search_attribute_uri,
         configuration_external_id=_resolve_configuration_external_id_from_values(
-            project=instance.project,
+            project=project,
             scope_prefix=scope_prefix,
             source_set_index=source_set_index,
             configuration_search_attribute_uri=configuration_search_attribute_uri,
@@ -295,6 +325,79 @@ def sync_device_detail_blocks(
 
         if stale_blocks:
             _compact_device_detail_blocks(project, catalog, scope_prefix, device_collection_attribute_uri)
+
+
+def get_configuration_scope_for_value(value: Value) -> tuple[str, int]:
+    if value.set_collection and not value.set_prefix:
+        return value.set_prefix or "", value.set_index
+    return _parent_configuration_scope(value.set_prefix or "", value.set_index)
+
+
+def get_selected_device_values_for_configuration_scope(
+    project,
+    selected_devices_attribute_uri: str,
+    scope_prefix: str,
+    source_set_index: int,
+) -> list[Value]:
+    child_prefix = _child_scope_prefix(scope_prefix, source_set_index)
+    row_values = list(
+        Value.objects.filter(
+            project=project,
+            snapshot=None,
+            attribute__uri=selected_devices_attribute_uri,
+            set_prefix=child_prefix,
+        )
+        .exclude(external_id__isnull=True)
+        .exclude(external_id__exact="")
+        .order_by("set_index", "id")
+    )
+    if row_values:
+        return row_values
+
+    return list(
+        Value.objects.filter(
+            project=project,
+            snapshot=None,
+            attribute__uri=selected_devices_attribute_uri,
+            set_collection=True,
+            set_prefix=scope_prefix,
+            set_index=source_set_index,
+        )
+        .exclude(external_id__isnull=True)
+        .exclude(external_id__exact="")
+        .order_by("collection_index", "id")
+    )
+
+
+def resolve_refresh_target_from_selected_device_row(
+    instance: Value,
+    selected_devices_attribute_uri: str = SELECTED_DEVICES_ATTRIBUTE_URI,
+    configuration_search_attribute_uri: str = CONFIGURATION_SEARCH_ATTRIBUTE_URI,
+) -> DeviceBlockRefreshTarget | None:
+    if not instance.set_prefix:
+        logger.warning("Refresh trigger value %s is not in a row-local question set scope", instance.pk)
+        return None
+
+    selected_device = _selected_device_for_trigger_row(instance, selected_devices_attribute_uri)
+    if selected_device is None or not selected_device.external_id:
+        logger.warning("No selected device found for refresh trigger value %s", instance.pk)
+        return None
+
+    scope_prefix, source_set_index = get_configuration_scope_for_value(instance)
+    config_context = _resolve_configuration_context(
+        project=instance.project,
+        scope_prefix=scope_prefix,
+        source_set_index=source_set_index,
+        configuration_search_attribute_uri=configuration_search_attribute_uri,
+    )
+    if config_context is None:
+        logger.warning("Could not resolve configuration context for refresh trigger value %s", instance.pk)
+        return None
+
+    return DeviceBlockRefreshTarget(
+        block_external_id=_compose_device_block_key(config_context.key, selected_device.external_id),
+        selected_device_external_id=selected_device.external_id,
+    )
 
 
 def refresh_device_detail_blocks(
@@ -988,6 +1091,58 @@ def _has_nonempty_scalar_value(project, attribute_uri: str, scope_prefix: str, s
 
 def _device_nested_questionset_scope(parent_set_index: int) -> tuple[str, int]:
     return str(parent_set_index), 0
+
+
+def _parent_configuration_scope(set_prefix: str, set_index: int) -> tuple[str, int]:
+    if not set_prefix:
+        return "", set_index
+
+    if "|" not in set_prefix:
+        return "", int(set_prefix)
+
+    parent_prefix, _, parent_index = set_prefix.rpartition("|")
+    return parent_prefix, int(parent_index)
+
+
+def _child_scope_prefix(scope_prefix: str, source_set_index: int) -> str:
+    if not scope_prefix:
+        return str(source_set_index)
+    return f"{scope_prefix}|{source_set_index}"
+
+
+def _selected_device_for_trigger_row(instance: Value, selected_devices_attribute_uri: str) -> Value | None:
+    row_value = (
+        Value.objects.filter(
+            project=instance.project,
+            snapshot=None,
+            attribute__uri=selected_devices_attribute_uri,
+            set_prefix=instance.set_prefix or "",
+            set_index=instance.set_index,
+        )
+        .exclude(external_id__isnull=True)
+        .exclude(external_id__exact="")
+        .order_by("set_collection", "collection_index", "id")
+        .first()
+    )
+    if row_value is not None:
+        return row_value
+
+    scope_prefix, source_set_index = get_configuration_scope_for_value(instance)
+    return (
+        Value.objects.filter(
+            project=instance.project,
+            snapshot=None,
+            attribute__uri=selected_devices_attribute_uri,
+            set_collection=True,
+            set_prefix=scope_prefix,
+            set_index=source_set_index,
+            collection_index=instance.set_index,
+        )
+        .exclude(external_id__isnull=True)
+        .exclude(external_id__exact="")
+        .order_by("id")
+        .first()
+    )
 
 
 def _parse_external_id(external_id: str) -> tuple[str | None, str | None]:

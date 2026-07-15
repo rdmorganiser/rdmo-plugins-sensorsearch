@@ -13,7 +13,11 @@ from rdmo_sensorsearch.signals.data_collection_variable_sync import (
     sync_data_collection_variables_from_device_value,
 )
 from rdmo_sensorsearch.signals.device_refresh import get_device_refresh_config, handle_device_refresh_value
-from rdmo_sensorsearch.signals.device_set_sync import sync_device_detail_blocks_from_values
+from rdmo_sensorsearch.signals.device_set_sync import (
+    get_configuration_scope_for_value,
+    get_selected_device_values_for_configuration_scope,
+    sync_device_detail_blocks_from_configuration_values,
+)
 from rdmo_sensorsearch.signals.handler_post_save import _get_handler_candidates, handle_post_save
 from rdmo_sensorsearch.signals.utils import _is_muted
 
@@ -74,22 +78,19 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
             configuration_search_attribute_uri=configuration_search_attribute_uri,
             auth_token=auth_token,
         ):
-            selected_values = (
-                Value.objects.filter(
-                    project=instance.project,
-                    snapshot=None,
-                    attribute__uri=selected_devices_attribute_uri,
-                    set_collection=True,
-                    set_prefix=instance.set_prefix or "",
-                    set_index=instance.set_index,
-                )
-                .exclude(external_id__isnull=True)
-                .exclude(external_id__exact="")
-                .order_by("collection_index", "id")
+            scope_prefix, source_set_index = get_configuration_scope_for_value(instance)
+            selected_values = get_selected_device_values_for_configuration_scope(
+                project=instance.project,
+                selected_devices_attribute_uri=selected_devices_attribute_uri,
+                scope_prefix=scope_prefix,
+                source_set_index=source_set_index,
             )
-            sync_device_detail_blocks_from_values(
-                instance,
-                selected_values,
+            sync_device_detail_blocks_from_configuration_values(
+                project=instance.project,
+                catalog=instance.project.catalog,
+                scope_prefix=scope_prefix,
+                source_set_index=source_set_index,
+                selected_values=selected_values,
                 selected_devices_attribute_uri=selected_devices_attribute_uri,
                 device_collection_attribute_uri=device_collection_attribute_uri,
                 configuration_search_attribute_uri=configuration_search_attribute_uri,
