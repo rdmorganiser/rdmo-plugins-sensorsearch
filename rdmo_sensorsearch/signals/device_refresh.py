@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from rdmo.projects.models import Value
 
-from rdmo_sensorsearch.config import load_config
+from rdmo_sensorsearch.config import catalog_matches, load_config
 from rdmo_sensorsearch.signals.device_set_sync import (
     CONFIGURATION_SEARCH_ATTRIBUTE_URI,
     DEVICE_COLLECTION_ATTRIBUTE_URI,
@@ -41,7 +41,7 @@ def get_device_refresh_config(catalog_uri: str, attribute_uri: str) -> DeviceRef
     catalogs = configuration.get("ProjectDeviceRefreshProvider", {}).get("catalogs", [])
 
     for catalog in catalogs:
-        if catalog.get("catalog_uri") != catalog_uri:
+        if not catalog_matches(catalog, catalog_uri):
             continue
 
         trigger_attribute_uri = catalog.get("trigger_attribute_uri", DEFAULT_REFRESH_TRIGGER_ATTRIBUTE_URI)

@@ -119,11 +119,18 @@ source_attribute_uri = "http://example.com/terms/domain/configuration-set/member
 [ProjectDataCollectionDevicesProvider]
 [[ProjectDataCollectionDevicesProvider.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+# Optional aliases for draft or derived catalog URIs using the same attribute layout.
+catalog_uris = [
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
+]
 source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
 [ProjectDeviceRefreshProvider]
 [[ProjectDeviceRefreshProvider.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+catalog_uris = [
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
+]
 source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
 selected_devices_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"

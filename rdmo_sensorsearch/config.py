@@ -21,6 +21,20 @@ else:
 logger = logging.getLogger(__name__)
 
 
+def catalog_matches(catalog_config: dict[str, Any], catalog_uri: str) -> bool:
+    catalog_uris = catalog_config.get("catalog_uris")
+    if catalog_uris is None:
+        catalog_uris = []
+    elif isinstance(catalog_uris, str):
+        catalog_uris = [catalog_uris]
+
+    configured_uri = catalog_config.get("catalog_uri")
+    if configured_uri:
+        catalog_uris = [configured_uri, *catalog_uris]
+
+    return catalog_uri in catalog_uris
+
+
 def merge_config(base: dict[str, Any] | None, override: dict[str, Any] | None) -> dict[str, Any]:
     """Merge two TOML-derived dictionaries recursively.
 
