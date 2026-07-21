@@ -106,6 +106,7 @@ class DeviceFetchBatchResult:
 class DeviceBlockRefreshTarget:
     block_external_id: str
     selected_device_external_id: str
+    selected_device_text: str = ""
 
 
 def sync_device_detail_blocks_from_values(
@@ -397,6 +398,7 @@ def resolve_refresh_target_from_selected_device_row(
     return DeviceBlockRefreshTarget(
         block_external_id=_compose_device_block_key(config_context.key, selected_device.external_id),
         selected_device_external_id=selected_device.external_id,
+        selected_device_text=selected_device.text or selected_device.external_id,
     )
 
 

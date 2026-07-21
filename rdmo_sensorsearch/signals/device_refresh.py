@@ -12,6 +12,7 @@ from rdmo_sensorsearch.signals.device_set_sync import (
     CONFIGURATION_SEARCH_ATTRIBUTE_URI,
     DEVICE_COLLECTION_ATTRIBUTE_URI,
     SELECTED_DEVICES_ATTRIBUTE_URI,
+    DeviceBlockRefreshTarget,
     DeviceRefreshError,
     DeviceRefreshResult,
     refresh_device_detail_blocks_with_result,
@@ -78,8 +79,8 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
         logger.debug("Skipping inactive row-local device refresh trigger %s", instance.pk)
         return
 
-    block_external_id = _resolve_refresh_block_external_id(instance, refresh_config)
-    if block_external_id is None:
+    refresh_target = _resolve_refresh_target(instance, refresh_config)
+    if refresh_target is None:
         result = _failed_refresh_result(instance, "Could not resolve selected device for this refresh trigger.")
         _store_refresh_result(instance, refresh_config, result)
         _finalize_refresh_trigger(instance, refresh_config)
@@ -88,7 +89,7 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
     result = refresh_device_detail_blocks_with_result(
         project=instance.project,
         catalog=instance.project.catalog,
-        block_external_ids=[block_external_id],
+        block_external_ids=[refresh_target.block_external_id],
         device_collection_attribute_uri=refresh_config.source_attribute_uri,
         auth_token=auth_token,
     )
@@ -98,7 +99,7 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
         result.refreshed_count,
         result.requested_count,
     )
-    _store_refresh_result(instance, refresh_config, result)
+    _store_refresh_result(instance, refresh_config, result, refreshed_device_label=refresh_target.selected_device_text)
     _finalize_refresh_trigger(instance, refresh_config)
 
 
@@ -124,16 +125,19 @@ def _reset_boolean_trigger_value(instance: Value) -> None:
             update_value_if_changed(current, text="0")
 
 
-def _resolve_refresh_block_external_id(instance: Value, refresh_config: DeviceRefreshConfig) -> str | None:
+def _resolve_refresh_target(instance: Value, refresh_config: DeviceRefreshConfig) -> DeviceBlockRefreshTarget | None:
     if instance.external_id:
-        return instance.external_id
+        return DeviceBlockRefreshTarget(
+            block_external_id=instance.external_id,
+            selected_device_external_id=instance.external_id,
+            selected_device_text=instance.text or instance.external_id,
+        )
 
-    target = resolve_refresh_target_from_selected_device_row(
+    return resolve_refresh_target_from_selected_device_row(
         instance,
         selected_devices_attribute_uri=refresh_config.selected_devices_attribute_uri,
         configuration_search_attribute_uri=refresh_config.configuration_search_attribute_uri,
     )
-    return target.block_external_id if target is not None else None
 
 
 def _is_truthy_trigger_value(instance: Value) -> bool:
@@ -159,12 +163,17 @@ def _failed_refresh_result(instance: Value, message: str) -> DeviceRefreshResult
     )
 
 
-def _store_refresh_result(instance: Value, refresh_config: DeviceRefreshConfig, result: DeviceRefreshResult) -> None:
+def _store_refresh_result(
+    instance: Value,
+    refresh_config: DeviceRefreshConfig,
+    result: DeviceRefreshResult,
+    refreshed_device_label: str = "",
+) -> None:
     payload = {}
     if refresh_config.status_attribute_uri:
         payload[refresh_config.status_attribute_uri] = "failed" if result.errors else "success"
     if refresh_config.error_attribute_uri:
-        payload[refresh_config.error_attribute_uri] = _format_refresh_errors(result)
+        payload[refresh_config.error_attribute_uri] = _format_refresh_message(result, refreshed_device_label)
     if refresh_config.timestamp_attribute_uri:
         payload[refresh_config.timestamp_attribute_uri] = timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")
 
@@ -185,9 +194,13 @@ def _write_refresh_feedback_values(instance: Value, payload: dict[str, str]) -> 
         replace_scalar_value_in_scopes(instance, attribute_uri, text, scopes_to_set=[target_scope])
 
 
-def _format_refresh_errors(result: DeviceRefreshResult) -> str:
+def _format_refresh_message(result: DeviceRefreshResult, refreshed_device_label: str = "") -> str:
     if not result.errors:
-        return ""
+        if refreshed_device_label:
+            return _truncate_refresh_error(f"Success: {refreshed_device_label} was refreshed")
+        return _truncate_refresh_error(
+            f"Success: {result.refreshed_count}/{result.requested_count} device detail block(s) refreshed."
+        )
 
     prefix = f"Refresh failed ({result.refreshed_count}/{result.requested_count} device detail blocks refreshed)."
     details = "; ".join(
