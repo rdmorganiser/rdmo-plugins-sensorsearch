@@ -338,6 +338,9 @@ to use RDMO's release-compatible `optionset.has_refresh` hook, which refetches
 the current page values after the trigger is saved. This makes sibling feedback
 values, such as refresh status and timestamp, visible without a manual browser
 refresh in RDMO versions that support the `fetchValues(page)` refresh branch.
+After a boolean Yes/No trigger refresh, the plugin resets the trigger value from
+`Yes` (`1`) to `No` (`0`) while sensorsearch signals are muted. This lets users
+click `Yes` again later to request another refresh without deleting the row.
 
 The older provider-select trigger question can use:
 

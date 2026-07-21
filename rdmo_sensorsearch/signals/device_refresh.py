@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from django.db import transaction
 from django.utils import timezone
 
+from rdmo.core.constants import VALUE_TYPE_BOOLEAN
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.config import catalog_matches, load_config
@@ -17,7 +18,7 @@ from rdmo_sensorsearch.signals.device_set_sync import (
     resolve_refresh_target_from_selected_device_row,
 )
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
-from rdmo_sensorsearch.signals.value_updater import replace_scalar_value_in_scopes
+from rdmo_sensorsearch.signals.value_updater import replace_scalar_value_in_scopes, update_value_if_changed
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
     if refresh_config is None:
         return
 
-    if not instance.external_id and not _is_row_local_refresh_trigger_enabled(instance):
+    if not instance.external_id and not _is_truthy_trigger_value(instance):
         logger.debug("Skipping inactive row-local device refresh trigger %s", instance.pk)
         return
 
@@ -81,8 +82,7 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
     if block_external_id is None:
         result = _failed_refresh_result(instance, "Could not resolve selected device for this refresh trigger.")
         _store_refresh_result(instance, refresh_config, result)
-        if refresh_config.clear_trigger_value:
-            _clear_trigger_value(instance)
+        _finalize_refresh_trigger(instance, refresh_config)
         return
 
     result = refresh_device_detail_blocks_with_result(
@@ -99,14 +99,29 @@ def handle_device_refresh_value(instance: Value, auth_token: str | None = None) 
         result.requested_count,
     )
     _store_refresh_result(instance, refresh_config, result)
-
-    if refresh_config.clear_trigger_value:
-        _clear_trigger_value(instance)
+    _finalize_refresh_trigger(instance, refresh_config)
 
 
 def _clear_trigger_value(instance: Value) -> None:
     with transaction.atomic(), mute_value_post_save():
         Value.objects.filter(pk=instance.pk).delete()
+
+
+def _finalize_refresh_trigger(instance: Value, refresh_config: DeviceRefreshConfig) -> None:
+    if refresh_config.clear_trigger_value:
+        _clear_trigger_value(instance)
+    else:
+        _reset_boolean_trigger_value(instance)
+
+
+def _reset_boolean_trigger_value(instance: Value) -> None:
+    if instance.value_type != VALUE_TYPE_BOOLEAN or instance.text != "1":
+        return
+
+    with transaction.atomic(), mute_value_post_save():
+        current = Value.objects.filter(pk=instance.pk).first()
+        if current is not None and current.value_type == VALUE_TYPE_BOOLEAN and current.text == "1":
+            update_value_if_changed(current, text="0")
 
 
 def _resolve_refresh_block_external_id(instance: Value, refresh_config: DeviceRefreshConfig) -> str | None:
@@ -121,7 +136,7 @@ def _resolve_refresh_block_external_id(instance: Value, refresh_config: DeviceRe
     return target.block_external_id if target is not None else None
 
 
-def _is_row_local_refresh_trigger_enabled(instance: Value) -> bool:
+def _is_truthy_trigger_value(instance: Value) -> bool:
     if instance.option_id is not None:
         return True
     if instance.external_id:

@@ -92,6 +92,9 @@ reset_attribute_uris = [
 # Earth-Sensor catalog https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
 [[handlers.O2ARegistrySearchHandler.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+catalog_uris = [
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
+]
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 reset_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
@@ -175,6 +178,9 @@ reset_attribute_uris = [
 # Earth-Sensor catalog https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
 [[handlers.SensorManagementSystemHandler.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+catalog_uris = [
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
+]
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 reset_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
@@ -239,6 +245,9 @@ reset_attribute_uris = [
 # Earth-Sensor configuration catalog mapping
 [[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+catalog_uris = [
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
+]
 # Optional: only materialize mounted devices overlapping with the configured
 # period from the interview.
 # cfg_start_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
@@ -277,6 +286,9 @@ reset_attribute_uris = [
 
 [[handlers.O2ARegistryMissionsHandler.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+catalog_uris = [
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
+]
 
 
 [handlers.GeophysicalInstrumentPoolPotsdamHandler]
@@ -313,6 +325,9 @@ reset_attribute_uris = [
 # Earth-Sensor catalog https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
 [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
+catalog_uris = [
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
+]
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 reset_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",

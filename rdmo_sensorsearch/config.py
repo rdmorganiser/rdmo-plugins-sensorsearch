@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 def catalog_matches(catalog_config: dict[str, Any], catalog_uri: str) -> bool:
+    return catalog_uri in catalog_uri_values(catalog_config)
+
+
+def catalog_uri_values(catalog_config: dict[str, Any]) -> list[str]:
     catalog_uris = catalog_config.get("catalog_uris")
     if catalog_uris is None:
         catalog_uris = []
@@ -32,7 +36,7 @@ def catalog_matches(catalog_config: dict[str, Any], catalog_uri: str) -> bool:
     if configured_uri:
         catalog_uris = [configured_uri, *catalog_uris]
 
-    return catalog_uri in catalog_uris
+    return list(dict.fromkeys(catalog_uris))
 
 
 def merge_config(base: dict[str, Any] | None, override: dict[str, Any] | None) -> dict[str, Any]:

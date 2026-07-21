@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 
-from rdmo_sensorsearch.config import load_config, merge_config
+from rdmo_sensorsearch.config import catalog_uri_values, load_config, merge_config
 from rdmo_sensorsearch.handlers.base import GenericSearchHandler
 from rdmo_sensorsearch.handlers.registry import HANDLER_REGISTRY
 
@@ -44,13 +44,14 @@ def build_handlers_by_catalog() -> dict:
                 catalog,
             )
 
-            catalog_uri = merged_catalog.get("catalog_uri") or WILDCARD_CATALOG_URI
+            catalog_uris = catalog_uri_values(merged_catalog) or [WILDCARD_CATALOG_URI]
+            catalog_uri = catalog_uris[0]
             auto_field_uri = merged_catalog.get("auto_complete_field_uri")
             attribute_mapping = merged_catalog.get("attribute_mapping", {})
             catalog_extra_kwargs = {
                 key: value
                 for key, value in merged_catalog.items()
-                if key not in {"catalog_uri", "auto_complete_field_uri", "attribute_mapping"}
+                if key not in {"catalog_uri", "catalog_uris", "auto_complete_field_uri", "attribute_mapping"}
             }
 
             if not auto_field_uri:
@@ -78,7 +79,7 @@ def build_handlers_by_catalog() -> dict:
                         catalog_uri=catalog_uri,
                         auto_complete_field_uri=auto_field_uri,
                     )
-                    handlers_by_catalog.setdefault(catalog_uri, []).append(hid)
+                    _register_handler_instance(handlers_by_catalog, catalog_uris, hid)
                 except Exception as e:
                     logger.error("Failed to instantiate handler %s with defaults: %s", handler_name, e)
                 continue
@@ -106,8 +107,20 @@ def build_handlers_by_catalog() -> dict:
                         catalog_uri=catalog_uri,
                         auto_complete_field_uri=auto_field_uri,
                     )
-                    handlers_by_catalog.setdefault(catalog_uri, []).append(hid)
+                    _register_handler_instance(handlers_by_catalog, catalog_uris, hid)
                 except Exception as e:
                     logger.error("Failed to instantiate handler %s with id_prefix=%s: %s", handler_name, id_prefix, e)
 
     return handlers_by_catalog
+
+
+def _register_handler_instance(handlers_by_catalog: dict, catalog_uris: list[str], handler_data: HandlerInstanceData) -> None:
+    for catalog_uri in catalog_uris:
+        handlers_by_catalog.setdefault(catalog_uri, []).append(
+            HandlerInstanceData(
+                id_prefix=handler_data.id_prefix,
+                handler=handler_data.handler,
+                catalog_uri=catalog_uri,
+                auto_complete_field_uri=handler_data.auto_complete_field_uri,
+            )
+        )
