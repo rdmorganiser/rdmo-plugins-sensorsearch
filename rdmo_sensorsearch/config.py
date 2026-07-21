@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 def catalog_matches(catalog_config: dict[str, Any], catalog_uri: str) -> bool:
-    return catalog_uri in catalog_uri_values(catalog_config)
+    configured_catalog_uris = catalog_uri_values(catalog_config)
+    return not configured_catalog_uris or catalog_uri in configured_catalog_uris
 
 
 def catalog_uri_values(catalog_config: dict[str, Any]) -> list[str]:

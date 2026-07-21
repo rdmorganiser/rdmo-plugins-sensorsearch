@@ -113,24 +113,17 @@ min_search_len = 3
 
 [ProjectConfigurationSensorsProvider]
 [[ProjectConfigurationSensorsProvider.catalogs]]
-catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
+# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 
 [ProjectDataCollectionDevicesProvider]
 [[ProjectDataCollectionDevicesProvider.catalogs]]
-catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-# Optional aliases for draft or derived catalog URIs using the same attribute layout.
-catalog_uris = [
-    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-]
+# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
 [ProjectDeviceRefreshProvider]
 [[ProjectDeviceRefreshProvider.catalogs]]
-catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-catalog_uris = [
-    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-]
+# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
 selected_devices_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"

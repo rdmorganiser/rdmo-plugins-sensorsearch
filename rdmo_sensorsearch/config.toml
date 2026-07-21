@@ -14,26 +14,17 @@
 
     [ProjectConfigurationSensorsProvider]
     [[ProjectConfigurationSensorsProvider.catalogs]]
-    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-    catalog_uris = [
-        "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-    ]
+    # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
     source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
     [ProjectDataCollectionDevicesProvider]
     [[ProjectDataCollectionDevicesProvider.catalogs]]
-    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-    catalog_uris = [
-        "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-    ]
+    # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
     source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
     [ProjectDeviceRefreshProvider]
     [[ProjectDeviceRefreshProvider.catalogs]]
-    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-    catalog_uris = [
-        "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-    ]
+    # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
     source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
     trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
     selected_devices_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
@@ -91,10 +82,7 @@ reset_attribute_uris = [
 
     # Earth-Sensor catalog mapping
 [[handlers.O2ARegistrySearchHandler.catalogs]]
-catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-catalog_uris = [
-    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-]
+# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 reset_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
@@ -175,10 +163,7 @@ reset_attribute_uris = [
 
     # Earth-Sensor catalog mapping
 [[handlers.SensorManagementSystemHandler.catalogs]]
-catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-catalog_uris = [
-    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-]
+# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 reset_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
@@ -246,10 +231,7 @@ reset_attribute_uris = [
 
     # Earth-Sensor catalog mapping
 [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
-catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-catalog_uris = [
-    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-]
+# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 reset_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
@@ -306,10 +288,7 @@ reset_attribute_uris = [
     "data.attributes.start_date" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
     "data.attributes.end_date" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
     [[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
-    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-    catalog_uris = [
-        "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-    ]
+    # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
     # Optional: only materialize mounted devices overlapping with the
     # configured period from the interview.
     # cfg_start_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
@@ -352,10 +331,7 @@ reset_attribute_uris = [
     "startDate" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
     "endDate" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
     [[handlers.O2ARegistryMissionsHandler.catalogs]]
-    catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-    catalog_uris = [
-        "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature",
-    ]
+    # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 
     [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
