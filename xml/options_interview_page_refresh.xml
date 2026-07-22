@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" required="2.1.0" version="2.5.1">
+	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>interview-page-refresh</uri_path>
+		<dc:comment>Marks metadata refresh triggers for an interview page value refetch after save.</dc:comment>
+		<provider_key>sensorssearch_interview_page_refresh</provider_key>
+		<options/>
+		<conditions/>
+	</optionset>
+</rdmo>

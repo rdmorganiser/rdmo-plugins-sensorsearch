@@ -1,0 +1,981 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+SPDX-FileCopyrightText: 2023 - 2024 Hannes Fuchs (GFZ) <hannes.fuchs@gfz-potsdam.de>
+SPDX-FileCopyrightText: 2023 - 2024 Helmholtz Centre Potsdam - GFZ German Research Centre for Geosciences
+SPDX-FileCopyrightText: 2026 RDMO Community and individual contributors
+
+SPDX-License-Identifier: Apache-2.0
+-->
+<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-07-22T12:00:00+02:00" required="2.1.0" version="2.5.1">
+	<catalog dc:uri="http://example.com/terms/questions/sensorsearch">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch</uri_path>
+		<dc:comment>Compact example catalog covering the Sensor Search plugin workflow.</dc:comment>
+		<order>0</order>
+		<title lang="en">Sensor Search Plugin Example</title>
+		<help lang="en">Demonstrates configuration and device search, project-local device options, metadata refresh actions, automatic device detail synchronization, and data collection parameter synchronization.</help>
+		<sections>
+			<section dc:uri="http://example.com/terms/questions/sensorsearch/features" order="0"/>
+		</sections>
+	</catalog>
+
+	<section dc:uri="http://example.com/terms/questions/sensorsearch/features">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/features</uri_path>
+		<dc:comment>All plugin features in their intended interview contexts.</dc:comment>
+		<title lang="en">Sensor Search Features</title>
+		<short_title lang="en">Sensor Search</short_title>
+		<pages>
+			<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations" order="0"/>
+			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general" order="1"/>
+			<page dc:uri="http://example.com/terms/questions/sensorsearch/project-devices" order="2"/>
+			<page dc:uri="http://example.com/terms/questions/sensorsearch/metadata-maintenance" order="3"/>
+			<page dc:uri="http://example.com/terms/questions/sensorsearch/data-collections" order="4"/>
+		</pages>
+	</section>
+
+	<!-- Configuration search and automatic device materialization -->
+	<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations</uri_path>
+		<dc:comment>Selecting a configuration fills its metadata, selected devices, and device detail tabs.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+		<is_collection>True</is_collection>
+		<title lang="en">1. Configurations and missions</title>
+		<short_title lang="en">Configurations</short_title>
+		<help lang="en">Search an SMS configuration or O2A mission. The plugin stores its devices and creates the corresponding Device Details tabs.</help>
+		<verbose_name lang="en">Configuration</verbose_name>
+		<questionsets/>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/search" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/description" order="1"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/link" order="2"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/start" order="3"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/end" order="4"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/latitude" order="5"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/longitude" order="6"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/devices" order="7"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh" order="10"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh-status" order="11"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh-timestamp" order="12"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh-message" order="13"/>
+		</questions>
+		<conditions/>
+	</page>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/search">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/search</uri_path>
+		<dc:comment>ConfigurationsProvider and configuration handler entry point.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en">Type at least three characters and select a backend configuration or mission.</help>
+		<text lang="en">Configuration or mission</text>
+		<widget_type>select</widget_type>
+		<value_type>option</value_type>
+		<optionsets>
+			<optionset dc:uri="http://example.com/terms/options/sensorsearch/configurations"/>
+		</optionsets>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/description">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/description</uri_path>
+		<dc:comment>Filled by the configuration handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Description</text>
+		<widget_type>textarea</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/link">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/link</uri_path>
+		<dc:comment>Filled by the configuration handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Backend link</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/start">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/start</uri_path>
+		<dc:comment>Filled by the configuration handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Start date and time</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/end">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/end</uri_path>
+		<dc:comment>Filled by the configuration handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">End date and time</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/latitude">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/latitude</uri_path>
+		<dc:comment>Filled for configurations with a static location.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lat"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Static location latitude</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/longitude">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/longitude</uri_path>
+		<dc:comment>Filled for configurations with a static location.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lon"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Static location longitude</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/devices">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/devices</uri_path>
+		<dc:comment>Collection filled by the configuration handler and editable through SensorsProvider.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"/>
+		<is_collection>True</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Review imported devices, remove unused devices, or search a sensor backend to add another one.</help>
+		<text lang="en">Selected configuration devices</text>
+		<verbose_name lang="en">Device</verbose_name>
+		<widget_type>select</widget_type>
+		<value_type>option</value_type>
+		<optionsets>
+			<optionset dc:uri="http://example.com/terms/options/sensorsearch/devices"/>
+		</optionsets>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/refresh</uri_path>
+		<dc:comment>Refreshes the configuration in this collection scope.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Yes reloads this configuration and its assigned devices. The plugin resets the value to No.</help>
+		<text lang="en">Refresh this configuration</text>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<width>4</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions>
+			<condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-configuration"/>
+		</conditions>
+	</question>
+
+	<!-- Materialized and manually searched device details -->
+	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general</uri_path>
+		<dc:comment>The canonical device details page URI used by configuration-to-device synchronization.</dc:comment>
+		<attribute dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"/>
+		<is_collection>True</is_collection>
+		<title lang="en">2. Device details</title>
+		<short_title lang="en">Devices</short_title>
+		<help lang="en">Tabs are created from configuration devices. Additional tabs can be added manually and populated through sensor search.</help>
+		<verbose_name lang="en">Device</verbose_name>
+		<questionsets>
+			<questionset dc:uri="http://example.com/terms/questions/sensorsearch/devices/time-range" order="8"/>
+			<questionset dc:uri="http://example.com/terms/questions/sensorsearch/devices/parameters" order="9"/>
+		</questionsets>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/search" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/name" order="1"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/type" order="2"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/manufacturer" order="3"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/model" order="4"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/serial" order="5"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/pid" order="6"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/link" order="7"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/refresh" order="10"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/refresh-status" order="11"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/refresh-timestamp" order="12"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/refresh-message" order="13"/>
+		</questions>
+		<conditions/>
+	</page>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/search">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/search</uri_path>
+		<dc:comment>SensorsProvider and sensor handler entry point.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en">Search O2A Registry, SMS, or GIPP and select one device.</help>
+		<text lang="en">Backend device</text>
+		<widget_type>select</widget_type>
+		<value_type>option</value_type>
+		<optionsets>
+			<optionset dc:uri="http://example.com/terms/options/sensorsearch/devices"/>
+		</optionsets>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/name">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/name</uri_path>
+		<dc:comment>Filled by a device handler.</dc:comment>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Device name</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/type">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/type</uri_path>
+		<dc:comment>Filled by a device handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Device type</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/manufacturer">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/manufacturer</uri_path>
+		<dc:comment>Filled by a device handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Manufacturer</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/model">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/model</uri_path>
+		<dc:comment>Filled by a device handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Model</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/serial">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/serial</uri_path>
+		<dc:comment>Filled by a device handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Serial number</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/pid">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/pid</uri_path>
+		<dc:comment>Filled by a device handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Persistent identifier</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/link">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/link</uri_path>
+		<dc:comment>Filled by a device handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Backend link</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<questionset dc:uri="http://example.com/terms/questions/sensorsearch/devices/time-range">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/time-range</uri_path>
+		<dc:comment>Nested scope used for configuration mount dates.</dc:comment>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">Operational time range</title>
+		<questionsets/>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/start" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/end" order="1"/>
+		</questions>
+		<conditions/>
+	</questionset>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/start">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/start</uri_path>
+		<dc:comment>Filled from a device mount period when available.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Operational start</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/end">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/end</uri_path>
+		<dc:comment>Filled from a device mount period when available.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Operational end</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<questionset dc:uri="http://example.com/terms/questions/sensorsearch/devices/parameters">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/parameters</uri_path>
+		<dc:comment>Device parameter collection used by data collection synchronization.</dc:comment>
+		<attribute/>
+		<is_collection>True</is_collection>
+		<title lang="en">Measured parameters</title>
+		<verbose_name lang="en">Parameter</verbose_name>
+		<questionsets/>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/parameter-name" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/parameter-unit" order="1"/>
+		</questions>
+		<conditions/>
+	</questionset>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/parameter-name">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/parameter-name</uri_path>
+		<dc:comment>Filled by a device handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Parameter name</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/parameter-unit">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/parameter-unit</uri_path>
+		<dc:comment>Filled by a device handler.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Parameter unit</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/refresh">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/refresh</uri_path>
+		<dc:comment>Refreshes the device in this collection scope.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Yes reloads this device. The plugin resets the value to No.</help>
+		<text lang="en">Refresh this device</text>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<width>4</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions>
+			<condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-device"/>
+		</conditions>
+	</question>
+
+	<!-- Project-local provider independent from remote search -->
+	<page dc:uri="http://example.com/terms/questions/sensorsearch/project-devices">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/project-devices</uri_path>
+		<dc:comment>Demonstrates ProjectConfigurationSensorsProvider.</dc:comment>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">3. Reuse project devices</title>
+		<short_title lang="en">Project devices</short_title>
+		<help lang="en">These options come from selected configuration devices already stored in this project; no backend request is made.</help>
+		<questionsets/>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/project-devices/select" order="0"/>
+		</questions>
+		<conditions/>
+	</page>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/project-devices/select">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/project-devices/select</uri_path>
+		<dc:comment>ProjectConfigurationSensorsProvider example.</dc:comment>
+		<attribute dc:uri="http://example.com/terms/domain/sensorsearch/reused-device"/>
+		<is_collection>True</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Select project devices</text>
+		<verbose_name lang="en">Device</verbose_name>
+		<widget_type>select</widget_type>
+		<value_type>option</value_type>
+		<optionsets>
+			<optionset dc:uri="http://example.com/terms/options/sensorsearch/project-devices"/>
+		</optionsets>
+		<conditions/>
+	</question>
+
+	<!-- Bulk refresh actions -->
+	<page dc:uri="http://example.com/terms/questions/sensorsearch/metadata-maintenance">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/metadata-maintenance</uri_path>
+		<dc:comment>Project-wide metadata refresh actions.</dc:comment>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">4. Metadata maintenance</title>
+		<short_title lang="en">Maintenance</short_title>
+		<help lang="en">The actions reload all imported configurations or all materialized devices and display feedback after the save completes.</help>
+		<questionsets/>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/configurations" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/configurations-status" order="1"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/configurations-timestamp" order="2"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/configurations-message" order="3"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/devices" order="10"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/devices-status" order="11"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/devices-timestamp" order="12"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/devices-message" order="13"/>
+		</questions>
+		<conditions/>
+	</page>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/configurations">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/maintenance/configurations</uri_path>
+		<dc:comment>RefreshKind.ALL_CONFIGURATIONS trigger.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Refresh all configurations</text>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<width>4</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/devices">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/maintenance/devices</uri_path>
+		<dc:comment>RefreshKind.ALL_DEVICES trigger.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Refresh all devices</text>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<width>4</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions/>
+	</question>
+
+	<!-- Data collection device selection and parameter propagation -->
+	<page dc:uri="http://example.com/terms/questions/sensorsearch/data-collections">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/data-collections</uri_path>
+		<dc:comment>Demonstrates ProjectDataCollectionDevicesProvider and generated parameter rows.</dc:comment>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/id"/>
+		<is_collection>True</is_collection>
+		<title lang="en">5. Data collections</title>
+		<short_title lang="en">Data collections</short_title>
+		<help lang="en">Select devices from imported configurations. Their parameter name and unit pairs are synchronized into the variable table.</help>
+		<verbose_name lang="en">Data collection</verbose_name>
+		<questionsets>
+			<questionset dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/variables" order="2"/>
+		</questionsets>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/title" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/devices" order="1"/>
+		</questions>
+		<conditions/>
+	</page>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/title">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/data-collections/title</uri_path>
+		<dc:comment>Label for the data collection tab.</dc:comment>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/title"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<text lang="en">Data collection title</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/devices">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/data-collections/devices</uri_path>
+		<dc:comment>ProjectDataCollectionDevicesProvider and data collection synchronization entry point.</dc:comment>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/collaboration_tools"/>
+		<is_collection>True</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Each option is a device stored under a selected configuration.</help>
+		<text lang="en">Contributing devices</text>
+		<verbose_name lang="en">Device</verbose_name>
+		<widget_type>select</widget_type>
+		<value_type>option</value_type>
+		<optionsets>
+			<optionset dc:uri="http://example.com/terms/options/sensorsearch/data-collection-devices"/>
+		</optionsets>
+		<conditions/>
+	</question>
+
+	<questionset dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/variables">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/data-collections/variables</uri_path>
+		<dc:comment>Rows generated from selected device parameter metadata remain editable.</dc:comment>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/metadata"/>
+		<is_collection>True</is_collection>
+		<title lang="en">Variables from selected devices</title>
+		<verbose_name lang="en">Variable</verbose_name>
+		<questionsets/>
+		<questions>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/variable-name" order="0"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/variable-unit" order="1"/>
+		</questions>
+		<conditions/>
+	</questionset>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/variable-name">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/data-collections/variable-name</uri_path>
+		<dc:comment>Generated by data collection synchronization.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-variable"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Variable name</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/data-collections/variable-unit">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/data-collections/variable-unit</uri_path>
+		<dc:comment>Generated by data collection synchronization.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-unit"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<text lang="en">Variable unit</text>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+
+	<!-- Shared feedback question definitions -->
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh-status">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/refresh-status</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Last refresh status</text><widget_type>text</widget_type><value_type>text</value_type>
+		<width>4</width><optionsets/><conditions><condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-configuration"/></conditions>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh-timestamp">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/refresh-timestamp</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Last refresh timestamp</text><widget_type>text</widget_type><value_type>text</value_type>
+		<width>4</width><optionsets/><conditions><condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-configuration"/></conditions>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh-message">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/refresh-message</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Last refresh message</text><widget_type>textarea</widget_type><value_type>text</value_type>
+		<optionsets/><conditions><condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-configuration"/></conditions>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/refresh-status">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/refresh-status</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Last refresh status</text><widget_type>text</widget_type><value_type>text</value_type>
+		<width>4</width><optionsets/><conditions><condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-device"/></conditions>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/refresh-timestamp">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/refresh-timestamp</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Last refresh timestamp</text><widget_type>text</widget_type><value_type>text</value_type>
+		<width>4</width><optionsets/><conditions><condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-device"/></conditions>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/devices/refresh-message">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices/refresh-message</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Last refresh message</text><widget_type>textarea</widget_type><value_type>text</value_type>
+		<optionsets/><conditions><condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-device"/></conditions>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/configurations-status">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/maintenance/configurations-status</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/status"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Configuration refresh status</text><widget_type>text</widget_type><value_type>text</value_type>
+		<width>4</width><optionsets/><conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/configurations-timestamp">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/maintenance/configurations-timestamp</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/timestamp"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Configuration refresh timestamp</text><widget_type>text</widget_type><value_type>text</value_type>
+		<width>4</width><optionsets/><conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/configurations-message">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/maintenance/configurations-message</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/message"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Configuration refresh message</text><widget_type>textarea</widget_type><value_type>text</value_type>
+		<optionsets/><conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/devices-status">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/maintenance/devices-status</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/status"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Device refresh status</text><widget_type>text</widget_type><value_type>text</value_type>
+		<width>4</width><optionsets/><conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/devices-timestamp">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/maintenance/devices-timestamp</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Device refresh timestamp</text><widget_type>text</widget_type><value_type>text</value_type>
+		<width>4</width><optionsets/><conditions/>
+	</question>
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/maintenance/devices-message">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/maintenance/devices-message</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message"/>
+		<is_collection>False</is_collection><is_optional>True</is_optional>
+		<text lang="en">Device refresh message</text><widget_type>textarea</widget_type><value_type>text</value_type>
+		<optionsets/><conditions/>
+	</question>
+
+	<!-- Local refresh controls are available only for values linked to a backend. -->
+	<condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-configuration">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/has-backend-configuration</uri_path>
+		<dc:comment/>
+		<source dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"/>
+		<relation>notempty</relation><target_text/><target_option/>
+	</condition>
+	<condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-device">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/has-backend-device</uri_path>
+		<dc:comment/>
+		<source dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"/>
+		<relation>notempty</relation><target_text/><target_option/>
+	</condition>
+
+	<!-- Provider-backed option sets -->
+	<optionset dc:uri="http://example.com/terms/options/sensorsearch/configurations">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations</uri_path>
+		<dc:comment>Remote configuration and mission search.</dc:comment>
+		<provider_key>sensorssearch_configurations</provider_key>
+		<options/><conditions/>
+	</optionset>
+	<optionset dc:uri="http://example.com/terms/options/sensorsearch/devices">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/devices</uri_path>
+		<dc:comment>Remote sensor and instrument search.</dc:comment>
+		<provider_key>sensorssearch</provider_key>
+		<options/><conditions/>
+	</optionset>
+	<optionset dc:uri="http://example.com/terms/options/sensorsearch/project-devices">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/project-devices</uri_path>
+		<dc:comment>Project-local configuration devices.</dc:comment>
+		<provider_key>sensorssearch_project_sensors</provider_key>
+		<options/><conditions/>
+	</optionset>
+	<optionset dc:uri="http://example.com/terms/options/sensorsearch/data-collection-devices">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/data-collection-devices</uri_path>
+		<dc:comment>Project-local devices for data collection questions.</dc:comment>
+		<provider_key>sensorssearch_project_data_collection_devices</provider_key>
+		<options/><conditions/>
+	</optionset>
+	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>interview-page-refresh</uri_path>
+		<dc:comment>Refetch the current interview page after a trigger is saved.</dc:comment>
+		<provider_key>sensorssearch_interview_page_refresh</provider_key>
+		<options/><conditions/>
+	</optionset>
+
+	<!-- Attributes required by plugin providers and signals -->
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>configuration-set</key><path>configuration-set</path><dc:comment/><parent/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>configuration-search</key><path>configuration-set/configuration-search</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>configuration-description</key><path>configuration-set/configuration-description</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>configuration-link</key><path>configuration-set/configuration-link</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>configuration-start-datetime</key><path>configuration-set/configuration-start-datetime</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>configurations-end-datetime</key><path>configuration-set/configurations-end-datetime</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lat">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>static-location-lat</key><path>configuration-set/static-location-lat</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lon">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>static-location-lon</key><path>configuration-set/static-location-lon</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>selected-devices</key><path>configuration-set/selected-devices</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>refresh-configuration</key><path>configuration-set/refresh-configuration</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>refresh-status</key><path>configuration-set/refresh-status</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>refresh-timestamp</key><path>configuration-set/refresh-timestamp</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>refresh-message</key><path>configuration-set/refresh-message</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+
+	<attribute dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id">
+		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix><key>id</key><path>moses/instruments/id</path><dc:comment/><parent/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>dataset</key><path>dataset</path><dc:comment/><parent/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>usage_technology</key><path>dataset/usage_technology</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>keywords</key><path>dataset/usage_technology/keywords</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology">
+		<uri_prefix>https://rdmorganiser.github.io/terms</uri_prefix><key>usage_technology</key><path>project/dataset/usage_technology</path><dc:comment/><parent/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>title</key><path>dataset/usage_technology/type/title</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>manufacturer</key><path>dataset/usage_technology/manufacturer</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>name</key><path>dataset/usage_technology/type/name</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>serial_number</key><path>dataset/usage_technology/serial_number</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>pid</key><path>dataset/usage_technology/type/pid</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>device-link</key><path>dataset/usage_technology/device-link</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>instrument-start-datetime</key><path>dataset/usage_technology/instrument-start-datetime</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>instrument-end-datetime</key><path>dataset/usage_technology/instrument-end-datetime</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>name</key><path>dataset/usage_technology/preservation/parameter/name</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix><key>unit</key><path>dataset/usage_technology/preservation/parameter/unit</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>refresh-device</key><path>dataset/usage_technology/refresh-device</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>refresh-status</key><path>dataset/usage_technology/refresh-status</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>refresh-timestamp</key><path>dataset/usage_technology/refresh-timestamp</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>refresh-message</key><path>dataset/usage_technology/refresh-message</path><dc:comment/><parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+
+	<attribute dc:uri="http://example.com/terms/domain/sensorsearch/reused-device">
+		<uri_prefix>http://example.com/terms</uri_prefix><key>reused-device</key><path>sensorsearch/reused-device</path><dc:comment/><parent/>
+	</attribute>
+	<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset">
+		<uri_prefix>https://rdmorganiser.github.io/terms</uri_prefix><key>dataset</key><path>project/dataset</path><dc:comment/><parent/>
+	</attribute>
+	<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/id">
+		<uri_prefix>https://rdmorganiser.github.io/terms</uri_prefix><key>id</key><path>project/dataset/id</path><dc:comment/><parent dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset"/>
+	</attribute>
+	<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/title">
+		<uri_prefix>https://rdmorganiser.github.io/terms</uri_prefix><key>title</key><path>project/dataset/title</path><dc:comment/><parent dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset"/>
+	</attribute>
+	<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/collaboration_tools">
+		<uri_prefix>https://rdmorganiser.github.io/terms</uri_prefix><key>collaboration_tools</key><path>project/dataset/collaboration_tools</path><dc:comment/><parent dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset"/>
+	</attribute>
+	<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/metadata">
+		<uri_prefix>https://rdmorganiser.github.io/terms</uri_prefix><key>metadata</key><path>project/dataset/metadata</path><dc:comment/><parent dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-variable">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>dc-variable</key><path>project/dataset/metadata/dc-variable</path><dc:comment/><parent dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/metadata"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-unit">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>dc-unit</key><path>project/dataset/metadata/dc-unit</path><dc:comment/><parent dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/metadata"/>
+	</attribute>
+
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>metadata-refresh</key><path>metadata-refresh</path><dc:comment/><parent/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>configurations</key><path>metadata-refresh/configurations</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>trigger</key><path>metadata-refresh/configurations/trigger</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>status</key><path>metadata-refresh/configurations/status</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>timestamp</key><path>metadata-refresh/configurations/timestamp</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>message</key><path>metadata-refresh/configurations/message</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>devices</key><path>metadata-refresh/devices</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>trigger</key><path>metadata-refresh/devices/trigger</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>status</key><path>metadata-refresh/devices/status</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>timestamp</key><path>metadata-refresh/devices/timestamp</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>message</key><path>metadata-refresh/devices/message</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
+	</attribute>
+</rdmo>

@@ -116,6 +116,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                         configuration_search_attribute_uri=instance.attribute.uri,
                         configuration_external_id=instance.external_id,
                         auth_token=auth_token,
+                        force_refresh=True,
                     )
                 )
 

@@ -12,6 +12,7 @@ from django.db.models import Q
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
+from rdmo_sensorsearch.signals.refresh_types import RefreshError, RefreshResult
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
 from rdmo_sensorsearch.signals.value_updater import (
     _change_label,
@@ -79,19 +80,6 @@ class DeviceFetchResult:
 
 
 @dataclass(frozen=True)
-class DeviceRefreshError:
-    external_id: str
-    message: str
-
-
-@dataclass(frozen=True)
-class DeviceRefreshResult:
-    requested_count: int
-    refreshed_count: int
-    errors: tuple[DeviceRefreshError, ...] = ()
-
-
-@dataclass(frozen=True)
 class DeviceFetchFailure:
     message: str
 
@@ -99,14 +87,7 @@ class DeviceFetchFailure:
 @dataclass(frozen=True)
 class DeviceFetchBatchResult:
     payloads: dict[str, DeviceFetchResult]
-    errors: tuple[DeviceRefreshError, ...] = ()
-
-
-@dataclass(frozen=True)
-class DeviceBlockRefreshTarget:
-    block_external_id: str
-    selected_device_external_id: str
-    selected_device_text: str = ""
+    errors: tuple[RefreshError, ...] = ()
 
 
 def sync_device_detail_blocks_from_values(
@@ -116,8 +97,8 @@ def sync_device_detail_blocks_from_values(
     device_collection_attribute_uri: str,
     configuration_search_attribute_uri: str,
     auth_token: str | None = None,
-) -> None:
-    sync_device_detail_blocks_from_configuration_values(
+) -> RefreshResult:
+    return sync_device_detail_blocks_from_configuration_values(
         project=instance.project,
         catalog=instance.project.catalog,
         scope_prefix=instance.set_prefix or "",
@@ -140,11 +121,11 @@ def sync_device_detail_blocks_from_configuration_values(
     device_collection_attribute_uri: str,
     configuration_search_attribute_uri: str,
     auth_token: str | None = None,
-) -> None:
+) -> RefreshResult:
     selected_devices = [
         SelectedDevice(text=value.text or "", external_id=value.external_id) for value in selected_values if value.external_id
     ]
-    sync_device_detail_blocks(
+    return sync_device_detail_blocks(
         project=project,
         catalog=catalog,
         scope_prefix=scope_prefix,
@@ -174,9 +155,10 @@ def sync_device_detail_blocks_from_payload(
     configuration_search_attribute_uri: str,
     configuration_external_id: str | None = None,
     auth_token: str | None = None,
-) -> None:
+    force_refresh: bool = False,
+) -> RefreshResult:
     scope_prefix = scope_prefix or ""
-    sync_device_detail_blocks(
+    return sync_device_detail_blocks(
         project=project,
         catalog=catalog,
         scope_prefix=scope_prefix,
@@ -187,6 +169,7 @@ def sync_device_detail_blocks_from_payload(
         configuration_search_attribute_uri=configuration_search_attribute_uri,
         configuration_external_id=configuration_external_id,
         auth_token=auth_token,
+        force_refresh=force_refresh,
     )
 
 
@@ -201,7 +184,8 @@ def sync_device_detail_blocks(
     configuration_search_attribute_uri: str,
     configuration_external_id: str | None = None,
     auth_token: str | None = None,
-) -> None:
+    force_refresh: bool = False,
+) -> RefreshResult:
     scope_prefix = scope_prefix or ""
     source_set_index = source_set_index or 0
     selected_devices = _unique_selected_devices(selected_devices)
@@ -217,7 +201,11 @@ def sync_device_detail_blocks(
             "Could not resolve configuration context for selected devices attribute %s",
             selected_devices_attribute_uri,
         )
-        return
+        return _failed_device_sync(
+            configuration_external_id or "",
+            "Could not resolve the configuration context for device synchronization.",
+            requested_count=len(selected_devices),
+        )
 
     config_key = config_context.key
     config_label = config_context.label
@@ -225,13 +213,21 @@ def sync_device_detail_blocks(
     device_detail_attribute_ids = _device_detail_attribute_ids(catalog)
     if not device_detail_attribute_ids:
         logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
-        return
+        return _failed_device_sync(
+            config_key,
+            f"Could not resolve device detail attributes for {DEVICE_DETAILS_PAGE_URI}.",
+            requested_count=len(selected_devices),
+        )
     related_attribute_ids = _device_detail_related_attribute_ids(catalog) or device_detail_attribute_ids
 
     root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
-        return
+        return _failed_device_sync(
+            config_key,
+            f"Device collection root attribute not found: {device_collection_attribute_uri}.",
+            requested_count=len(selected_devices),
+        )
 
     existing_blocks = _existing_device_blocks(project, root_attribute, scope_prefix, config_key)
     next_index = _next_device_set_index(project, root_attribute, scope_prefix)
@@ -240,12 +236,19 @@ def sync_device_detail_blocks(
     existing_blocks = {block_key: block for block_key, block in existing_blocks.items() if block_key in desired_block_keys}
 
     plans: list[DeviceBlockPlan] = []
+    planning_errors: list[RefreshError] = []
     for device in selected_devices:
         block_key = _compose_device_block_key(config_key, device.external_id)
         block = existing_blocks.get(block_key)
         sensor_candidate = _resolve_sensor_candidate(project.catalog.uri, device.external_id)
         if sensor_candidate is None:
             logger.warning("No sensor handler found for selected device %s", device.external_id)
+            planning_errors.append(
+                RefreshError(
+                    external_id=device.external_id,
+                    message="No matching sensor handler is configured.",
+                )
+            )
             continue
 
         if block is not None:
@@ -272,7 +275,8 @@ def sync_device_detail_blocks(
                 set_index=set_index,
                 sensor_candidate=sensor_candidate,
                 needs_metadata_write=needs_metadata_write,
-                needs_refresh=block is None
+                needs_refresh=force_refresh
+                or block is None
                 or _device_block_needs_refresh(
                     project=project,
                     scope_prefix=scope_prefix,
@@ -327,6 +331,20 @@ def sync_device_detail_blocks(
         if stale_blocks:
             _compact_device_detail_blocks(project, catalog, scope_prefix, device_collection_attribute_uri)
 
+    return RefreshResult(
+        requested_count=sum(plan.needs_refresh for plan in plans) + len(planning_errors),
+        refreshed_count=len(fetched_payloads),
+        errors=tuple(planning_errors) + fetch_batch.errors,
+    )
+
+
+def _failed_device_sync(external_id: str, message: str, requested_count: int) -> RefreshResult:
+    return RefreshResult(
+        requested_count=requested_count,
+        refreshed_count=0,
+        errors=(RefreshError(external_id=external_id, message=message),),
+    )
+
 
 def get_configuration_scope_for_value(value: Value) -> tuple[str, int]:
     if value.set_collection and not value.set_prefix:
@@ -370,160 +388,65 @@ def get_selected_device_values_for_configuration_scope(
     )
 
 
-def resolve_refresh_target_from_selected_device_row(
-    instance: Value,
-    selected_devices_attribute_uri: str = SELECTED_DEVICES_ATTRIBUTE_URI,
-    configuration_search_attribute_uri: str = CONFIGURATION_SEARCH_ATTRIBUTE_URI,
-) -> DeviceBlockRefreshTarget | None:
-    if not instance.set_prefix:
-        logger.warning("Refresh trigger value %s is not in a row-local question set scope", instance.pk)
-        return None
-
-    selected_device = _selected_device_for_trigger_row(instance, selected_devices_attribute_uri)
-    if selected_device is None or not selected_device.external_id:
-        logger.warning("No selected device found for refresh trigger value %s", instance.pk)
-        return None
-
-    scope_prefix, source_set_index = get_configuration_scope_for_value(instance)
-    config_context = _resolve_configuration_context(
-        project=instance.project,
-        scope_prefix=scope_prefix,
-        source_set_index=source_set_index,
-        configuration_search_attribute_uri=configuration_search_attribute_uri,
-    )
-    if config_context is None:
-        logger.warning("Could not resolve configuration context for refresh trigger value %s", instance.pk)
-        return None
-
-    return DeviceBlockRefreshTarget(
-        block_external_id=_compose_device_block_key(config_context.key, selected_device.external_id),
-        selected_device_external_id=selected_device.external_id,
-        selected_device_text=selected_device.text or selected_device.external_id,
-    )
-
-
-def refresh_device_detail_blocks(
+def remove_orphaned_device_detail_blocks(
     project,
     catalog,
-    block_external_ids: Iterable[str],
-    device_collection_attribute_uri: str = DEVICE_COLLECTION_ATTRIBUTE_URI,
-    auth_token: str | None = None,
+    configuration_search_attribute_uris: Iterable[str],
+    device_collection_attribute_uri: str,
 ) -> int:
-    return refresh_device_detail_blocks_with_result(
-        project=project,
-        catalog=catalog,
-        block_external_ids=block_external_ids,
-        device_collection_attribute_uri=device_collection_attribute_uri,
-        auth_token=auth_token,
-    ).refreshed_count
-
-
-def refresh_device_detail_blocks_with_result(
-    project,
-    catalog,
-    block_external_ids: Iterable[str],
-    device_collection_attribute_uri: str = DEVICE_COLLECTION_ATTRIBUTE_URI,
-    auth_token: str | None = None,
-) -> DeviceRefreshResult:
-    block_external_ids = {external_id for external_id in block_external_ids if external_id}
-    if not block_external_ids:
-        return _device_refresh_result(block_external_ids)
-
     root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
-        return _device_refresh_result(
-            block_external_ids,
-            errors=[
-                DeviceRefreshError(
-                    external_id=external_id,
-                    message=f"Device collection root attribute not found: {device_collection_attribute_uri}",
-                )
-                for external_id in sorted(block_external_ids)
-            ],
-        )
+        return 0
 
-    root_values = list(
+    related_attribute_ids = _device_detail_related_attribute_ids(catalog)
+    if not related_attribute_ids:
+        logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
+        return 0
+
+    active_configuration_keys = {
+        value.external_id or value.text
+        for value in Value.objects.filter(
+            project=project,
+            snapshot=None,
+            attribute__uri__in=configuration_search_attribute_uris,
+        )
+        if value.external_id or value.text
+    }
+    root_values = (
         Value.objects.filter(
             project=project,
             snapshot=None,
             attribute=root_attribute,
             set_collection=True,
-            external_id__in=block_external_ids,
-        ).order_by("set_prefix", "set_index", "id")
-    )
-    found_external_ids = {value.external_id for value in root_values if value.external_id}
-    errors = [
-        DeviceRefreshError(external_id=external_id, message="No device detail block found for refresh ID.")
-        for external_id in sorted(block_external_ids - found_external_ids)
-    ]
-    if not root_values:
-        logger.warning("No device detail blocks found for refresh IDs: %s", sorted(block_external_ids))
-        return _device_refresh_result(block_external_ids, errors=errors)
-
-    plans: list[DeviceBlockPlan] = []
-    for root_value in root_values:
-        block_key = root_value.external_id or ""
-        configuration_external_id, device_external_id = _parse_block_external_id(block_key)
-        if not configuration_external_id or not device_external_id:
-            logger.warning("Skipping refresh for invalid device block external_id=%s", block_key)
-            errors.append(DeviceRefreshError(external_id=block_key, message="Invalid device block refresh ID."))
-            continue
-
-        sensor_candidate = _resolve_sensor_candidate(catalog.uri, device_external_id)
-        if sensor_candidate is None:
-            logger.warning("No sensor handler found for refresh device %s", device_external_id)
-            errors.append(DeviceRefreshError(external_id=block_key, message="No sensor handler found for refresh device."))
-            continue
-
-        plans.append(
-            DeviceBlockPlan(
-                device=_selected_device_from_block_value(project, root_value, sensor_candidate, device_external_id),
-                block_key=block_key,
-                set_index=root_value.set_index,
-                sensor_candidate=sensor_candidate,
-                needs_metadata_write=False,
-                needs_refresh=True,
-                set_prefix=root_value.set_prefix or "",
-                configuration_external_id=configuration_external_id,
-            )
         )
-
-    fetch_batch = _fetch_device_detail_payloads(
-        plans,
-        root_attribute.id,
-        auth_token=auth_token,
+        .exclude(external_id__isnull=True)
+        .exclude(external_id__exact="")
     )
-    fetched_payloads = fetch_batch.payloads
-    errors.extend(fetch_batch.errors)
-    if not fetched_payloads:
-        return _device_refresh_result(block_external_ids, errors=errors)
+    orphaned_scopes = set()
+    for value in root_values:
+        configuration_key = _device_block_configuration_key(value.external_id)
+        if configuration_key and configuration_key not in active_configuration_keys:
+            orphaned_scopes.add((value.set_prefix or "", value.set_index))
+    if not orphaned_scopes:
+        return 0
 
-    refreshed_count = 0
     with transaction.atomic(), mute_value_post_save():
-        for plan in plans:
-            fetched_payload = fetched_payloads.get(plan.block_key)
-            if fetched_payload is None:
-                continue
+        for scope_prefix, set_index in orphaned_scopes:
+            _delete_device_block(project, scope_prefix, set_index, related_attribute_ids)
+        for scope_prefix in {scope_prefix for scope_prefix, _ in orphaned_scopes}:
+            _compact_device_detail_blocks(
+                project,
+                catalog,
+                scope_prefix,
+                device_collection_attribute_uri,
+            )
 
-            block_instance = _device_block_instance(project, root_attribute.id, plan.set_prefix, plan.set_index)
-            _clear_device_refresh_targets(block_instance, plan.sensor_candidate.handler)
-            _write_device_fetch_payload(block_instance, fetched_payload, plan.set_prefix, plan.set_index)
-            refreshed_count += 1
-
-    return _device_refresh_result(block_external_ids, refreshed_count=refreshed_count, errors=errors)
-
-
-def _device_refresh_result(
-    block_external_ids: set[str],
-    refreshed_count: int = 0,
-    errors: Iterable[DeviceRefreshError] = (),
-) -> DeviceRefreshResult:
-    return DeviceRefreshResult(
-        requested_count=len(block_external_ids),
-        refreshed_count=refreshed_count,
-        errors=tuple(errors),
+    logger.info(
+        "Removed %s orphaned device detail block(s) after configuration cleanup",
+        len(orphaned_scopes),
     )
+    return len(orphaned_scopes)
 
 
 def _device_block_instance(project, root_attribute_id: int, set_prefix: str, set_index: int) -> DeviceBlockInstance:
@@ -564,7 +487,7 @@ def _fetch_device_detail_payloads(
 
     max_workers = min(DEVICE_DETAIL_FETCH_WORKERS, len(refresh_plans))
     results: dict[str, DeviceFetchResult] = {}
-    errors: list[DeviceRefreshError] = []
+    errors: list[RefreshError] = []
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_plan = {
@@ -585,11 +508,11 @@ def _fetch_device_detail_payloads(
             except Exception as e:
                 message = str(e) or e.__class__.__name__
                 logger.exception("Failed to fetch device detail payload for %s", plan.device.external_id)
-                errors.append(DeviceRefreshError(external_id=plan.block_key, message=message))
+                errors.append(RefreshError(external_id=plan.block_key, message=message))
                 continue
 
             if isinstance(result, DeviceFetchFailure):
-                errors.append(DeviceRefreshError(external_id=plan.block_key, message=result.message))
+                errors.append(RefreshError(external_id=plan.block_key, message=result.message))
             elif result is not None:
                 results[plan.block_key] = result
 
@@ -652,36 +575,6 @@ def _format_handler_errors(errors: Any) -> str:
     return str(errors)
 
 
-def _selected_device_from_block_value(
-    project,
-    root_value: Value,
-    sensor_candidate: Any,
-    device_external_id: str,
-) -> SelectedDevice:
-    search_value = (
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute__uri=sensor_candidate.auto_complete_field_uri,
-            set_prefix=root_value.set_prefix or "",
-            set_index=root_value.set_index,
-            set_collection=False,
-        )
-        .exclude(text__isnull=True)
-        .order_by("-id")
-        .first()
-    )
-    if search_value is not None:
-        return SelectedDevice(text=search_value.text or root_value.text or "", external_id=device_external_id)
-    return SelectedDevice(text=root_value.text or "", external_id=device_external_id)
-
-
-def _clear_device_refresh_targets(instance, handler) -> None:
-    from rdmo_sensorsearch.signals.handler_post_save import _clear_handler_targets
-
-    _clear_handler_targets(instance, handler)
-
-
 def _resolve_sensor_candidate(catalog_uri: str, external_id: str) -> Any | None:
     id_prefix, _ = _parse_external_id(external_id)
     if id_prefix is None:
@@ -691,22 +584,6 @@ def _resolve_sensor_candidate(catalog_uri: str, external_id: str) -> Any | None:
 
     for candidate in _get_handler_candidates(catalog_uri):
         if candidate.id_prefix == id_prefix and getattr(candidate.handler, "sync_device_detail_blocks", False):
-            return candidate
-    return None
-
-
-def _resolve_configuration_candidate(catalog_uri: str, external_id: str) -> Any | None:
-    id_prefix, _ = _parse_external_id(external_id)
-    if id_prefix is None:
-        return None
-
-    from rdmo_sensorsearch.handlers.handler_sms_configurations import (
-        SensorManagementSystemConfigurationsHandler,
-    )
-    from rdmo_sensorsearch.signals.handler_post_save import _get_handler_candidates
-
-    for candidate in _get_handler_candidates(catalog_uri):
-        if isinstance(candidate.handler, SensorManagementSystemConfigurationsHandler) and candidate.id_prefix == id_prefix:
             return candidate
     return None
 
@@ -1112,41 +989,6 @@ def _child_scope_prefix(scope_prefix: str, source_set_index: int) -> str:
     return f"{scope_prefix}|{source_set_index}"
 
 
-def _selected_device_for_trigger_row(instance: Value, selected_devices_attribute_uri: str) -> Value | None:
-    row_value = (
-        Value.objects.filter(
-            project=instance.project,
-            snapshot=None,
-            attribute__uri=selected_devices_attribute_uri,
-            set_prefix=instance.set_prefix or "",
-            set_index=instance.set_index,
-        )
-        .exclude(external_id__isnull=True)
-        .exclude(external_id__exact="")
-        .order_by("set_collection", "collection_index", "id")
-        .first()
-    )
-    if row_value is not None:
-        return row_value
-
-    scope_prefix, source_set_index = get_configuration_scope_for_value(instance)
-    return (
-        Value.objects.filter(
-            project=instance.project,
-            snapshot=None,
-            attribute__uri=selected_devices_attribute_uri,
-            set_collection=True,
-            set_prefix=scope_prefix,
-            set_index=source_set_index,
-            collection_index=instance.set_index,
-        )
-        .exclude(external_id__isnull=True)
-        .exclude(external_id__exact="")
-        .order_by("id")
-        .first()
-    )
-
-
 def _parse_external_id(external_id: str) -> tuple[str | None, str | None]:
     if ":" not in external_id:
         return None, external_id or None
@@ -1159,6 +1001,13 @@ def _parse_block_external_id(external_id: str) -> tuple[str | None, str | None]:
         return None, None
     config_key, device_external_id = external_id.split("||", 1)
     return config_key or None, device_external_id or None
+
+
+def _device_block_configuration_key(external_id: str) -> str | None:
+    configuration_key, device_external_id = _parse_block_external_id(external_id)
+    if not configuration_key or not device_external_id:
+        return None
+    return configuration_key
 
 
 def _compose_device_block_key(config_key: str, device_external_id: str) -> str:

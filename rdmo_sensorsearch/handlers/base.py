@@ -18,7 +18,7 @@ class CollectionAssignment:
 class HandlerResult:
     mapped_values: dict[str, Any] = field(default_factory=dict)
     collections: list[CollectionAssignment] = field(default_factory=list)
-    post_actions: list[Callable[[], None]] = field(default_factory=list)
+    post_actions: list[Callable[[], Any]] = field(default_factory=list)
 
 
 class GenericSearchHandler:

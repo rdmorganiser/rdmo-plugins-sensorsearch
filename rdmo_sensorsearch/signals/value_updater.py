@@ -518,20 +518,15 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
     delete_from(last_nonblank_index + 1)
 
 
-def update_values_from_handler_result(instance, result: HandlerResult):
+def update_values_from_handler_result(instance, result: HandlerResult) -> tuple[Any, ...]:
     update_values_from_mapped_data(instance, result.mapped_values)
 
-    if not result.collections:
-        for post_action in result.post_actions:
-            post_action()
-        return
+    if result.collections:
+        with transaction.atomic(), mute_value_post_save():
+            for collection in result.collections:
+                _update_collection_assignment(instance, collection)
 
-    with transaction.atomic(), mute_value_post_save():
-        for collection in result.collections:
-            _update_collection_assignment(instance, collection)
-
-    for post_action in result.post_actions:
-        post_action()
+    return tuple(post_action() for post_action in result.post_actions)
 
 
 def _update_collection_assignment(instance, collection: CollectionAssignment):

@@ -6,6 +6,11 @@ from rdmo_sensorsearch.handlers.handler_sms import (
     INSTRUMENT_END_ATTRIBUTE_URI,
     INSTRUMENT_START_ATTRIBUTE_URI,
 )
+from rdmo_sensorsearch.signals.refresh_types import (
+    RefreshError,
+    RefreshResult,
+    combine_refresh_results,
+)
 from rdmo_sensorsearch.signals.value_updater import (
     build_clear_payload,
     clear_attribute_values,
@@ -69,6 +74,7 @@ def _device_nested_questionset_scope(instance) -> tuple[str, int]:
 
 
 def _update_mapped_data(instance, mapped_data: dict) -> None:
+    mapped_data = dict(mapped_data)
     scoped_scalar_values = {
         INSTRUMENT_START_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
         INSTRUMENT_END_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_END_ATTRIBUTE_URI, ""),
@@ -86,8 +92,7 @@ def _update_mapped_data(instance, mapped_data: dict) -> None:
         )
 
 
-def handle_post_save(instance, auth_token: str | None = None):
-
+def handle_post_save(instance, auth_token: str | None = None) -> None:
     if not ALL_HANDLER_MAP:
         logger.warning("No handlers found for %s", __name__)
         return
@@ -132,50 +137,87 @@ def handle_post_save(instance, auth_token: str | None = None):
             _clear_handler_targets(instance, candidate.handler)
         return
 
-    if not instance.external_id:
-        logger.debug("external_id is empty and not marked empty: %r", instance)
-        return
+    result = refresh_value_from_backend(instance, auth_token=auth_token)
+    for error in result.errors:
+        logger.error("Backend update failed for %s: %s", error.external_id, error.message)
+
+
+def refresh_value_from_backend(instance, auth_token: str | None = None) -> RefreshResult:
+    external_id = getattr(instance, "external_id", None) or ""
+    if not external_id:
+        return _failed_refresh(external_id, "Value has no external ID.")
+
+    project = getattr(instance, "project", None)
+    attribute = getattr(instance, "attribute", None)
+    catalog = getattr(project, "catalog", None)
+    if project is None or attribute is None or catalog is None:
+        return _failed_refresh(external_id, "Value has no complete project, catalog, and attribute context.")
 
     try:
-        id_prefix, external_id = instance.external_id.split(":", 1)
+        id_prefix, backend_id = external_id.split(":", 1)
     except ValueError:
-        logger.warning("Can not parse instance.external_id: %s", instance.external_id)
-        return
+        return _failed_refresh(external_id, "External ID must contain a backend prefix.")
 
-    matched = False
-    for candidate in attribute_handler_candidates:
-        if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute_uri:
-            try:
-                if getattr(candidate.handler, "uses_auth_token", False):
-                    mapped_data = candidate.handler.handle(id_=external_id, instance=instance, auth_token=auth_token)
-                else:
-                    mapped_data = candidate.handler.handle(id_=external_id, instance=instance)
-            except Exception:
-                logger.exception(
-                    "Handler %s failed while processing external_id=%s for catalog=%s",
-                    candidate.id_prefix,
-                    external_id,
-                    catalog_uri,
-                )
-                continue
+    candidates = [
+        candidate
+        for candidate in _get_handler_candidates(catalog.uri)
+        if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute.uri
+    ]
+    if not candidates:
+        return _failed_refresh(external_id, "No matching backend handler is configured.")
+    if len(candidates) > 1:
+        return _failed_refresh(external_id, "Multiple matching backend handlers are configured.")
 
-            matched = True
-
-            if isinstance(mapped_data, dict) and "errors" in mapped_data:
-                logger.error("Handler %s returned errors: %s", candidate.id_prefix, mapped_data["errors"])
-                continue
-
-            _clear_handler_targets(instance, candidate.handler)
-
-            if isinstance(mapped_data, HandlerResult):
-                update_values_from_handler_result(instance, mapped_data)
-            else:
-                _update_mapped_data(instance, mapped_data)
-
-    if not matched:
-        logger.warning(
-            "No matching handlers found for id_prefix=%s and attribute_uri=%s in catalog=%s",
-            id_prefix,
-            attribute_uri,
-            catalog_uri,
+    candidate = candidates[0]
+    try:
+        if getattr(candidate.handler, "uses_auth_token", False):
+            mapped_data = candidate.handler.handle(id_=backend_id, instance=instance, auth_token=auth_token)
+        else:
+            mapped_data = candidate.handler.handle(id_=backend_id, instance=instance)
+    except Exception as error:
+        logger.exception(
+            "Handler %s failed while processing external_id=%s for catalog=%s",
+            candidate.id_prefix,
+            backend_id,
+            catalog.uri,
         )
+        return _failed_refresh(external_id, str(error) or type(error).__name__)
+
+    if isinstance(mapped_data, dict) and "errors" in mapped_data:
+        return _failed_refresh(external_id, _format_handler_errors(mapped_data["errors"]))
+    if not isinstance(mapped_data, (dict, HandlerResult)):
+        return _failed_refresh(external_id, f"Handler returned {type(mapped_data).__name__}, expected mapped data.")
+
+    try:
+        _clear_handler_targets(instance, candidate.handler)
+        post_action_results = ()
+        if isinstance(mapped_data, HandlerResult):
+            post_action_results = update_values_from_handler_result(instance, mapped_data)
+        else:
+            _update_mapped_data(instance, mapped_data)
+    except Exception as error:
+        logger.exception("Failed to apply backend data for external_id=%s", external_id)
+        return _failed_refresh(external_id, f"Could not store backend data: {error}")
+
+    device_result = combine_refresh_results(result for result in post_action_results if isinstance(result, RefreshResult))
+    return RefreshResult(
+        requested_count=1,
+        refreshed_count=1,
+        errors=device_result.errors,
+        device_requested_count=device_result.requested_count,
+        device_refreshed_count=device_result.refreshed_count,
+    )
+
+
+def _failed_refresh(external_id: str, message: str) -> RefreshResult:
+    return RefreshResult(
+        requested_count=1,
+        refreshed_count=0,
+        errors=(RefreshError(external_id=external_id, message=message),),
+    )
+
+
+def _format_handler_errors(errors) -> str:
+    if isinstance(errors, (list, tuple)):
+        return "; ".join(str(error) for error in errors)
+    return str(errors)

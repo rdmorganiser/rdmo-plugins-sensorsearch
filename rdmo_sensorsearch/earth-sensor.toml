@@ -1,6 +1,38 @@
 # Earth-Sensor catalog additions for rdmo_sensorsearch
 # https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
 
+[MetadataRefresh]
+configuration_search_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
+device_search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+
+[[MetadataRefresh.actions]]
+kind = "configuration"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration"
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
+
+[[MetadataRefresh.actions]]
+kind = "device"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp"
+
+[[MetadataRefresh.actions]]
+kind = "all_configurations"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger"
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/status"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/message"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/timestamp"
+
+[[MetadataRefresh.actions]]
+kind = "all_devices"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger"
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/status"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp"
+
 [handlers.O2ARegistrySearchHandler]
 [[handlers.O2ARegistrySearchHandler.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"

@@ -86,26 +86,3 @@ class ProjectDataCollectionDevicesProvider(BaseProjectAttributeOptionsProvider):
     """
 
     config_key = "ProjectDataCollectionDevicesProvider"
-
-
-class ProjectDeviceRefreshProvider(BaseProjectAttributeOptionsProvider):
-    """
-    Provides project-local device detail blocks that can be refreshed from their backend.
-    """
-
-    config_key = "ProjectDeviceRefreshProvider"
-
-
-class ProjectValueRefreshProvider(Provider):
-    """
-    No-op provider used to ask the RDMO interview frontend to refetch page values after save.
-
-    RDMO main checks `optionset.has_refresh` on the saved question and calls `fetchValues(page)`
-    when at least one attached optionset provider has `refresh = True`.
-    """
-
-    search = False
-    refresh = True
-
-    def get_options(self, project, search=None, user=None, site=None):
-        return []

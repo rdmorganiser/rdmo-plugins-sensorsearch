@@ -116,6 +116,7 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
                     device_collection_attribute_uri=device_collection_attribute_uri,
                     configuration_search_attribute_uri=instance.attribute.uri,
                     configuration_external_id=instance.external_id,
+                    force_refresh=True,
                 )
             )
 

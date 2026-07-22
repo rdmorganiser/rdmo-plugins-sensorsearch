@@ -41,6 +41,13 @@ installation and install it with:
 pip install -e ../rdmo-plugins-sensorsearch
 ```
 
+For development, install the test dependencies and run pytest with:
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
+
 Add the plugin to the `OPTIONSET_PROVIDERS` in `config/settings/local.py`:
 
 ```python
@@ -49,8 +56,7 @@ OPTIONSET_PROVIDERS = [
     ('sensorssearch_configurations', _('Configuration Search'), 'rdmo_sensorsearch.providers.ConfigurationsProvider'),
     ('sensorssearch_project_sensors', _('Project Configuration Sensors'), 'rdmo_sensorsearch.providers.ProjectConfigurationSensorsProvider'),
     ('sensorssearch_project_data_collection_devices', _('Project Data Collection Devices'), 'rdmo_sensorsearch.providers.ProjectDataCollectionDevicesProvider'),
-    ('sensorssearch_project_device_refresh', _('Project Device Refresh'), 'rdmo_sensorsearch.providers.ProjectDeviceRefreshProvider'),
-    ('sensorssearch_refresh_values', _('Refresh Values'), 'rdmo_sensorsearch.providers.ProjectValueRefreshProvider'),
+    ('sensorssearch_interview_page_refresh', _('Interview Page Refresh'), 'rdmo_sensorsearch.providers.InterviewPageRefreshProvider'),
 ]
 ```
 
@@ -74,11 +80,17 @@ MIDDLEWARE = [
 After restarting RDMO, the `Sensor Search` should be selectable as a provider
 option for option sets. If you enable the additional provider entries, a
 separate `Configuration Search` provider, a project-local reuse provider for
-mounted sensors, a data collection devices provider, and a device refresh
-provider are available as well. The data collection devices provider uses the
-same project-local value source for data collection instrument selection
-questions. The device refresh provider lists already materialized device
-detail blocks so an interview question can trigger backend refreshes.
+mounted sensors, and a data collection devices provider are available as well.
+The data collection devices provider uses the same project-local value source
+for data collection instrument selection questions. The no-op `Interview Page
+Refresh` provider can be attached to metadata refresh trigger questions so
+RDMO refetches the current interview page after saving the trigger.
+
+The importable [`xml/example_catalog_sensorsearch.xml`](xml/example_catalog_sensorsearch.xml)
+combines all plugin workflows in one compact catalog: configuration and device
+search, automatic device detail materialization, both project-local optionset
+providers, individual and bulk metadata refresh actions, interview page
+refetching, and data collection parameter synchronization.
 
 ## Configuration
 
@@ -121,18 +133,37 @@ source_attribute_uri = "http://example.com/terms/domain/configuration-set/member
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
-[ProjectDeviceRefreshProvider]
-[[ProjectDeviceRefreshProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
-source_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
-trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices"
-selected_devices_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
+[MetadataRefresh]
 configuration_search_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
-clear_trigger_value = false
-# Optional attributes for interview-visible refresh feedback.
+device_search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+
+[[MetadataRefresh.actions]]
+kind = "configuration"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration"
 status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
-error_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-error"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
+
+[[MetadataRefresh.actions]]
+kind = "device"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp"
+
+[[MetadataRefresh.actions]]
+kind = "all_configurations"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger"
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/status"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/message"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/timestamp"
+
+[[MetadataRefresh.actions]]
+kind = "all_devices"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger"
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/status"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp"
 
 [[SensorsProvider.providers.O2ARegistrySearchProvider]]
 
@@ -280,71 +311,31 @@ configuration handler after a configuration was selected. For the Earth-Sensor
 catalog, `ProjectDataCollectionDevicesProvider` reads the selected devices from
 `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices`.
 
-`ProjectDeviceRefreshProvider` is also project-local. The preferred
-Earth-Sensor catalog layout uses a collection question set for selected devices
-inside the configuration page. Each row contains the selected device and a
-row-local refresh trigger whose attribute URI matches the configured
-`trigger_attribute_uri`, by default
-`https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`,
-and the selected device attribute configured by `selected_devices_attribute_uri`.
-When the trigger value has no provider `external_id`, the plugin resolves the
-selected device from the same question set row and refreshes the corresponding
-materialized device detail block in
-`https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id`.
+Metadata refresh actions are ordinary Yes/No catalog questions. Only the `Yes`
+value triggers an action, and the plugin resets it to `No` after completion
+while its own value signals are muted. Four action kinds are supported:
 
-The older provider-select trigger remains supported: if the saved trigger value
-has an `external_id`, it is treated as the materialized device detail block id
-and refreshed directly.
+- `configuration` refreshes the backend configuration in the trigger value's
+  exact `set_prefix` and `set_index` scope;
+- `device` refreshes the backend device in the trigger value's exact
+  `set_prefix` and `set_index` scope;
+- `all_configurations` refreshes every backend configuration stored in the
+  project;
+- `all_devices` refreshes every materialized device detail block stored in the
+  project.
 
-Refresh backend errors happen after RDMO has already saved the trigger value.
-To make these failures visible in the interview, configure
-`status_attribute_uri`, `error_attribute_uri`, and optionally
-`timestamp_attribute_uri` to point to scalar catalog questions in the same
-interview scope. The plugin then stores `success` or `failed`, a short error
-message, and the refresh timestamp as normal RDMO values.
+Place the `configuration` and `device` triggers directly on their respective
+collection pages. Place the two bulk triggers on a non-collection maintenance
+page. Feedback attributes are optional scalar text questions in the same scope
+as their trigger. Status is stored as `success`, `partial`, or `failed`; the
+message contains the refreshed target or aggregate counts and backend errors.
+Successful single-configuration messages also report how many associated
+devices were refreshed. The timestamp uses local server time.
 
-Do not use a provider-backed checkbox for this trigger in standard RDMO. RDMO's
-checkbox conflict validation compares regular option values by `option`, while
-dynamic provider values are stored with `external_id` and `option=None`. This
-means multiple dynamic checkbox selections for the same question can collide
-before the sensorsearch refresh signal is reached.
-
-A minimal row-local Earth-Sensor catalog layout can use:
-
-- page:
-  `https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set`
-  with `is_collection=true`
-- child question set:
-  `https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/devices`
-  with `is_collection=true`
-- selected-device question inside that question set:
-  `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices`
-  as a scalar text value with the selected device `external_id`
-- refresh trigger question inside that same question set:
-  `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`
-  as a Yes/No row-local action trigger
-- optional refresh optionset on that trigger question:
-  an optionset with provider key `sensorssearch_refresh_values`
-
-`sensorssearch_refresh_values` intentionally returns no options. It exists only
-to use RDMO's release-compatible `optionset.has_refresh` hook, which refetches
-the current page values after the trigger is saved. This makes sibling feedback
-values, such as refresh status and timestamp, visible without a manual browser
-refresh in RDMO versions that support the `fetchValues(page)` refresh branch.
-After a boolean Yes/No trigger refresh, the plugin resets the trigger value from
-`Yes` (`1`) to `No` (`0`) while sensorsearch signals are muted. This lets users
-click `Yes` again later to request another refresh without deleting the row.
-
-The older provider-select trigger question can use:
-
-- attribute:
-  `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-devices`
-- widget/value type: select / option
-- collection: true
-- option set:
-  `https://rdmo.nfdi4earth.de/terms/options/device-refresh/optionset`
-- provider key:
-  `sensorssearch_project_device_refresh`
+Attach an optionset using `InterviewPageRefreshProvider` to every trigger
+question. Its `refresh = True` flag makes RDMO refetch the current page after
+the trigger save completes, so the reset trigger and feedback values are shown
+without navigating away.
 
 For the Earth-Sensor catalog, selected data collection devices also drive the
 parameter list of the following data collection question. When a device is

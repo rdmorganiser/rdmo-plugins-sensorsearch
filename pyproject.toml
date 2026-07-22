@@ -29,6 +29,11 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
 [project.urls]
 repository = "https://github.com/rdmorganiser/rdmo-plugins-sensorsearch"
 
