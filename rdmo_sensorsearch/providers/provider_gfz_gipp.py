@@ -26,14 +26,14 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
         max_hits (int):     Maximum number of search results to return.
                             Defaults to 10.
         base_url (str):     Base URL for the GIPP API endpoint. Defaults to
-                            "https://gipp.gfz-potsdam.de/instruments".
+                            "https://gipp.gfz.de/instruments".
     """
 
     # max_hits = 10 from base provider
 
     id_prefix = "gfzgipp"
     text_prefix = "GIPP:"
-    base_url = "https://gipp.gfz-potsdam.de/instruments"
+    base_url = "https://gipp.gfz.de/instruments"
     instruments_url = "{base_url}/index.json?limit=10000&program=MOSES"
 
     option_id = "{prefix}:{id}"

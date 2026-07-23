@@ -13,7 +13,7 @@ from the sensor registries. To use this feature an attribute mapping must be
 configured.
 
 The following sensor registries are currently implemented:
-- [Geophysical Instrument Pool Potsdam (GIPP)](https://gipp.gfz-potsdam.de/)
+- [Geophysical Instrument Pool Potsdam (GIPP)](https://gipp.gfz.de/)
 - [O2A Registry](https://registry.o2a-data.de/)
 - [Sensor Management System](https://codebase.helmholtz.cloud/hub-terra/sms/service-desk/-/wikis/home)
 

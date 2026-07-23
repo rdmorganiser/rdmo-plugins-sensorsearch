@@ -16,11 +16,11 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
 
      base_url (str, optional):           The base URL for API requests
                                                 to GIPP. Defaults to
-                                                'https://gipp.gfz-potsdam.de/instruments/rest'.
+                                                'https://gipp.gfz.de/instruments/rest'.
     """
 
     id_prefix = "gfzgipp"
-    base_url = "https://gipp.gfz-potsdam.de/instruments/rest"
+    base_url = "https://gipp.gfz.de/instruments/rest"
 
     json_url = "{base_url}/{id}.json"
 
