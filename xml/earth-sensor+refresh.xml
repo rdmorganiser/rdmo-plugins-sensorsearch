@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-07-15T13:24:49.356640+02:00" required="2.1.0" version="2.5.1">
-	<catalog dc:uri="https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature">
+<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-07-24T12:03:39.088161+02:00" required="2.1.0" version="2.5.1">
+	<catalog dc:uri="https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature-v1">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>earth-sensor-with-refresh-feature</uri_path>
+		<uri_path>earth-sensor-with-refresh-feature-v1</uri_path>
 		<dc:comment>Katalogentwurf von Sabine Schönau.
 Weiterbearbeitung durch Corinna Rebmann, Matthias Risse und Claudia Schütze
 Weiterentwicklung als Inkubator ab Jan. 2026 durch Bjarne Biskamp (UFZ) und Corinna Rebmann (KIT)</dc:comment>
 		<order>1</order>
-		<title lang="en">Draft: Earth-Sensor Data Management Plan + refresh feature</title>
+		<title lang="en">V1 Draft: Earth-Sensor Data Management Plan + refresh feature</title>
 		<help lang="en">This is the Earth-Sensor RDMO catalog, developed to collect metadata for sensor based research projects. More information can be found here (help document will be available soon) and also once you have started to fill the catalog with the '&lt;b&gt;Answer questions&lt;/b&gt;' button on the panel to the right  &lt;b&gt; &gt;&gt;&gt; &lt;/b&gt;.
 
 Please check the instructions there carefully!</help>
-		<title lang="de">Draft:  Earth-Sensor Data Management Plan + refresh feature</title>
+		<title lang="de">V1 Draft:  Earth-Sensor Data Management Plan + refresh feature</title>
 		<help lang="de">This is the Earth-Sensor RDMO catalog, developed to collect metadata for sensor based research projects. More information can be found here (help document will be available soon) and also once you have started to fill the catalog with the '&lt;b&gt;Answer questions&lt;/b&gt;' button on the panel to the right  &lt;b&gt; &gt;&gt;&gt; &lt;/b&gt;.
 
 Please check the instructions there carefully!</help>
@@ -1319,8 +1319,8 @@ In case you did not use campaigns or missions in your sensor management system j
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/link" order="5"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh" order="6"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-status" order="7"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-message" order="8"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-timestamp" order="9"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-timestamp" order="8"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-message" order="9"/>
 		</questions>
 		<conditions/>
 	</page>
@@ -1627,89 +1627,6 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
-	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments/configuration-set</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
-		<is_collection>True</is_collection>
-		<title lang="en">2.02) Device set</title>
-		<short_title lang="en"/>
-		<help lang="en"/>
-		<verbose_name lang="en">Configuration/Mission</verbose_name>
-		<title lang="de">2.02) Configuration set</title>
-		<short_title lang="de"/>
-		<help lang="de"/>
-		<verbose_name lang="de">Configuration/Mission</verbose_name>
-		<questionsets>
-			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/devices" order="1"/>
-		</questionsets>
-		<questions/>
-		<conditions/>
-	</page>
-	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/devices">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments/configuration-set/devices</uri_path>
-		<dc:comment>Devices imported from the configuration backend or added individually through sensor search.</dc:comment>
-		<attribute/>
-		<is_collection>True</is_collection>
-		<title lang="en">2.02) Devices in this configuration or mission</title>
-		<help lang="en">Review the imported devices, remove devices that are not used, or add another device from a sensor backend.</help>
-		<verbose_name lang="en"/>
-		<title lang="de">2.02) Geräte in dieser Konfiguration oder Mission</title>
-		<help lang="de">Prüfen Sie die importierten Geräte, entfernen Sie nicht verwendete Geräte oder fügen Sie ein weiteres Gerät aus einem Sensor-Backend hinzu.</help>
-		<verbose_name lang="de"/>
-		<questionsets/>
-		<questions>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/selected" order="0"/>
-		</questions>
-		<conditions/>
-	</questionset>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/selected">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments/configuration-set/selected</uri_path>
-		<dc:comment>Configuration-scoped device selection populated by configuration handlers and editable through SensorsProvider.</dc:comment>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en">Search by name, type, manufacturer, serial number, PID, or another device identifier.</help>
-		<text lang="en">Device</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en">Device</verbose_name>
-		<help lang="de">Suchen Sie nach Name, Typ, Hersteller, Seriennummer, PID oder einer anderen Gerätekennung.</help>
-		<text lang="de">Gerät</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de">Gerät</verbose_name>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>select</widget_type>
-		<value_type>option</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets>
-			<optionset dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/optionsets/sensorsearch"/>
-		</optionsets>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>selected-devices</key>
-		<path>configuration-set/selected-devices</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
-	</attribute>
-	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>configurations-general/has-backend-configuration</uri_path>
-		<dc:comment>Shows local configuration refresh controls only when a backend configuration is selected.</dc:comment>
-		<source dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"/>
-		<relation>notempty</relation>
-		<target_text/>
-		<target_option/>
-	</condition>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>configurations-general/refresh</uri_path>
@@ -1748,6 +1665,15 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment>Boolean action trigger for refreshing one configuration.</dc:comment>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
+	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>configurations-general/has-backend-configuration</uri_path>
+		<dc:comment>Shows local configuration refresh controls only when a backend configuration is selected.</dc:comment>
+		<source dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"/>
+		<relation>notempty</relation>
+		<target_text/>
+		<target_option/>
+	</condition>
 	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>interview-page-refresh</uri_path>
@@ -1756,42 +1682,6 @@ Question: which parent attribute would we need here?</dc:comment>
 		<options/>
 		<conditions/>
 	</optionset>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>configurations-general/refresh-timestamp</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last refresh timestamp</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Zeitpunkt der letzten Aktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-timestamp</key>
-		<path>configuration-set/refresh-timestamp</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
-	</attribute>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-status">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>configurations-general/refresh-status</uri_path>
@@ -1864,330 +1754,107 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
-	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh">
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-timestamp">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>metadata-refresh</uri_path>
-		<dc:comment>Project-wide maintenance actions for metadata imported from external backends.</dc:comment>
-		<attribute/>
+		<uri_path>configurations-general/refresh-timestamp</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"/>
 		<is_collection>False</is_collection>
-		<title lang="en">2.05) Refresh imported metadata</title>
-		<short_title lang="en">Refresh metadata</short_title>
-		<help lang="en">Use these actions to reload all imported configuration or device metadata from the original backends.</help>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last refresh timestamp</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<title lang="de">2.05) Importierte Metadaten aktualisieren</title>
-		<short_title lang="de">Metadaten aktualisieren</short_title>
-		<help lang="de">Mit diesen Aktionen können alle importierten Konfigurations- oder Gerätemetadaten erneut aus den ursprünglichen Backends geladen werden.</help>
+		<help lang="de"/>
+		<text lang="de">Zeitpunkt der letzten Aktualisierung</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets/>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-timestamp</key>
+		<path>configuration-set/refresh-timestamp</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments/configuration-set</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+		<is_collection>True</is_collection>
+		<title lang="en">2.02) Device set</title>
+		<short_title lang="en"/>
+		<help lang="en"/>
+		<verbose_name lang="en">Configuration/Mission</verbose_name>
+		<title lang="de">2.02) Configuration set</title>
+		<short_title lang="de"/>
+		<help lang="de"/>
+		<verbose_name lang="de">Configuration/Mission</verbose_name>
 		<questionsets/>
 		<questions>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/trigger" order="0"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/status" order="1"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/timestamp" order="2"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/message" order="3"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/trigger" order="10"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/status" order="11"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/timestamp" order="12"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/message" order="13"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/selected" order="2"/>
 		</questions>
 		<conditions/>
 	</page>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/trigger">
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/selected">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>metadata-refresh/configurations/trigger</uri_path>
-		<dc:comment>Triggers a project-wide configuration metadata refresh.</dc:comment>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en">Select Yes to reload every backend configuration stored in this project.</help>
-		<text lang="en">Refresh all configurations from backend:</text>
+		<uri_path>instruments/configuration-set/selected</uri_path>
+		<dc:comment>Configuration-scoped device selection populated by configuration handlers and editable through SensorsProvider.
+Devices imported from the configuration backend or added individually through sensor search.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"/>
+		<is_collection>True</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en">Search by name, type, manufacturer, serial number, PID, or another device identifier.</help>
+		<text lang="en">2.02) Devices in this configuration or mission</text>
 		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie Ja, um alle im Projekt gespeicherten Backend-Konfigurationen erneut zu laden.</help>
-		<text lang="de">Alle Konfigurationen aus dem Backend aktualisieren:</text>
+		<verbose_name lang="en">Device</verbose_name>
+		<help lang="de">Suchen Sie nach Name, Typ, Hersteller, Seriennummer, PID oder einer anderen Gerätekennung.</help>
+		<text lang="de">2.02) Geräte in dieser Konfiguration oder Mission</text>
 		<default_text lang="de"/>
-		<verbose_name lang="de"/>
+		<verbose_name lang="de">Gerät</verbose_name>
 		<default_option/>
 		<default_external_id/>
-		<widget_type>yesno</widget_type>
-		<value_type>boolean</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets>
-			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
-		</optionsets>
-		<conditions/>
-	</question>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/status">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>metadata-refresh/configurations/status</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/status"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last configuration refresh status</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Status der letzten Konfigurationsaktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>metadata-refresh/configurations/timestamp</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/timestamp"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last configuration refresh timestamp</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Zeitpunkt der letzten Konfigurationsaktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>metadata-refresh/configurations/message</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/message"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last configuration refresh message</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Meldung der letzten Konfigurationsaktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>textarea</widget_type>
-		<value_type>text</value_type>
+		<widget_type>select</widget_type>
+		<value_type>option</value_type>
 		<maximum/>
 		<minimum/>
 		<step/>
 		<unit/>
 		<width/>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/trigger">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>metadata-refresh/devices/trigger</uri_path>
-		<dc:comment>Triggers a project-wide device metadata refresh.</dc:comment>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en">Select Yes to reload every materialized device in this project.</help>
-		<text lang="en">Refresh all devices from backend:</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie Ja, um alle im Projekt materialisierten Geräte erneut zu laden.</help>
-		<text lang="de">Alle Geräte aus dem Backend aktualisieren:</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>yesno</widget_type>
-		<value_type>boolean</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
 		<optionsets>
-			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+			<optionset dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/optionsets/sensorsearch"/>
 		</optionsets>
 		<conditions/>
 	</question>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/status">
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>metadata-refresh/devices/status</uri_path>
+		<key>selected-devices</key>
+		<path>configuration-set/selected-devices</path>
 		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/status"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last device refresh status</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Status der letzten Geräteaktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<optionset dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/optionsets/sensorsearch">
+		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
+		<uri_path>optionsets/sensorsearch</uri_path>
+		<dc:comment/>
+		<provider_key>sensorssearch</provider_key>
+		<options/>
 		<conditions/>
-	</question>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>metadata-refresh/devices/timestamp</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last device refresh timestamp</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Zeitpunkt der letzten Geräteaktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>metadata-refresh/devices/message</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last device refresh message</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Meldung der letzten Geräteaktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>textarea</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>metadata-refresh</key>
-		<path>metadata-refresh</path>
-		<dc:comment/>
-		<parent/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>configurations</key>
-		<path>metadata-refresh/configurations</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>devices</key>
-		<path>metadata-refresh/devices</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>trigger</key>
-		<path>metadata-refresh/configurations/trigger</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/status">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>status</key>
-		<path>metadata-refresh/configurations/status</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>message</key>
-		<path>metadata-refresh/configurations/message</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>timestamp</key>
-		<path>metadata-refresh/configurations/timestamp</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>trigger</key>
-		<path>metadata-refresh/devices/trigger</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/status">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>status</key>
-		<path>metadata-refresh/devices/status</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>message</key>
-		<path>metadata-refresh/devices/message</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>timestamp</key>
-		<path>metadata-refresh/devices/timestamp</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
-	</attribute>
+	</optionset>
 	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instruments_general</uri_path>
@@ -2223,161 +1890,6 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		</questions>
 		<conditions/>
 	</page>
-	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments-general/has-backend-device</uri_path>
-		<dc:comment>Shows local device refresh controls only when a backend device is selected.</dc:comment>
-		<source dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"/>
-		<relation>notempty</relation>
-		<target_text/>
-		<target_option/>
-	</condition>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments_general/refresh</uri_path>
-		<dc:comment>Triggers a refresh of the current device from its backend.</dc:comment>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en">Select Yes to reload this device's metadata from the original backend.</help>
-		<text lang="en">Refresh this device from backend:</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie Ja, um die Metadaten dieses Geräts erneut aus dem ursprünglichen Backend zu laden.</help>
-		<text lang="de">Dieses Gerät aus dem Backend aktualisieren:</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>yesno</widget_type>
-		<value_type>boolean</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets>
-			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
-		</optionsets>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-device</key>
-		<path>dataset/usage_technology/refresh-device</path>
-		<dc:comment>Boolean action trigger for refreshing one device.</dc:comment>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-status">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments_general/refresh-status</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last refresh status</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Status der letzten Aktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-status</key>
-		<path>dataset/usage_technology/refresh-status</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments_general/refresh-timestamp</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last refresh timestamp</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Zeitpunkt der letzten Aktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-timestamp</key>
-		<path>dataset/usage_technology/refresh-timestamp</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments_general/refresh-message</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last refresh message</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Meldung der letzten Aktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>textarea</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-message</key>
-		<path>dataset/usage_technology/refresh-message</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
-	</attribute>
 	<attribute dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id">
 		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
 		<key>id</key>
@@ -2641,14 +2153,6 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
 	</attribute>
-	<optionset dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/optionsets/sensorsearch">
-		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
-		<uri_path>optionsets/sensorsearch</uri_path>
-		<dc:comment/>
-		<provider_key>sensorssearch</provider_key>
-		<options/>
-		<conditions/>
-	</optionset>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instrument_name_api">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instrument_name_api</uri_path>
@@ -2912,6 +2416,161 @@ https://glossary.ametsoc.org/wiki/Welcome</help>
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<key>device-link</key>
 		<path>dataset/usage_technology/device-link</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general/refresh</uri_path>
+		<dc:comment>Triggers a refresh of the current device from its backend.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Select Yes to reload this device's metadata from the original backend.</help>
+		<text lang="en">Refresh this device from backend:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de">Wählen Sie Ja, um die Metadaten dieses Geräts erneut aus dem ursprünglichen Backend zu laden.</help>
+		<text lang="de">Dieses Gerät aus dem Backend aktualisieren:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-device</key>
+		<path>dataset/usage_technology/refresh-device</path>
+		<dc:comment>Boolean action trigger for refreshing one device.</dc:comment>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments-general/has-backend-device</uri_path>
+		<dc:comment>Shows local device refresh controls only when a backend device is selected.</dc:comment>
+		<source dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"/>
+		<relation>notempty</relation>
+		<target_text/>
+		<target_option/>
+	</condition>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general/refresh-status</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last refresh status</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Status der letzten Aktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets/>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-status</key>
+		<path>dataset/usage_technology/refresh-status</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general/refresh-timestamp</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last refresh timestamp</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Zeitpunkt der letzten Aktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets/>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-timestamp</key>
+		<path>dataset/usage_technology/refresh-timestamp</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general/refresh-message</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last refresh message</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Meldung der letzten Aktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>textarea</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-message</key>
+		<path>dataset/usage_technology/refresh-message</path>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
 	</attribute>
@@ -3292,6 +2951,330 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<path>dataset/usage_technology/additional_information</path>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh</uri_path>
+		<dc:comment>Project-wide maintenance actions for metadata imported from external backends.</dc:comment>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">2.05) Refresh imported metadata</title>
+		<short_title lang="en">Refresh metadata</short_title>
+		<help lang="en">Use these actions to reload all imported configuration or device metadata from the original backends.</help>
+		<verbose_name lang="en"/>
+		<title lang="de">2.05) Importierte Metadaten aktualisieren</title>
+		<short_title lang="de">Metadaten aktualisieren</short_title>
+		<help lang="de">Mit diesen Aktionen können alle importierten Konfigurations- oder Gerätemetadaten erneut aus den ursprünglichen Backends geladen werden.</help>
+		<verbose_name lang="de"/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/trigger" order="0"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/status" order="1"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/timestamp" order="2"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/message" order="3"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/trigger" order="10"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/status" order="11"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/timestamp" order="12"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/message" order="13"/>
+		</questions>
+		<conditions/>
+	</page>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/trigger">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/configurations/trigger</uri_path>
+		<dc:comment>Triggers a project-wide configuration metadata refresh.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Select Yes to reload every backend configuration stored in this project.</help>
+		<text lang="en">Refresh all configurations from backend:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de">Wählen Sie Ja, um alle im Projekt gespeicherten Backend-Konfigurationen erneut zu laden.</help>
+		<text lang="de">Alle Konfigurationen aus dem Backend aktualisieren:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>trigger</key>
+		<path>metadata-refresh/configurations/trigger</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>configurations</key>
+		<path>metadata-refresh/configurations</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>metadata-refresh</key>
+		<path>metadata-refresh</path>
+		<dc:comment/>
+		<parent/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/configurations/status</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/status"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last configuration refresh status</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Status der letzten Konfigurationsaktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>status</key>
+		<path>metadata-refresh/configurations/status</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/configurations/timestamp</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/timestamp"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last configuration refresh timestamp</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Zeitpunkt der letzten Konfigurationsaktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>timestamp</key>
+		<path>metadata-refresh/configurations/timestamp</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/configurations/message</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/message"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last configuration refresh message</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Meldung der letzten Konfigurationsaktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>textarea</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>message</key>
+		<path>metadata-refresh/configurations/message</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/trigger">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/devices/trigger</uri_path>
+		<dc:comment>Triggers a project-wide device metadata refresh.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Select Yes to reload every materialized device in this project.</help>
+		<text lang="en">Refresh all devices from backend:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de">Wählen Sie Ja, um alle im Projekt materialisierten Geräte erneut zu laden.</help>
+		<text lang="de">Alle Geräte aus dem Backend aktualisieren:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>trigger</key>
+		<path>metadata-refresh/devices/trigger</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>devices</key>
+		<path>metadata-refresh/devices</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/devices/status</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/status"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last device refresh status</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Status der letzten Geräteaktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>status</key>
+		<path>metadata-refresh/devices/status</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/devices/timestamp</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last device refresh timestamp</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Zeitpunkt der letzten Geräteaktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>timestamp</key>
+		<path>metadata-refresh/devices/timestamp</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/devices/message</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last device refresh message</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Meldung der letzten Geräteaktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>textarea</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>message</key>
+		<path>metadata-refresh/devices/message</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices"/>
 	</attribute>
 	<section dc:uri="https://rdmo.nfdi4earth.de/terms/questions/data_collection">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
