@@ -57,6 +57,26 @@ class FakeManager:
         return FakeQuerySet(self._count)
 
 
+class FakeValueQuerySet:
+    def __init__(self, filters):
+        self.filters = filters
+        self.ordering = ()
+
+    def order_by(self, *fields):
+        self.ordering = fields
+        return self
+
+
+class FakeValueManager:
+    def __init__(self):
+        self.querysets = []
+
+    def filter(self, **filters):
+        queryset = FakeValueQuerySet(filters)
+        self.querysets.append(queryset)
+        return queryset
+
+
 def make_binding(layout: CollectionLayout) -> CollectionBinding:
     return CollectionBinding(
         project=FakeProject(),
@@ -82,6 +102,20 @@ def install_question_model_stubs(monkeypatch, question_count, questionset_count)
     monkeypatch.setitem(sys.modules, "rdmo.questions", questions)
     monkeypatch.setitem(sys.modules, "rdmo.questions.models", models)
     return FakeQuestion, FakeQuestionSet
+
+
+def install_value_model_stub(monkeypatch):
+    projects = ModuleType("rdmo.projects")
+    models = ModuleType("rdmo.projects.models")
+
+    class StubValue:
+        objects = FakeValueManager()
+
+    models.Value = StubValue
+    projects.models = models
+    monkeypatch.setitem(sys.modules, "rdmo.projects", projects)
+    monkeypatch.setitem(sys.modules, "rdmo.projects.models", models)
+    return StubValue
 
 
 @pytest.mark.parametrize(
@@ -151,6 +185,65 @@ def test_collection_questionset_uses_child_prefix_and_set_index():
         "collection_index": 0,
     }
     assert binding.row_index_field == "set_index"
+
+
+@pytest.mark.parametrize(
+    ("active_layout", "parent_scope", "expected_layout", "expected_scope", "expected_ordering"),
+    [
+        (
+            CollectionLayout.QUESTION,
+            CollectionScope("", 2),
+            CollectionLayout.QUESTIONSET,
+            {"set_prefix": "2"},
+            ("set_index", "id"),
+        ),
+        (
+            CollectionLayout.QUESTIONSET,
+            CollectionScope("", 2),
+            CollectionLayout.QUESTION,
+            {"set_prefix": "", "set_index": 2},
+            ("collection_index", "id"),
+        ),
+        (
+            CollectionLayout.QUESTION,
+            CollectionScope("1|4", 2),
+            CollectionLayout.QUESTIONSET,
+            {"set_prefix": "1|4|2"},
+            ("set_index", "id"),
+        ),
+        (
+            CollectionLayout.QUESTIONSET,
+            CollectionScope("1|4", 2),
+            CollectionLayout.QUESTION,
+            {"set_prefix": "1|4", "set_index": 2},
+            ("collection_index", "id"),
+        ),
+    ],
+)
+def test_opposite_values_use_the_legacy_layout_coordinates(
+    monkeypatch,
+    active_layout,
+    parent_scope,
+    expected_layout,
+    expected_scope,
+    expected_ordering,
+):
+    value_model = install_value_model_stub(monkeypatch)
+    binding = make_binding(active_layout)
+
+    queryset = binding.opposite_values_for_scope(parent_scope)
+
+    assert binding.opposite_layout is expected_layout
+    assert binding.layout is active_layout
+    assert queryset.filters == {
+        "project": binding.project,
+        "attribute": binding.attribute,
+        "snapshot": None,
+        "set_collection": True,
+        **expected_scope,
+    }
+    assert queryset.ordering == expected_ordering
+    assert len(value_model.objects.querysets) == 1
 
 
 @pytest.mark.parametrize(

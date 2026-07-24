@@ -332,6 +332,18 @@ message contains the refreshed target or aggregate counts and backend errors.
 Successful single-configuration messages also report how many associated
 devices were refreshed. The timestamp uses local server time.
 
+The selected-device collection can be represented either by one collection
+Question or by a collection QuestionSet. The plugin resolves the active shape
+from `selected_devices_page_uri`. A successful configuration refresh writes
+the complete backend device list using that shape and removes values using the
+opposite shape in the same configuration scope. This allows an existing project
+to be reused after changing between the two catalog representations. After
+such a catalog change, refresh every configuration individually or run the
+`all_configurations` action. Failed backend requests leave both representations
+unchanged. Individual device refreshes do not normalize configuration
+membership, and manually added devices not returned by the configuration
+backend are removed by the authoritative configuration refresh.
+
 Attach an optionset using `InterviewPageRefreshProvider` to every trigger
 question. Its `refresh = True` flag makes RDMO refetch the current page after
 the trigger save completes, so the reset trigger and feedback values are shown

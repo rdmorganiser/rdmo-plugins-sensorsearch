@@ -1,5 +1,7 @@
 import logging
 
+from django.db import transaction
+
 from rdmo_sensorsearch.handlers.base import HandlerResult
 from rdmo_sensorsearch.handlers.factory import WILDCARD_CATALOG_URI, build_handlers_by_catalog
 from rdmo_sensorsearch.handlers.handler_sms import (
@@ -42,7 +44,12 @@ def _get_handler_candidates(catalog_uri: str) -> list:
     return merged_candidates
 
 
-def _clear_handler_targets(instance, handler) -> None:
+def _clear_handler_targets(
+    instance,
+    handler,
+    preserved_collection_attribute_uris: set[str] | None = None,
+) -> None:
+    preserved_collection_attribute_uris = preserved_collection_attribute_uris or set()
     reset_attribute_uris = set(getattr(handler, "reset_attribute_uris", []))
     member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
     selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
@@ -59,7 +66,11 @@ def _clear_handler_targets(instance, handler) -> None:
     }
     update_values_from_mapped_data(instance, clear_payload)
 
-    if member_sensors_attribute_uri and selected_devices_page_uri:
+    if (
+        member_sensors_attribute_uri
+        and member_sensors_attribute_uri not in preserved_collection_attribute_uris
+        and selected_devices_page_uri
+    ):
         clear_collection_attribute(instance, member_sensors_attribute_uri, selected_devices_page_uri)
 
 
@@ -190,16 +201,32 @@ def refresh_value_from_backend(instance, auth_token: str | None = None) -> Refre
     if not isinstance(mapped_data, (dict, HandlerResult)):
         return _failed_refresh(external_id, f"Handler returned {type(mapped_data).__name__}, expected mapped data.")
 
+    post_actions = ()
     try:
-        _clear_handler_targets(instance, candidate.handler)
-        post_action_results = ()
-        if isinstance(mapped_data, HandlerResult):
-            post_action_results = update_values_from_handler_result(instance, mapped_data)
-        else:
-            _update_mapped_data(instance, mapped_data)
+        preserved_collection_attribute_uris = (
+            {collection.attribute_uri for collection in mapped_data.collections}
+            if isinstance(mapped_data, HandlerResult)
+            else set()
+        )
+        with transaction.atomic():
+            _clear_handler_targets(
+                instance,
+                candidate.handler,
+                preserved_collection_attribute_uris=preserved_collection_attribute_uris,
+            )
+            if isinstance(mapped_data, HandlerResult):
+                post_actions = update_values_from_handler_result(instance, mapped_data)
+            else:
+                _update_mapped_data(instance, mapped_data)
     except Exception as error:
         logger.exception("Failed to apply backend data for external_id=%s", external_id)
         return _failed_refresh(external_id, f"Could not store backend data: {error}")
+
+    try:
+        post_action_results = tuple(post_action() for post_action in post_actions)
+    except Exception as error:
+        logger.exception("Failed to run post-update actions for external_id=%s", external_id)
+        return _failed_refresh(external_id, f"Could not complete backend update: {error}")
 
     device_result = combine_refresh_results(result for result in post_action_results if isinstance(result, RefreshResult))
     return RefreshResult(

@@ -251,8 +251,15 @@ def clear_collection_attribute(instance, attribute_uri: str, page_uri: str) -> N
         return
 
     with transaction.atomic(), mute_value_post_save():
-        deleted, _ = binding.values_for_scope(scope_from_value(instance)).delete()
-        logger.info("Cleared collection values for attribute %s (%s rows)", attribute_uri, deleted)
+        parent_scope = scope_from_value(instance)
+        active_deleted, _ = binding.values_for_scope(parent_scope).delete()
+        legacy_deleted, _ = binding.opposite_values_for_scope(parent_scope).delete()
+        logger.info(
+            "Cleared collection values for attribute %s (active=%s, legacy=%s)",
+            attribute_uri,
+            active_deleted,
+            legacy_deleted,
+        )
 
 
 def _qs_scalar_for_scope(instance, attribute, set_prefix: str, set_index: int):
@@ -423,7 +430,7 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
     delete_from(last_nonblank_index + 1)
 
 
-def update_values_from_handler_result(instance, result: HandlerResult) -> tuple[Any, ...]:
+def update_values_from_handler_result(instance, result: HandlerResult) -> tuple:
     update_values_from_mapped_data(instance, result.mapped_values)
 
     if result.collections:
@@ -431,30 +438,28 @@ def update_values_from_handler_result(instance, result: HandlerResult) -> tuple[
             for collection in result.collections:
                 _update_collection_assignment(instance, collection)
 
-    return tuple(post_action() for post_action in result.post_actions)
+    return tuple(result.post_actions)
 
 
 def _update_collection_assignment(instance, collection: CollectionAssignment):
     try:
         attribute = Attribute.objects.get(uri=collection.attribute_uri)
-    except Attribute.DoesNotExist:
-        logger.warning("Collection target attribute not found: %s", collection.attribute_uri)
-        return
+    except Attribute.DoesNotExist as error:
+        raise ValueError(f"Collection target attribute not found: {collection.attribute_uri}") from error
 
     try:
         binding = CollectionBinding.resolve(instance.project, attribute, collection.page_uri)
     except CollectionBindingError as error:
-        logger.warning("Cannot update collection assignment: %s", error)
-        return
+        raise ValueError(f"Cannot update collection assignment: {error}") from error
 
     parent_scope = scope_from_value(instance)
     desired_indexes = set()
 
-    for index, value in enumerate(collection.values):
-        if not isinstance(value, dict):
-            logger.warning("Collection value must be a dictionary, got %s", type(value).__name__)
-            continue
+    invalid_value_types = {type(value).__name__ for value in collection.values if not isinstance(value, dict)}
+    if invalid_value_types:
+        raise TypeError(f"Collection values must be dictionaries, got {', '.join(sorted(invalid_value_types))}.")
 
+    for index, value in enumerate(collection.values):
         desired_indexes.add(index)
         defaults = {"text": value.get("text", "")}
         if "external_id" in value:
@@ -476,6 +481,7 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
 
     if collection.replace_existing:
         _delete_surplus_collection_values(binding, parent_scope, desired_indexes)
+        _delete_legacy_collection_values(binding, parent_scope)
 
 
 def _delete_surplus_collection_values(binding, parent_scope, desired_indexes: set[int]):
@@ -486,6 +492,17 @@ def _delete_surplus_collection_values(binding, parent_scope, desired_indexes: se
     deleted, _ = queryset.delete()
     if deleted:
         logger.info("Deleted surplus collection values for attribute %s (%s rows)", binding.attribute.uri, deleted)
+
+
+def _delete_legacy_collection_values(binding, parent_scope):
+    deleted, _ = binding.opposite_values_for_scope(parent_scope).delete()
+    if deleted:
+        logger.info(
+            "Deleted legacy %s collection values for attribute %s (%s rows)",
+            binding.opposite_layout.value,
+            binding.attribute.uri,
+            deleted,
+        )
 
 
 def _normalize_set_prefix(set_prefix: str | None) -> str:

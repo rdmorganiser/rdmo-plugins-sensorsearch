@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
@@ -107,6 +107,18 @@ class CollectionBinding:
             **self.scope_lookup(parent_scope),
         )
         return queryset.order_by(self.row_index_field, "id")
+
+    def opposite_values_for_scope(self, parent_scope: CollectionScope):
+        return self.for_layout(self.opposite_layout).values_for_scope(parent_scope)
+
+    def for_layout(self, layout: CollectionLayout) -> CollectionBinding:
+        return replace(self, layout=layout)
+
+    @property
+    def opposite_layout(self) -> CollectionLayout:
+        if self.layout is CollectionLayout.QUESTION:
+            return CollectionLayout.QUESTIONSET
+        return CollectionLayout.QUESTION
 
     @property
     def row_index_field(self) -> str:

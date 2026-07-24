@@ -8,7 +8,11 @@ from django.dispatch import receiver
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
-from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionBindingError
+from rdmo_sensorsearch.signals.collection_binding import (
+    CollectionBinding,
+    CollectionBindingError,
+    CollectionScope,
+)
 from rdmo_sensorsearch.signals.data_collection_variable_sync import (
     DATA_COLLECTION_DEVICES_ATTRIBUTE_URI,
     remove_stale_data_collection_variables,
@@ -112,6 +116,18 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
             logger.warning("Cannot synchronize selected devices: %s", error)
             return
 
+        legacy_values = binding.opposite_values_for_scope(CollectionScope(set_prefix=scope_prefix, set_index=source_set_index))
+        if _has_meaningful_collection_values(legacy_values):
+            logger.warning(
+                "Skipping selected-device synchronization for project %s, set_prefix=%r, set_index=%s because "
+                "legacy %s values still exist. Refresh the configuration to normalize its selected devices.",
+                instance.project_id,
+                scope_prefix,
+                source_set_index,
+                binding.opposite_layout.value,
+            )
+            return
+
         configuration_search_attribute_uri = candidate.auto_complete_field_uri
 
         auth_token = get_sms_auth_token()
@@ -144,6 +160,15 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
 
         transaction.on_commit(sync_selected_devices)
         break
+
+
+def _has_meaningful_collection_values(queryset) -> bool:
+    return (
+        queryset.exclude(text__exact="").exists()
+        or queryset.exclude(external_id__exact="").exists()
+        or queryset.filter(option__isnull=False).exists()
+        or queryset.exclude(file__exact="").exists()
+    )
 
 
 @receiver(post_save, sender=Value)
