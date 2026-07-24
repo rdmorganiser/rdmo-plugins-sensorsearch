@@ -75,3 +75,16 @@ def test_handler_uses_current_gipp_hostname(monkeypatch):
     handler.handle("1")
 
     assert requested_urls == ["https://gipp.gfz.de/instruments/rest/1.json"]
+
+
+def test_handler_propagates_backend_errors(monkeypatch):
+    monkeypatch.setattr(
+        handler_gfz_gipp,
+        "fetch_json",
+        lambda url: {"errors": ["instrument unavailable"]},
+    )
+    handler = handler_gfz_gipp.GeophysicalInstrumentPoolPotsdamHandler(attribute_mapping={"Instrument.code": "uri"})
+
+    result = handler.handle("1")
+
+    assert result == {"errors": ["instrument unavailable"]}

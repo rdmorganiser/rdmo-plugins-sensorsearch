@@ -50,12 +50,20 @@ class SensorManagementSystemHandler(GenericSearchHandler):
 
         data = fetch_json(self.device_url.format(base_url=self.base_url, id=id_), auth_token=auth_token)
 
-        if "errors" in data:
+        if isinstance(data, dict) and "errors" in data:
             logger.debug("Errors in data returned for ID %s, %s", id_, ", ".join(data["errors"]))
             return data
+        if not isinstance(data, dict):
+            return {"errors": [f"Unexpected SMS device payload for device {id_}: {type(data).__name__}"]}
+        if not isinstance(data.get("data"), dict):
+            return {"errors": [f"SMS device request for device {id_} returned no device data."]}
 
         # contacts can not be included in the first request with the include parameter
         contact_data = fetch_json(self.contact_url.format(base_url=self.base_url, id=id_), auth_token=auth_token)
+        if isinstance(contact_data, dict) and "errors" in contact_data:
+            return contact_data
+        if not isinstance(contact_data, dict):
+            return {"errors": [f"Unexpected SMS contact payload for device {id_}: {type(contact_data).__name__}"]}
 
         # add the included contact data to the data
         data["included"] = [*data.get("included", []), *contact_data.get("included", [])]
@@ -65,7 +73,9 @@ class SensorManagementSystemHandler(GenericSearchHandler):
 
         mapped_data = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
         self._set_frontend_device_link(mapped_data, data)
-        self._set_mount_period(mapped_data, id_, instance, auth_token=auth_token)
+        mount_period_errors = self._set_mount_period(mapped_data, id_, instance, auth_token=auth_token)
+        if mount_period_errors:
+            return {"errors": mount_period_errors}
         return mapped_data
 
     def _set_frontend_device_link(self, mapped_data: dict, device_data: dict) -> None:
@@ -88,18 +98,26 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         parsed = urlsplit(self.base_url)
         return f"{parsed.scheme}://{parsed.netloc}"
 
-    def _set_mount_period(self, mapped_data: dict, device_id: str, instance=None, auth_token: str | None = None) -> None:
+    def _set_mount_period(
+        self,
+        mapped_data: dict,
+        device_id: str,
+        instance=None,
+        auth_token: str | None = None,
+    ) -> list[str]:
         configuration_external_id = self._resolve_configuration_external_id(instance)
         if not configuration_external_id:
-            return
+            return []
 
         configuration_id = self._parse_external_id(configuration_external_id)[1]
         if not configuration_id:
-            return
+            return []
 
-        mount_actions = self._fetch_device_mount_actions(device_id, auth_token=auth_token)
+        mount_actions, errors = self._fetch_device_mount_actions(device_id, auth_token=auth_token)
+        if errors:
+            return errors
         if not mount_actions:
-            return
+            return []
 
         matching_actions = []
         for item in mount_actions:
@@ -120,11 +138,12 @@ class SensorManagementSystemHandler(GenericSearchHandler):
             matching_actions.append((begin_date, end_date))
 
         if not matching_actions:
-            return
+            return []
 
         latest_start, latest_end = max(matching_actions, key=lambda item: item[0])
         mapped_data[INSTRUMENT_START_ATTRIBUTE_URI] = self._format_timepoint(latest_start)
         mapped_data[INSTRUMENT_END_ATTRIBUTE_URI] = self._format_timepoint(latest_end) or ""
+        return []
 
     def _resolve_configuration_external_id(self, instance) -> str | None:
         if instance is None or instance.project is None:
@@ -151,7 +170,11 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         configuration_external_id, _ = root_value.external_id.split("||", 1)
         return configuration_external_id or None
 
-    def _fetch_device_mount_actions(self, device_id: str, auth_token: str | None = None) -> list[dict]:
+    def _fetch_device_mount_actions(
+        self,
+        device_id: str,
+        auth_token: str | None = None,
+    ) -> tuple[list[dict], list[str]]:
         url = getattr(
             self,
             "device_mount_actions_url",
@@ -160,16 +183,13 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         ).format(base_url=self.base_url, id=device_id)
         action_data = fetch_json(url, auth_token=auth_token)
         if isinstance(action_data, dict) and "errors" in action_data:
-            logger.warning(
-                "Could not fetch device mount actions for %s: %s",
-                device_id,
-                action_data["errors"],
-            )
-            return []
+            return [], [f"SMS mount action request for device {device_id} failed: {error}" for error in action_data["errors"]]
         if not isinstance(action_data, dict):
-            return []
+            return [], [f"Unexpected SMS mount action payload for device {device_id}: {type(action_data).__name__}"]
         data = action_data.get("data", [])
-        return data if isinstance(data, list) else []
+        if not isinstance(data, list):
+            return [], [f"Unexpected SMS mount action data for device {device_id}: {type(data).__name__}"]
+        return data, []
 
     def _parse_external_id(self, external_id: str) -> tuple[str | None, str | None]:
         if ":" not in external_id:

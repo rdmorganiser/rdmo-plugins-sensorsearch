@@ -2,7 +2,7 @@ from collections import Counter
 from pathlib import Path
 from xml.etree import ElementTree
 
-CATALOG_PATH = Path(__file__).parents[1] / "xml" / "earth-sensor+refresh+questionset.xml"
+CATALOG_PATH = Path(__file__).parents[1] / "xml" / "earth-sensor+refresh.xml"
 DC_URI = "{http://purl.org/dc/elements/1.1/}uri"
 INTERVIEW_PAGE_REFRESH_OPTIONSET_URI = "https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"
 REFRESH_TRIGGER_QUESTION_URIS = {

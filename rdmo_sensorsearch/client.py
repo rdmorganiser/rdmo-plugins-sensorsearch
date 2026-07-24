@@ -60,7 +60,7 @@ def get_user_agent():
     user_agent = f"rdmo/{__version__} SensorSearch Plugin https://github.com/rdmorganiser/rdmo-plugins-sensorsearch"
     try:
         if settings.DEFAULT_FROM_EMAIL:
-            user_agent += f"{user_agent} ({settings.DEFAULT_FROM_EMAIL})"
+            user_agent += f" ({settings.DEFAULT_FROM_EMAIL})"
     except AttributeError:
         pass
     return user_agent

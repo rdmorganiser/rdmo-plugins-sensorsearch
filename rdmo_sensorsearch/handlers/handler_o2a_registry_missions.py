@@ -26,9 +26,10 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
     base_url = "https://registry.o2a-data.de/rest/v2"
 
     mission_url = "{base_url}/missions/{id}"
-    mission_items_url = "{base_url}/missions/{id}/items?offset=0&hits={page_size}"
+    mission_items_url = "{base_url}/missions/{id}/items?offset={offset}&hits={page_size}"
     item_url = "{base_url}/items/{id}"
     mission_item_max_hits = 100
+    max_collection_pages = 1000
 
     item_id_prefix = "o2aregistry"
     item_text_prefix = "O2A Item"
@@ -50,14 +51,10 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
         if not isinstance(mission_data, dict):
             logger.warning("Unexpected O2A mission payload for ID %s: %s", id_, type(mission_data).__name__)
             return {"errors": [f"Unexpected O2A mission payload for ID {id_}"]}
+        if not mission_data:
+            return {"errors": [f"O2A mission request for ID {id_} returned no mission data."]}
 
-        mission_items_data = fetch_json(
-            self.mission_items_url.format(
-                base_url=self.base_url,
-                id=id_,
-                page_size=self.mission_item_max_hits,
-            )
-        )
+        mission_items_data = self._fetch_mission_items(id_)
         if isinstance(mission_items_data, dict) and "errors" in mission_items_data:
             logger.debug(
                 "Errors in O2A mission items data returned for ID %s: %s",
@@ -79,12 +76,14 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
             self._format_timepoint(mission_data.get(self.mission_start_date_path)),
             self._format_timepoint(mission_data.get(self.mission_end_date_path)),
         )
-        member_sensor_values = self._build_member_sensor_values(
+        member_sensor_values, member_errors = self._build_member_sensor_values(
             mission_id=id_,
             mission_data=mission_data,
             mission_items_data=mission_items_data,
             mission_period=mission_period,
         )
+        if member_errors:
+            return {"errors": member_errors}
         result.collections.append(
             CollectionAssignment(
                 attribute_uri=member_sensors_attribute_uri,
@@ -160,16 +159,17 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
         mission_data: dict,
         mission_items_data: dict,
         mission_period: tuple[str | None, str | None],
-    ) -> list[dict[str, str]]:
+    ) -> tuple[list[dict[str, str]], list[str]]:
         values = []
+        errors = []
         for mission_item in self._mission_items(mission_items_data):
             item_id = mission_item.get("itemId")
             if item_id is None:
                 continue
 
-            item_data = self._fetch_item(str(item_id))
-            if item_data is None:
-                logger.warning("O2A mission item %s could not be resolved", item_id)
+            item_data, item_errors = self._fetch_item(str(item_id))
+            if item_errors:
+                errors.extend(item_errors)
                 continue
 
             values.append(
@@ -186,7 +186,39 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
                 }
             )
 
-        return values
+        return values, errors
+
+    def _fetch_mission_items(self, mission_id: str) -> dict:
+        records = []
+        seen_pages: set[tuple[str, ...]] = set()
+        offset = 0
+
+        for _page_number in range(1, self.max_collection_pages + 1):
+            payload = fetch_json(
+                self.mission_items_url.format(
+                    base_url=self.base_url,
+                    id=mission_id,
+                    offset=offset,
+                    page_size=self.mission_item_max_hits,
+                )
+            )
+            if isinstance(payload, dict) and "errors" in payload:
+                return payload
+            if not isinstance(payload, (dict, list)):
+                return {"errors": [f"Unexpected O2A mission items payload: {type(payload).__name__}"]}
+
+            page_records = self._mission_items(payload)
+            signature = tuple(str(item.get("@uuid") or item.get("id") or item.get("itemId")) for item in page_records)
+            if page_records and signature in seen_pages:
+                return {"errors": ["O2A mission item pagination returned the same page more than once."]}
+            seen_pages.add(signature)
+            records.extend(page_records)
+
+            if len(page_records) < self.mission_item_max_hits:
+                return {"records": records}
+            offset += self.mission_item_max_hits
+
+        return {"errors": [f"O2A mission item pagination exceeded {self.max_collection_pages} pages."]}
 
     def _mission_items(self, mission_items_data: dict | list) -> list[dict]:
         if isinstance(mission_items_data, dict):
@@ -194,12 +226,15 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
             return records if isinstance(records, list) else []
         return mission_items_data if isinstance(mission_items_data, list) else []
 
-    def _fetch_item(self, item_id: str) -> dict | None:
+    def _fetch_item(self, item_id: str) -> tuple[dict | None, list[str]]:
         item_data = fetch_json(self.item_url.format(base_url=self.base_url, id=item_id))
         if isinstance(item_data, dict) and "errors" in item_data:
-            logger.warning("Could not fetch O2A item %s: %s", item_id, item_data["errors"])
-            return None
-        return item_data if isinstance(item_data, dict) else None
+            return None, [f"O2A item request for mission item {item_id} failed: {error}" for error in item_data["errors"]]
+        if not isinstance(item_data, dict):
+            return None, [f"Unexpected O2A item payload for mission item {item_id}: {type(item_data).__name__}"]
+        if not item_data:
+            return None, [f"O2A item request for mission item {item_id} returned no item data."]
+        return item_data, []
 
     def _format_item_text(
         self,

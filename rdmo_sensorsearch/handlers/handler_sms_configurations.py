@@ -27,12 +27,16 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     device_url = "{base_url}/devices/{id}"
     device_mount_action_url = "{base_url}/device-mount-actions/{id}"
     device_mount_actions_url = (
-        "{base_url}/device-mount-actions?filter[configuration_id]={id}&include=device&page[size]={page_size}"
+        "{base_url}/device-mount-actions?filter[configuration_id]={id}&include=device"
+        "&page[size]={page_size}&page[number]={page_number}"
     )
     mounting_action_timepoints_url = "{base_url}/configurations/{id}/mounting-action-timepoints"
-    static_location_actions_url = "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]={page_size}"
+    static_location_actions_url = (
+        "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]={page_size}&page[number]={page_number}"
+    )
     mounted_sensor_max_hits = 100
     static_location_max_hits = 100
+    max_collection_pages = 1000
     configuration_self_link_path = "data.links.self"
     configuration_start_date_path = "data.attributes.start_date"
     configuration_end_date_path = "data.attributes.end_date"
@@ -50,16 +54,18 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             id_,
             sorted(configuration_data.keys()) if isinstance(configuration_data, dict) else type(configuration_data),
         )
-        if "errors" in configuration_data:
+        if isinstance(configuration_data, dict) and "errors" in configuration_data:
             logger.debug("Errors in configuration data returned for ID %s: %s", id_, configuration_data["errors"])
             return configuration_data
+        if not isinstance(configuration_data, dict):
+            return {"errors": [f"Unexpected SMS configuration payload for ID {id_}: {type(configuration_data).__name__}"]}
+        if not isinstance(configuration_data.get("data"), dict):
+            return {"errors": [f"SMS configuration request for ID {id_} returned no configuration data."]}
 
-        mount_action_data = fetch_json(
-            self.device_mount_actions_url.format(
-                base_url=self.base_url,
-                id=id_,
-                page_size=self.mounted_sensor_max_hits,
-            ),
+        mount_action_data = self._fetch_jsonapi_collection(
+            self.device_mount_actions_url,
+            id_,
+            self.mounted_sensor_max_hits,
             auth_token=auth_token,
         )
         if "errors" in mount_action_data:
@@ -69,7 +75,9 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, configuration_data)
         self._set_configuration_links(mapped_values, configuration_data)
         self._normalize_configuration_datetimes(mapped_values)
-        self._set_configuration_location(mapped_values, id_, auth_token=auth_token)
+        location_errors = self._set_configuration_location(mapped_values, id_, auth_token=auth_token)
+        if location_errors:
+            return {"errors": location_errors}
 
         result = HandlerResult(
             mapped_values=mapped_values,
@@ -78,12 +86,14 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
         if getattr(self, "member_sensors_attribute_uri", None):
             cfg_period = self._get_cfg_period(instance)
-            member_sensor_values = self._build_member_sensor_values(
+            member_sensor_values, member_errors = self._build_member_sensor_values(
                 configuration_data=configuration_data,
                 mount_action_data=mount_action_data,
                 cfg_period=cfg_period,
                 auth_token=auth_token,
             )
+            if member_errors:
+                return {"errors": member_errors}
             result.collections.append(
                 CollectionAssignment(
                     attribute_uri=self.member_sensors_attribute_uri,
@@ -194,38 +204,34 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         mapped_values: dict[str, str | None],
         configuration_id: str,
         auth_token: str | None = None,
-    ) -> None:
+    ) -> list[str]:
         location_attribute_uri = getattr(self, "location_attribute_uri", None)
         latitude_attribute_uri = getattr(self, "latitude_attribute_uri", None)
         longitude_attribute_uri = getattr(self, "longitude_attribute_uri", None)
         if not any((location_attribute_uri, latitude_attribute_uri, longitude_attribute_uri)):
-            return
+            return []
 
-        location_actions_data = fetch_json(
-            self.static_location_actions_url.format(
-                base_url=self.base_url,
-                id=configuration_id,
-                page_size=self.static_location_max_hits,
-            ),
+        location_actions_data = self._fetch_jsonapi_collection(
+            self.static_location_actions_url,
+            configuration_id,
+            self.static_location_max_hits,
             auth_token=auth_token,
         )
         if "errors" in location_actions_data:
-            logger.debug(
-                "Errors in static location action data returned for configuration ID %s: %s",
-                configuration_id,
-                location_actions_data["errors"],
-            )
-            return
+            return [
+                f"SMS static location request for configuration {configuration_id} failed: {error}"
+                for error in location_actions_data["errors"]
+            ]
 
         action = self._select_best_static_location_action(location_actions_data.get("data", []))
         if action is None:
-            return
+            return []
 
         attrs = action.get("attributes", {})
         lat = attrs.get("y")
         lon = attrs.get("x")
         if lat is None or lon is None:
-            return
+            return []
 
         if latitude_attribute_uri:
             mapped_values[latitude_attribute_uri] = lat
@@ -235,6 +241,71 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
         if location_attribute_uri:
             mapped_values[location_attribute_uri] = f"({lat},{lon})"
+        return []
+
+    def _fetch_jsonapi_collection(
+        self,
+        url_template: str,
+        object_id: str,
+        page_size: int,
+        auth_token: str | None = None,
+    ) -> dict:
+        data: list[dict] = []
+        included: dict[tuple[str | None, str | None], dict] = {}
+        seen_pages: set[tuple[tuple[str | None, str | None], ...]] = set()
+        page_number = 1
+        pages_fetched = 0
+        next_url = url_template.format(
+            base_url=self.base_url,
+            id=object_id,
+            page_size=page_size,
+            page_number=page_number,
+        )
+
+        while next_url and pages_fetched < self.max_collection_pages:
+            pages_fetched += 1
+            payload = fetch_json(next_url, auth_token=auth_token)
+            if isinstance(payload, dict) and "errors" in payload:
+                return payload
+            if not isinstance(payload, dict):
+                return {"errors": [f"Unexpected SMS collection payload: {type(payload).__name__}"]}
+
+            page_data = payload.get("data", [])
+            if not isinstance(page_data, list):
+                return {"errors": [f"Unexpected SMS collection data: {type(page_data).__name__}"]}
+
+            signature = tuple((item.get("type"), item.get("id")) for item in page_data)
+            if page_data and signature in seen_pages:
+                return {"errors": ["SMS collection pagination returned the same page more than once."]}
+            seen_pages.add(signature)
+            data.extend(page_data)
+
+            page_included = payload.get("included", [])
+            if not isinstance(page_included, list):
+                return {"errors": [f"Unexpected SMS included data: {type(page_included).__name__}"]}
+            for item in page_included:
+                included[(item.get("type"), item.get("id"))] = item
+
+            links = payload.get("links", {})
+            raw_next = links.get("next") if isinstance(links, dict) else None
+            if isinstance(raw_next, dict):
+                raw_next = raw_next.get("href")
+            if isinstance(raw_next, str) and raw_next:
+                next_url = urljoin(self.base_url_origin, raw_next)
+            elif len(page_data) >= page_size:
+                page_number = pages_fetched + 1
+                next_url = url_template.format(
+                    base_url=self.base_url,
+                    id=object_id,
+                    page_size=page_size,
+                    page_number=page_number,
+                )
+            else:
+                next_url = None
+
+        if next_url:
+            return {"errors": [f"SMS collection pagination exceeded {self.max_collection_pages} pages."]}
+        return {"data": data, "included": list(included.values())}
 
     def _select_best_static_location_action(self, actions: list[dict]) -> dict | None:
         if not actions:
@@ -260,13 +331,19 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         mount_action_data: dict,
         cfg_period: tuple[datetime, datetime] | None = None,
         auth_token: str | None = None,
-    ) -> list[dict[str, str]]:
+    ) -> tuple[list[dict[str, str]], list[str]]:
         included_devices = {item["id"]: item for item in mount_action_data.get("included", []) if item.get("type") == "device"}
 
         sensor_id_prefix = getattr(self, "sensor_id_prefix", self.id_prefix)
         member_sensor_values = []
 
-        mount_actions = self._get_mount_actions(configuration_data, mount_action_data, auth_token=auth_token)
+        mount_actions, errors = self._get_mount_actions(
+            configuration_data,
+            mount_action_data,
+            auth_token=auth_token,
+        )
+        if errors:
+            return [], errors
 
         for mount_action in mount_actions:
             if cfg_period is not None and not self._is_mount_action_in_period(mount_action, cfg_period):
@@ -278,9 +355,9 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
             device = included_devices.get(device_ref["id"])
             if device is None:
-                device = self._fetch_device(device_ref["id"], auth_token=auth_token)
-                if device is None:
-                    logger.warning("Mounted device %s could not be resolved", device_ref["id"])
+                device, device_errors = self._fetch_device(device_ref["id"], auth_token=auth_token)
+                if device_errors:
+                    errors.extend(device_errors)
                     continue
 
             attrs = mount_action.get("attributes", {})
@@ -297,7 +374,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 }
             )
 
-        return member_sensor_values
+        return member_sensor_values, errors
 
     def _format_sensor_text(
         self,
@@ -324,16 +401,17 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         configuration_data: dict,
         mount_action_data: dict,
         auth_token: str | None = None,
-    ) -> list[dict]:
+    ) -> tuple[list[dict], list[str]]:
         mount_actions = mount_action_data.get("data", [])
         if mount_actions:
-            return mount_actions
+            return mount_actions, []
 
         relationship_actions = (
             configuration_data.get("data", {}).get("relationships", {}).get("device_mount_actions", {}).get("data", [])
         )
 
         resolved_mount_actions = []
+        errors = []
         for action_ref in relationship_actions:
             action_id = action_ref.get("id")
             if not action_id:
@@ -343,22 +421,35 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 self.device_mount_action_url.format(base_url=self.base_url, id=action_id),
                 auth_token=auth_token,
             )
-            if "errors" in action_data:
-                logger.warning("Could not fetch mount action %s: %s", action_id, action_data["errors"])
+            if isinstance(action_data, dict) and "errors" in action_data:
+                errors.extend(
+                    f"SMS mount action request for action {action_id} failed: {error}" for error in action_data["errors"]
+                )
+                continue
+            if not isinstance(action_data, dict):
+                errors.append(f"Unexpected SMS mount action payload for action {action_id}: {type(action_data).__name__}")
                 continue
 
             action = action_data.get("data")
             if action:
                 resolved_mount_actions.append(action)
 
-        return resolved_mount_actions
+        return resolved_mount_actions, errors
 
-    def _fetch_device(self, device_id: str, auth_token: str | None = None) -> dict | None:
+    def _fetch_device(
+        self,
+        device_id: str,
+        auth_token: str | None = None,
+    ) -> tuple[dict | None, list[str]]:
         device_data = fetch_json(self.device_url.format(base_url=self.base_url, id=device_id), auth_token=auth_token)
-        if "errors" in device_data:
-            logger.warning("Could not fetch device %s: %s", device_id, device_data["errors"])
-            return None
-        return device_data.get("data")
+        if isinstance(device_data, dict) and "errors" in device_data:
+            return None, [f"SMS device request for mounted device {device_id} failed: {error}" for error in device_data["errors"]]
+        if not isinstance(device_data, dict):
+            return None, [f"Unexpected SMS device payload for mounted device {device_id}: {type(device_data).__name__}"]
+        device = device_data.get("data")
+        if not isinstance(device, dict):
+            return None, [f"Unexpected SMS device data for mounted device {device_id}: {type(device).__name__}"]
+        return device, []
 
     def _get_cfg_period(self, instance) -> tuple[datetime, datetime] | None:
         if instance is None:

@@ -91,10 +91,14 @@ class GenericSearchHandler:
 
     @property
     def attribute_mapping(self) -> dict:
-        value = self._attribute_mapping or getattr(type(self), "attribute_mapping", None)
-        if value is None:
-            raise ValueError(f"{self.__class__.__name__} requires `attribute_mapping` to be set before use.")
-        return value
+        if self._attribute_mapping is not None:
+            return self._attribute_mapping
+
+        for handler_class in type(self).__mro__:
+            value = handler_class.__dict__.get("attribute_mapping")
+            if value is not None and not isinstance(value, property):
+                return value
+        raise ValueError(f"{self.__class__.__name__} requires `attribute_mapping` to be set before use.")
 
     @attribute_mapping.setter
     def attribute_mapping(self, mapping: dict) -> None:

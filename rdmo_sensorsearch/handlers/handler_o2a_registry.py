@@ -80,6 +80,18 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         # units
         units_data = fetch_json(self.units_url.format(base_url=base_url))
 
+        response_errors = self._response_errors(
+            (
+                ("item", data),
+                ("contacts", contacts_data),
+                ("parameters", parameters_data),
+                ("units", units_data),
+            ),
+            id_,
+        )
+        if response_errors:
+            return {"errors": response_errors}
+
         # extend basic data with contacts
         self.add_contacts_to_data(data, contacts_data)
 
@@ -92,6 +104,17 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         mapped_data = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
         self.set_item_link(mapped_data, data)
         return mapped_data
+
+    def _response_errors(self, responses, item_id: str) -> list[str]:
+        errors = []
+        for endpoint, payload in responses:
+            if isinstance(payload, dict) and "errors" in payload:
+                errors.extend(f"O2A {endpoint} request for item {item_id} failed: {error}" for error in payload["errors"])
+            elif not isinstance(payload, dict):
+                errors.append(f"Unexpected O2A {endpoint} payload for item {item_id}: {type(payload).__name__}")
+            elif endpoint == "item" and not payload:
+                errors.append(f"O2A item request for item {item_id} returned no data.")
+        return errors
 
     @property
     def base_url_origin(self) -> str:

@@ -38,5 +38,12 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
         """
 
         data = fetch_json(self.json_url.format(base_url=self.base_url, id=id_))
+        if isinstance(data, dict) and "errors" in data:
+            return data
+        if not isinstance(data, dict):
+            return {"errors": [f"Unexpected GIPP payload for instrument {id_}: {type(data).__name__}"]}
+        if not data:
+            return {"errors": [f"GIPP request for instrument {id_} returned no instrument data."]}
+
         logger.debug("data: %s", data)
         return map_jamespath_to_attribute_uri(self.attribute_mapping, data)

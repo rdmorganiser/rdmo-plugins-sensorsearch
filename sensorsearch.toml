@@ -22,6 +22,15 @@ source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-se
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
+[DataCollectionVariableSync]
+[[DataCollectionVariableSync.catalogs]]
+catalog_uris = [
+    "http://example.com/terms/questions/sensorsearch",
+    "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses",
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor",
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature-v1",
+]
+
 [MetadataRefresh]
 configuration_search_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
 device_search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
@@ -212,7 +221,7 @@ reset_attribute_uris = [
 [handlers.SensorManagementSystemConfigurationsHandler]
 [[handlers.SensorManagementSystemConfigurationsHandler.backends]]
 id_prefix = "gfzcfg"
-base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
+base_url = "https://sensors.gfz.de/backend/api/v1"
 sensor_id_prefix = "gfzsms"
 sensor_text_prefix = "GFZ Sensor"
 [[handlers.SensorManagementSystemConfigurationsHandler.backends]]
@@ -350,7 +359,7 @@ reset_attribute_uris = [
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "gfzsms"
 text_prefix = "GFZ Sensor"
-base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/devices"
+base_url = "https://sensors.gfz.de/backend/api/v1/devices"
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "kitsms"
@@ -367,7 +376,7 @@ base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
 id_prefix = "gfzcfg"
 text_prefix = "GFZ Config"
-base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/configurations"
+base_url = "https://sensors.gfz.de/backend/api/v1/configurations"
 
 [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
 id_prefix = "kitcfg"

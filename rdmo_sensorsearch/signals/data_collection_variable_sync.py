@@ -8,6 +8,7 @@ from django.db.models import Q
 from rdmo.domain.models import Attribute
 from rdmo.projects.models import Value
 
+from rdmo_sensorsearch.config import catalog_matches, load_config
 from rdmo_sensorsearch.signals.device_set_sync import DEVICE_COLLECTION_ATTRIBUTE_URI
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
 from rdmo_sensorsearch.signals.value_updater import _change_label, upsert_value_if_changed
@@ -29,23 +30,69 @@ class VariableUnit:
     unit: str
 
 
-def sync_data_collection_variables_from_device_value(instance: Value) -> None:
-    if instance.attribute.uri != DATA_COLLECTION_DEVICES_ATTRIBUTE_URI:
+@dataclass(frozen=True)
+class DataCollectionVariableSyncConfig:
+    devices_attribute_uri: str
+    device_collection_attribute_uri: str
+    parameter_name_attribute_uri: str
+    parameter_unit_attribute_uri: str
+    variable_attribute_uri: str
+    unit_attribute_uri: str
+
+
+def get_data_collection_variable_sync_config(catalog_uri: str) -> DataCollectionVariableSyncConfig | None:
+    for catalog_config in load_config().get("DataCollectionVariableSync", {}).get("catalogs", []):
+        if not catalog_matches(catalog_config, catalog_uri):
+            continue
+        return DataCollectionVariableSyncConfig(
+            devices_attribute_uri=catalog_config.get(
+                "devices_attribute_uri",
+                DATA_COLLECTION_DEVICES_ATTRIBUTE_URI,
+            ),
+            device_collection_attribute_uri=catalog_config.get(
+                "device_collection_attribute_uri",
+                DEVICE_COLLECTION_ATTRIBUTE_URI,
+            ),
+            parameter_name_attribute_uri=catalog_config.get(
+                "parameter_name_attribute_uri",
+                DEVICE_PARAMETER_NAME_ATTRIBUTE_URI,
+            ),
+            parameter_unit_attribute_uri=catalog_config.get(
+                "parameter_unit_attribute_uri",
+                DEVICE_PARAMETER_UNIT_ATTRIBUTE_URI,
+            ),
+            variable_attribute_uri=catalog_config.get(
+                "variable_attribute_uri",
+                DATA_COLLECTION_VARIABLE_ATTRIBUTE_URI,
+            ),
+            unit_attribute_uri=catalog_config.get(
+                "unit_attribute_uri",
+                DATA_COLLECTION_UNIT_ATTRIBUTE_URI,
+            ),
+        )
+    return None
+
+
+def sync_data_collection_variables_from_device_value(
+    instance: Value,
+    config: DataCollectionVariableSyncConfig,
+) -> None:
+    if instance.attribute.uri != config.devices_attribute_uri:
         return
 
     device_external_id = instance.external_id
     if not device_external_id:
         logger.debug("Skipping data collection variable sync without device external_id for value %s", instance.pk)
-        remove_stale_data_collection_variables(instance)
+        remove_stale_data_collection_variables(instance, config)
         return
 
     attribute_by_uri = _attribute_by_uri(
         [
-            DEVICE_COLLECTION_ATTRIBUTE_URI,
-            DEVICE_PARAMETER_NAME_ATTRIBUTE_URI,
-            DEVICE_PARAMETER_UNIT_ATTRIBUTE_URI,
-            DATA_COLLECTION_VARIABLE_ATTRIBUTE_URI,
-            DATA_COLLECTION_UNIT_ATTRIBUTE_URI,
+            config.device_collection_attribute_uri,
+            config.parameter_name_attribute_uri,
+            config.parameter_unit_attribute_uri,
+            config.variable_attribute_uri,
+            config.unit_attribute_uri,
         ]
     )
     if len(attribute_by_uri) < 5:
@@ -55,35 +102,38 @@ def sync_data_collection_variables_from_device_value(instance: Value) -> None:
     parameters = _parameters_for_device(
         instance,
         device_external_id,
-        device_collection_attribute=attribute_by_uri[DEVICE_COLLECTION_ATTRIBUTE_URI],
-        parameter_name_attribute=attribute_by_uri[DEVICE_PARAMETER_NAME_ATTRIBUTE_URI],
-        parameter_unit_attribute=attribute_by_uri[DEVICE_PARAMETER_UNIT_ATTRIBUTE_URI],
+        device_collection_attribute=attribute_by_uri[config.device_collection_attribute_uri],
+        parameter_name_attribute=attribute_by_uri[config.parameter_name_attribute_uri],
+        parameter_unit_attribute=attribute_by_uri[config.parameter_unit_attribute_uri],
     )
     if not parameters:
         logger.debug("No parameters found for selected data collection device %s", device_external_id)
-        remove_stale_data_collection_variables(instance)
+        remove_stale_data_collection_variables(instance, config)
         return
 
     _append_missing_data_collection_parameters(
         instance,
         parameters,
-        variable_attribute=attribute_by_uri[DATA_COLLECTION_VARIABLE_ATTRIBUTE_URI],
-        unit_attribute=attribute_by_uri[DATA_COLLECTION_UNIT_ATTRIBUTE_URI],
+        variable_attribute=attribute_by_uri[config.variable_attribute_uri],
+        unit_attribute=attribute_by_uri[config.unit_attribute_uri],
     )
-    remove_stale_data_collection_variables(instance)
+    remove_stale_data_collection_variables(instance, config)
 
 
-def remove_stale_data_collection_variables(instance: Value) -> None:
-    if instance.attribute.uri != DATA_COLLECTION_DEVICES_ATTRIBUTE_URI:
+def remove_stale_data_collection_variables(
+    instance: Value,
+    config: DataCollectionVariableSyncConfig,
+) -> None:
+    if instance.attribute.uri != config.devices_attribute_uri:
         return
 
     attribute_by_uri = _attribute_by_uri(
         [
-            DEVICE_COLLECTION_ATTRIBUTE_URI,
-            DEVICE_PARAMETER_NAME_ATTRIBUTE_URI,
-            DEVICE_PARAMETER_UNIT_ATTRIBUTE_URI,
-            DATA_COLLECTION_VARIABLE_ATTRIBUTE_URI,
-            DATA_COLLECTION_UNIT_ATTRIBUTE_URI,
+            config.device_collection_attribute_uri,
+            config.parameter_name_attribute_uri,
+            config.parameter_unit_attribute_uri,
+            config.variable_attribute_uri,
+            config.unit_attribute_uri,
         ]
     )
     if len(attribute_by_uri) < 5:
@@ -92,15 +142,16 @@ def remove_stale_data_collection_variables(instance: Value) -> None:
 
     desired_markers = _desired_data_collection_variable_markers(
         instance,
-        device_collection_attribute=attribute_by_uri[DEVICE_COLLECTION_ATTRIBUTE_URI],
-        parameter_name_attribute=attribute_by_uri[DEVICE_PARAMETER_NAME_ATTRIBUTE_URI],
-        parameter_unit_attribute=attribute_by_uri[DEVICE_PARAMETER_UNIT_ATTRIBUTE_URI],
+        config=config,
+        device_collection_attribute=attribute_by_uri[config.device_collection_attribute_uri],
+        parameter_name_attribute=attribute_by_uri[config.parameter_name_attribute_uri],
+        parameter_unit_attribute=attribute_by_uri[config.parameter_unit_attribute_uri],
     )
     _delete_stale_auto_data_collection_parameters(
         instance,
         desired_markers,
-        variable_attribute=attribute_by_uri[DATA_COLLECTION_VARIABLE_ATTRIBUTE_URI],
-        unit_attribute=attribute_by_uri[DATA_COLLECTION_UNIT_ATTRIBUTE_URI],
+        variable_attribute=attribute_by_uri[config.variable_attribute_uri],
+        unit_attribute=attribute_by_uri[config.unit_attribute_uri],
     )
 
 
@@ -269,12 +320,13 @@ def _normalize(value: str) -> str:
 
 def _desired_data_collection_variable_markers(
     instance: Value,
+    config: DataCollectionVariableSyncConfig,
     device_collection_attribute: Attribute,
     parameter_name_attribute: Attribute,
     parameter_unit_attribute: Attribute,
 ) -> set[str]:
     markers: set[str] = set()
-    for device_external_id in _selected_data_collection_device_external_ids(instance):
+    for device_external_id in _selected_data_collection_device_external_ids(instance, config.devices_attribute_uri):
         for parameter in _parameters_for_device(
             instance,
             device_external_id,
@@ -286,12 +338,15 @@ def _desired_data_collection_variable_markers(
     return markers
 
 
-def _selected_data_collection_device_external_ids(instance: Value) -> list[str]:
+def _selected_data_collection_device_external_ids(
+    instance: Value,
+    devices_attribute_uri: str,
+) -> list[str]:
     values = (
         Value.objects.filter(
             project=instance.project,
             snapshot=None,
-            attribute__uri=DATA_COLLECTION_DEVICES_ATTRIBUTE_URI,
+            attribute__uri=devices_attribute_uri,
             set_collection=True,
             set_prefix=instance.set_prefix or "",
             set_index=instance.set_index,

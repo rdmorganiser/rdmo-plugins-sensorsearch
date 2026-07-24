@@ -170,7 +170,7 @@ timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refr
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "gfzsms"
 text_prefix = "GFZ Sensors:"
-base_url = "https://sensors.gfz-potsdam.de/backend/api/v1/devices"
+base_url = "https://sensors.gfz.de/backend/api/v1/devices"
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "kitsms"
@@ -373,6 +373,24 @@ parameter rows are removed again if no remaining selected device still provides
 that parameter name/unit pair. Manually entered rows and older unmarked rows are
 left untouched.
 
+This synchronization is enabled only for catalogs listed under
+`DataCollectionVariableSync`. The attribute URI settings are optional when the
+catalog uses the defaults shown above:
+
+```toml
+[DataCollectionVariableSync]
+[[DataCollectionVariableSync.catalogs]]
+catalog_uris = [
+    "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature-v1",
+]
+# devices_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/collaboration_tools"
+# device_collection_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
+# parameter_name_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
+# parameter_unit_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
+# variable_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-variable"
+# unit_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-unit"
+```
+
 O2A Registry missions are exposed through `O2ARegistryMissionsProvider`. They
 follow the same configuration flow as SMS configurations: selecting a mission
 can materialize its items into the configured project-local sensor collection.
@@ -408,7 +426,7 @@ catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
 [handlers.SensorManagementSystemHandler]
 [[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "gfzsms"
-base_url = "https://sensors.gfz-potsdam.de/backend/api/v1"
+base_url = "https://sensors.gfz.de/backend/api/v1"
 [[handlers.SensorManagementSystemHandler.backends]]
 id_prefix = "kitsms"
 base_url = "https://sms.atmohub.kit.edu/backend/api/v1"

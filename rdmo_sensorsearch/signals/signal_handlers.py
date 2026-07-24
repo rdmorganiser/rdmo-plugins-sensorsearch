@@ -14,7 +14,7 @@ from rdmo_sensorsearch.signals.collection_binding import (
     CollectionScope,
 )
 from rdmo_sensorsearch.signals.data_collection_variable_sync import (
-    DATA_COLLECTION_DEVICES_ATTRIBUTE_URI,
+    get_data_collection_variable_sync_config,
     remove_stale_data_collection_variables,
     sync_data_collection_variables_from_device_value,
 )
@@ -180,10 +180,11 @@ def sync_data_collection_variables_from_selected_device(sender, instance, **kwar
         return
     if instance is None or instance.project is None or instance.attribute is None or instance.project.catalog is None:
         return
-    if instance.attribute.uri != DATA_COLLECTION_DEVICES_ATTRIBUTE_URI:
+    sync_config = get_data_collection_variable_sync_config(instance.project.catalog.uri)
+    if sync_config is None or instance.attribute.uri != sync_config.devices_attribute_uri:
         return
 
-    transaction.on_commit(lambda: sync_data_collection_variables_from_device_value(instance))
+    transaction.on_commit(lambda: sync_data_collection_variables_from_device_value(instance, sync_config))
 
 
 @receiver(post_save, sender=Value)
@@ -257,7 +258,8 @@ def remove_data_collection_variables_from_deleted_device(sender, instance, **kwa
         return
     if instance is None or instance.project is None or instance.attribute is None or instance.project.catalog is None:
         return
-    if instance.attribute.uri != DATA_COLLECTION_DEVICES_ATTRIBUTE_URI:
+    sync_config = get_data_collection_variable_sync_config(instance.project.catalog.uri)
+    if sync_config is None or instance.attribute.uri != sync_config.devices_attribute_uri:
         return
 
-    transaction.on_commit(lambda: remove_stale_data_collection_variables(instance))
+    transaction.on_commit(lambda: remove_stale_data_collection_variables(instance, sync_config))
