@@ -289,6 +289,7 @@ reset_attribute_uris = [
     [handlers.SensorManagementSystemConfigurationsHandler.defaults]
     auto_complete_field_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
     member_sensors_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
+    selected_devices_page_uri = "https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set"
     device_collection_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
     frontend_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link"
     latitude_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lat"
@@ -324,6 +325,7 @@ reset_attribute_uris = [
     [handlers.O2ARegistryMissionsHandler.defaults]
     auto_complete_field_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
     member_sensors_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
+    selected_devices_page_uri = "https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set"
     device_collection_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
     frontend_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link"
     mission_url = "{base_url}/missions/{id}"

@@ -8,6 +8,7 @@ from django.dispatch import receiver
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
+from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionBindingError
 from rdmo_sensorsearch.signals.data_collection_variable_sync import (
     DATA_COLLECTION_DEVICES_ATTRIBUTE_URI,
     remove_stale_data_collection_variables,
@@ -96,27 +97,36 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
     catalog_uri = instance.project.catalog.uri
     for candidate in _get_handler_candidates(catalog_uri):
         selected_devices_attribute_uri = getattr(candidate.handler, "member_sensors_attribute_uri", None)
+        selected_devices_page_uri = getattr(candidate.handler, "selected_devices_page_uri", None)
         device_collection_attribute_uri = getattr(candidate.handler, "device_collection_attribute_uri", None)
-        if not selected_devices_attribute_uri or not device_collection_attribute_uri:
+        if not selected_devices_attribute_uri or not selected_devices_page_uri or not device_collection_attribute_uri:
             continue
 
         if instance.attribute.uri != selected_devices_attribute_uri:
             continue
+
+        try:
+            binding = CollectionBinding.resolve(instance.project, instance.attribute, selected_devices_page_uri)
+            scope_prefix, source_set_index = get_configuration_scope_for_value(instance, binding)
+        except CollectionBindingError as error:
+            logger.warning("Cannot synchronize selected devices: %s", error)
+            return
 
         configuration_search_attribute_uri = candidate.auto_complete_field_uri
 
         auth_token = get_sms_auth_token()
 
         def sync_selected_devices(
+            binding=binding,
+            scope_prefix=scope_prefix,
+            source_set_index=source_set_index,
             selected_devices_attribute_uri=selected_devices_attribute_uri,
             device_collection_attribute_uri=device_collection_attribute_uri,
             configuration_search_attribute_uri=configuration_search_attribute_uri,
             auth_token=auth_token,
         ):
-            scope_prefix, source_set_index = get_configuration_scope_for_value(instance)
             selected_values = get_selected_device_values_for_configuration_scope(
-                project=instance.project,
-                selected_devices_attribute_uri=selected_devices_attribute_uri,
+                binding=binding,
                 scope_prefix=scope_prefix,
                 source_set_index=source_set_index,
             )

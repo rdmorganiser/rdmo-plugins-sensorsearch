@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CollectionAssignment:
     attribute_uri: str
+    page_uri: str
     values: list[dict[str, Any]] = field(default_factory=list)
     replace_existing: bool = True
 

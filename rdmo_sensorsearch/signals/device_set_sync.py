@@ -12,6 +12,7 @@ from django.db.models import Q
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
+from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionScope
 from rdmo_sensorsearch.signals.refresh_types import RefreshError, RefreshResult
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
 from rdmo_sensorsearch.signals.value_updater import (
@@ -346,45 +347,25 @@ def _failed_device_sync(external_id: str, message: str, requested_count: int) ->
     )
 
 
-def get_configuration_scope_for_value(value: Value) -> tuple[str, int]:
-    if value.set_collection and not value.set_prefix:
-        return value.set_prefix or "", value.set_index
-    return _parent_configuration_scope(value.set_prefix or "", value.set_index)
+def get_configuration_scope_for_value(value: Value, binding: CollectionBinding) -> tuple[str, int]:
+    scope = binding.parent_scope_for_value(value)
+    return scope.set_prefix, scope.set_index
 
 
 def get_selected_device_values_for_configuration_scope(
-    project,
-    selected_devices_attribute_uri: str,
+    binding: CollectionBinding,
     scope_prefix: str,
     source_set_index: int,
 ) -> list[Value]:
-    child_prefix = _child_scope_prefix(scope_prefix, source_set_index)
-    row_values = list(
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute__uri=selected_devices_attribute_uri,
-            set_prefix=child_prefix,
-        )
-        .exclude(external_id__isnull=True)
-        .exclude(external_id__exact="")
-        .order_by("set_index", "id")
-    )
-    if row_values:
-        return row_values
-
     return list(
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute__uri=selected_devices_attribute_uri,
-            set_collection=True,
-            set_prefix=scope_prefix,
-            set_index=source_set_index,
+        binding.values_for_scope(
+            CollectionScope(
+                set_prefix=scope_prefix,
+                set_index=source_set_index,
+            )
         )
         .exclude(external_id__isnull=True)
         .exclude(external_id__exact="")
-        .order_by("collection_index", "id")
     )
 
 
@@ -970,23 +951,6 @@ def _has_nonempty_scalar_value(project, attribute_uri: str, scope_prefix: str, s
 
 def _device_nested_questionset_scope(parent_set_index: int) -> tuple[str, int]:
     return str(parent_set_index), 0
-
-
-def _parent_configuration_scope(set_prefix: str, set_index: int) -> tuple[str, int]:
-    if not set_prefix:
-        return "", set_index
-
-    if "|" not in set_prefix:
-        return "", int(set_prefix)
-
-    parent_prefix, _, parent_index = set_prefix.rpartition("|")
-    return parent_prefix, int(parent_index)
-
-
-def _child_scope_prefix(scope_prefix: str, source_set_index: int) -> str:
-    if not scope_prefix:
-        return str(source_set_index)
-    return f"{scope_prefix}|{source_set_index}"
 
 
 def _parse_external_id(external_id: str) -> tuple[str | None, str | None]:

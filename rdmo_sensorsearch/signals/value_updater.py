@@ -7,9 +7,13 @@ from django.db import transaction
 from rdmo.domain.models import Attribute
 from rdmo.projects.answers import AnswerTree
 from rdmo.projects.models import Value
-from rdmo.questions.models import Question, QuestionSet
 
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerResult
+from rdmo_sensorsearch.signals.collection_binding import (
+    CollectionBinding,
+    CollectionBindingError,
+    scope_from_value,
+)
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
 
 logger = logging.getLogger(__name__)
@@ -233,41 +237,22 @@ def replace_scalar_value_in_scopes(
             )
 
 
-def clear_collection_attribute(instance, attribute_uri: str) -> None:
+def clear_collection_attribute(instance, attribute_uri: str, page_uri: str) -> None:
     try:
         attribute = Attribute.objects.get(uri=attribute_uri)
     except Attribute.DoesNotExist:
         logger.warning("Collection clear target attribute not found: %s", attribute_uri)
         return
 
-    mode = _collection_shape(instance, attribute)
-    if mode is None:
-        logger.warning("Cannot clear collection attribute without collection shape: %s", attribute_uri)
+    try:
+        binding = CollectionBinding.resolve(instance.project, attribute, page_uri)
+    except CollectionBindingError as error:
+        logger.warning("Cannot clear collection attribute: %s", error)
         return
 
     with transaction.atomic(), mute_value_post_save():
-        deleted, _ = _qs_collection(instance, attribute, mode).delete()
+        deleted, _ = binding.values_for_scope(scope_from_value(instance)).delete()
         logger.info("Cleared collection values for attribute %s (%s rows)", attribute_uri, deleted)
-
-
-def _collection_shape(instance, attribute) -> str | None:
-    question_match_count = Question.objects.filter(
-        is_collection=True,
-        attribute=attribute,
-        pages__sections__catalogs__id__exact=instance.project.catalog.id,
-    ).count()
-
-    question_set_match_count = QuestionSet.objects.filter(
-        is_collection=True,
-        pages__sections__catalogs__id__exact=instance.project.catalog.id,
-        questions__attribute=attribute,
-    ).count()
-
-    if question_match_count == 1 and question_set_match_count == 0:
-        return "question"
-    if question_set_match_count > 0:
-        return "questionset"
-    return None
 
 
 def _qs_scalar_for_scope(instance, attribute, set_prefix: str, set_index: int):
@@ -280,24 +265,6 @@ def _qs_scalar_for_scope(instance, attribute, set_prefix: str, set_index: int):
         set_prefix=set_prefix,
     )
     return queryset
-
-
-def _qs_collection(instance, attribute, mode: str):
-    if mode == "question":
-        return Value.objects.filter(
-            project=instance.project,
-            attribute=attribute,
-            snapshot=None,
-            set_collection=True,
-            set_index=instance.set_index,
-        )
-    return Value.objects.filter(
-        project=instance.project,
-        attribute=attribute,
-        snapshot=None,
-        set_collection=True,
-        set_prefix=instance.set_index,
-    )
 
 
 def update_values_from_mapped_data(instance, data: dict):
@@ -389,119 +356,57 @@ def update_values_from_mapped_data(instance, data: dict):
 
 
 def _apply_list(instance, attribute, items: list[Any]) -> None:
-    mode = _collection_shape(instance, attribute)
-
-    if mode is None:
-        logger.warning(
-            "List value found, but no matching Question or QuestionSet with is_collection flag. Attribute: %s",
-            attribute,
-        )
-        Value.objects.filter(
-            project=instance.project,
-            attribute=attribute,
-            snapshot=None,
-            set_collection=True,
-            set_index=instance.set_index,
-        ).delete()
-        Value.objects.filter(
-            project=instance.project,
-            attribute=attribute,
-            snapshot=None,
-            set_collection=True,
-            set_prefix=instance.set_index,
-        ).delete()
-        logger.info("Cleared stray collection values for attribute %s", attribute.uri)
+    try:
+        binding = CollectionBinding.resolve(instance.project, attribute)
+    except CollectionBindingError as error:
+        logger.warning("Cannot apply list value: %s", error)
         return
 
-    queryset = _qs_collection(instance, attribute, mode)
+    parent_scope = scope_from_value(instance)
+    queryset = binding.values_for_scope(parent_scope)
 
     if not items:
         deleted, _ = queryset.delete()
         logger.info("Cleared collection values for attribute %s (%s rows)", attribute.uri, deleted)
         return
 
-    if mode == "question":
-        existing = {value.collection_index: value for value in queryset.only("id", "collection_index", "text")}
+    row_index_field = binding.row_index_field
+    existing = {getattr(value, row_index_field): value for value in queryset.only("id", row_index_field, "text")}
 
-        def upsert_at(index: int, text: Any):
-            _, created, changed = upsert_value_if_changed(
-                {
-                    "project": instance.project,
-                    "attribute": attribute,
-                    "snapshot": None,
-                    "set_collection": True,
-                    "set_index": instance.set_index,
-                    "collection_index": index,
-                },
-                {"text": text},
-            )
+    def upsert_at(index: int, text: Any):
+        _, created, changed = upsert_value_if_changed(
+            binding.value_lookup(parent_scope, index),
+            {"text": text},
+        )
+        logger.info(
+            "%s collection value for attribute %s at %s=%s: %r",
+            _change_label(created, changed),
+            attribute.uri,
+            row_index_field,
+            index,
+            text,
+        )
+
+    def delete_index(index: int):
+        deleted, _ = queryset.filter(**{row_index_field: index}).delete()
+        if deleted:
             logger.info(
-                "%s collection value for attribute %s at collection_index=%s: %r",
-                _change_label(created, changed),
+                "Deleted collection value for attribute %s at %s=%s",
                 attribute.uri,
+                row_index_field,
                 index,
-                text,
             )
 
-        def delete_index(index: int):
-            deleted, _ = queryset.filter(collection_index=index).delete()
-            if deleted:
-                logger.info(
-                    "Deleted collection value for attribute %s at collection_index=%s",
-                    attribute.uri,
-                    index,
-                )
-
-        def delete_from(start: int):
-            deleted, _ = queryset.filter(collection_index__gte=start).delete()
-            if deleted:
-                logger.info(
-                    "Deleted surplus collection values for attribute %s from collection_index=%s (%s rows)",
-                    attribute.uri,
-                    start,
-                    deleted,
-                )
-    else:
-        existing = {value.set_index: value for value in queryset.only("id", "set_index", "text")}
-
-        def upsert_at(index: int, text: Any):
-            _, created, changed = upsert_value_if_changed(
-                {
-                    "project": instance.project,
-                    "attribute": attribute,
-                    "snapshot": None,
-                    "set_prefix": instance.set_index,
-                    "set_collection": True,
-                    "set_index": index,
-                },
-                {"text": text},
-            )
+    def delete_from(start: int):
+        deleted, _ = queryset.filter(**{f"{row_index_field}__gte": start}).delete()
+        if deleted:
             logger.info(
-                "%s collection value for attribute %s at set_index=%s: %r",
-                _change_label(created, changed),
+                "Deleted surplus collection values for attribute %s from %s=%s (%s rows)",
                 attribute.uri,
-                index,
-                text,
+                row_index_field,
+                start,
+                deleted,
             )
-
-        def delete_index(index: int):
-            deleted, _ = queryset.filter(set_index=index, set_prefix=instance.set_index).delete()
-            if deleted:
-                logger.info(
-                    "Deleted collection value for attribute %s at set_index=%s",
-                    attribute.uri,
-                    index,
-                )
-
-        def delete_from(start: int):
-            deleted, _ = queryset.filter(set_index__gte=start).delete()
-            if deleted:
-                logger.info(
-                    "Deleted surplus collection values for attribute %s from set_index=%s (%s rows)",
-                    attribute.uri,
-                    start,
-                    deleted,
-                )
 
     last_nonblank_index = -1
     for index, raw_value in enumerate(items):
@@ -536,7 +441,13 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
         logger.warning("Collection target attribute not found: %s", collection.attribute_uri)
         return
 
-    mode = _collection_shape(instance, attribute)
+    try:
+        binding = CollectionBinding.resolve(instance.project, attribute, collection.page_uri)
+    except CollectionBindingError as error:
+        logger.warning("Cannot update collection assignment: %s", error)
+        return
+
+    parent_scope = scope_from_value(instance)
     desired_indexes = set()
 
     for index, value in enumerate(collection.values):
@@ -549,75 +460,32 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
         if "external_id" in value:
             defaults["external_id"] = value.get("external_id")
 
-        if mode == "question":
-            _, created, changed = upsert_value_if_changed(
-                {
-                    "project": instance.project,
-                    "attribute": attribute,
-                    "snapshot": None,
-                    "set_collection": True,
-                    "set_index": instance.set_index,
-                    "collection_index": index,
-                },
-                defaults,
-            )
-            logger.info(
-                "%s handler collection value for attribute %s at collection_index=%s: %r",
-                _change_label(created, changed),
-                attribute.uri,
-                index,
-                defaults,
-            )
-        elif mode == "questionset":
-            _, created, changed = upsert_value_if_changed(
-                {
-                    "project": instance.project,
-                    "attribute": attribute,
-                    "snapshot": None,
-                    "set_prefix": instance.set_index,
-                    "set_collection": True,
-                    "set_index": index,
-                },
-                defaults,
-            )
-            logger.info(
-                "%s handler collection value for attribute %s at set_index=%s: %r",
-                _change_label(created, changed),
-                attribute.uri,
-                index,
-                defaults,
-            )
-        else:
-            logger.warning(
-                "Collection assignment found, but no matching Question or QuestionSet with is_collection flag. Attribute: %s",
-                attribute,
-            )
+        _, created, changed = upsert_value_if_changed(
+            binding.value_lookup(parent_scope, index),
+            defaults,
+        )
+        logger.info(
+            "%s handler collection value for attribute %s using %s at %s=%s: %r",
+            _change_label(created, changed),
+            attribute.uri,
+            binding.layout.value,
+            binding.row_index_field,
+            index,
+            defaults,
+        )
 
     if collection.replace_existing:
-        _delete_surplus_collection_values(instance, attribute, mode, desired_indexes)
+        _delete_surplus_collection_values(binding, parent_scope, desired_indexes)
 
 
-def _delete_surplus_collection_values(instance, attribute, mode: str | None, desired_indexes: set[int]):
-    queryset = Value.objects.filter(project=instance.project, attribute=attribute, snapshot=None)
-
-    if mode == "question":
-        queryset = queryset.filter(set_collection=True, set_index=instance.set_index)
-        if desired_indexes:
-            queryset = queryset.exclude(collection_index__in=desired_indexes)
-    elif mode == "questionset":
-        queryset = queryset.filter(set_collection=True, set_prefix=instance.set_index)
-        if desired_indexes:
-            queryset = queryset.exclude(set_index__in=desired_indexes)
-    else:
-        logger.warning(
-            "Cannot determine surplus collection deletion scope. Attribute: %s",
-            attribute,
-        )
-        return
+def _delete_surplus_collection_values(binding, parent_scope, desired_indexes: set[int]):
+    queryset = binding.values_for_scope(parent_scope)
+    if desired_indexes:
+        queryset = queryset.exclude(**{f"{binding.row_index_field}__in": desired_indexes})
 
     deleted, _ = queryset.delete()
     if deleted:
-        logger.info("Deleted surplus collection values for attribute %s (%s rows)", attribute.uri, deleted)
+        logger.info("Deleted surplus collection values for attribute %s (%s rows)", binding.attribute.uri, deleted)
 
 
 def _normalize_set_prefix(set_prefix: str | None) -> str:

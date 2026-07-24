@@ -26,7 +26,7 @@ SPDX-License-Identifier: Apache-2.0
 		<title lang="en">Sensor Search Features</title>
 		<short_title lang="en">Sensor Search</short_title>
 		<pages>
-			<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations" order="0"/>
+			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set" order="0"/>
 			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general" order="1"/>
 			<page dc:uri="http://example.com/terms/questions/sensorsearch/project-devices" order="2"/>
 			<page dc:uri="http://example.com/terms/questions/sensorsearch/metadata-maintenance" order="3"/>
@@ -35,9 +35,9 @@ SPDX-License-Identifier: Apache-2.0
 	</section>
 
 	<!-- Configuration search and automatic device materialization -->
-	<page dc:uri="http://example.com/terms/questions/sensorsearch/configurations">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations</uri_path>
+	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>questions/instruments/configuration-set</uri_path>
 		<dc:comment>Selecting a configuration fills its metadata, selected devices, and device detail tabs.</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 		<is_collection>True</is_collection>

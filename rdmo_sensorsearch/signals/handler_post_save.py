@@ -45,6 +45,7 @@ def _get_handler_candidates(catalog_uri: str) -> list:
 def _clear_handler_targets(instance, handler) -> None:
     reset_attribute_uris = set(getattr(handler, "reset_attribute_uris", []))
     member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+    selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
 
     for attribute_uri_to_clear in getattr(handler, "reset_attribute_uris", []):
         if attribute_uri_to_clear == member_sensors_attribute_uri:
@@ -58,15 +59,16 @@ def _clear_handler_targets(instance, handler) -> None:
     }
     update_values_from_mapped_data(instance, clear_payload)
 
-    if member_sensors_attribute_uri:
-        clear_collection_attribute(instance, member_sensors_attribute_uri)
+    if member_sensors_attribute_uri and selected_devices_page_uri:
+        clear_collection_attribute(instance, member_sensors_attribute_uri, selected_devices_page_uri)
 
 
 def _clear_handler_signature(handler) -> tuple:
     reset_attribute_uris = tuple(sorted(getattr(handler, "reset_attribute_uris", [])))
     mapped_attribute_uris = tuple(sorted(set(handler.attribute_mapping.values())))
     member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
-    return reset_attribute_uris, mapped_attribute_uris, member_sensors_attribute_uri
+    selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
+    return reset_attribute_uris, mapped_attribute_uris, member_sensors_attribute_uri, selected_devices_page_uri
 
 
 def _device_nested_questionset_scope(instance) -> tuple[str, int]:

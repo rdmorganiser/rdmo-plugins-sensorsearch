@@ -88,6 +88,7 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
         result.collections.append(
             CollectionAssignment(
                 attribute_uri=member_sensors_attribute_uri,
+                page_uri=self.selected_devices_page_uri,
                 values=member_sensor_values,
             )
         )

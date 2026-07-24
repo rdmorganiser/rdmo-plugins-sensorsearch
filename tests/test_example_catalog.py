@@ -87,3 +87,14 @@ def test_example_catalog_configuration_devices_use_sensor_search():
     assert question.findtext("widget_type") == "select"
     assert question.findtext("value_type") == "option"
     assert question.find("./optionsets/optionset").attrib[DC_URI] == ("http://example.com/terms/options/sensorsearch/devices")
+
+
+def test_example_catalog_uses_canonical_configuration_page():
+    configuration_page = next(
+        page
+        for page in _catalog_root().findall("page")
+        if page.find("attribute") is not None
+        and page.find("attribute").attrib[DC_URI] == "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
+    )
+
+    assert configuration_page.attrib[DC_URI] == ("https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set")
