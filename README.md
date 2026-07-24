@@ -241,6 +241,13 @@ instances. Set `filter_sms_by_selected_configuration = true` in
 backend corresponding to an already selected configuration, such as
 `kitcfg -> kitsms`.
 
+When RDMO initializes an asynchronous select containing an existing answer, it
+requests options using the complete stored answer text. The meta-providers
+resolve an exact match from current project values when its external ID belongs
+to an enabled backend. These initialization requests therefore avoid backend
+authentication and external API calls. Partial or otherwise unmatched searches
+continue to query the configured backends normally.
+
 The `O2ARegistrySearchProvider` and `GeophysicalInstrumentPoolPotsdamProvider`
 uses their default values for `id_prefix`, `text_prefix`, `base_url` and
 `max_hits`.

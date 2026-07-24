@@ -32,10 +32,6 @@ class BaseMetaProvider(Provider):
         providers = build_provider_instances(self.config_key)
         if section_config.get("filter_sms_by_selected_configuration", False):
             providers = self._filter_providers_for_project(project, providers)
-        auth_token = get_sms_auth_token(user=user)
-        for provider in providers:
-            if getattr(provider, "uses_auth_token", False):
-                provider.auth_token = auth_token
 
         logger.debug(
             "%s.get_options called with search=%r, min_search_len=%s, config_path=%s, providers=%s",
@@ -53,6 +49,16 @@ class BaseMetaProvider(Provider):
             )
             return []
 
+        project_options = self._get_project_exact_options(project, search, providers)
+        if project_options:
+            logger.debug(
+                "%s resolved exact search=%r from %s current project value(s)",
+                type(self).__name__,
+                search,
+                len(project_options),
+            )
+            return project_options
+
         if not providers:
             logger.warning(
                 "%s has no configured backend providers. Check %s [%s].providers",
@@ -61,6 +67,11 @@ class BaseMetaProvider(Provider):
                 self.config_key,
             )
             return []
+
+        auth_token = get_sms_auth_token(user=user)
+        for provider in providers:
+            if getattr(provider, "uses_auth_token", False):
+                provider.auth_token = auth_token
 
         logger.debug("Configuration top-level keys: %s", sorted(configuration.keys()))
         logger.debug("Search term: %s", search)
@@ -84,6 +95,48 @@ class BaseMetaProvider(Provider):
 
         logger.debug("Results: %s", results)
         return results
+
+    def _get_project_exact_options(self, project, search: str, providers: list[Provider]) -> list[dict]:
+        if project is None:
+            return []
+
+        provider_prefixes = {
+            prefix for provider in providers if isinstance(prefix := getattr(provider, "id_prefix", None), str) and prefix
+        }
+        if not provider_prefixes:
+            return []
+
+        values = (
+            Value.objects.filter(
+                project=project,
+                snapshot=None,
+                text=search,
+            )
+            .exclude(external_id__isnull=True)
+            .exclude(external_id__exact="")
+            .order_by("id")
+            .values_list("external_id", "text")
+        )
+
+        options = []
+        seen_external_ids = set()
+        for external_id, text in values:
+            if not self._is_provider_external_id(external_id, provider_prefixes):
+                continue
+            if external_id in seen_external_ids:
+                continue
+
+            seen_external_ids.add(external_id)
+            options.append({"id": external_id, "text": text})
+        return options
+
+    @staticmethod
+    def _is_provider_external_id(external_id, provider_prefixes: set[str]) -> bool:
+        if not isinstance(external_id, str):
+            return False
+
+        prefix, separator, backend_id = external_id.partition(":")
+        return bool(separator and backend_id and prefix in provider_prefixes and "||" not in external_id)
 
     def _get_parallel_provider_options(self, providers, project, search, user, site) -> list[dict]:
         results = []
