@@ -7,8 +7,14 @@ from urllib.parse import urljoin
 from django.utils import timezone as django_timezone
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import CollectionAssignment, GenericSearchHandler, HandlerResult
+from rdmo_sensorsearch.handlers.base import (
+    CollectionAssignment,
+    GenericSearchHandler,
+    HandlerExecutionContext,
+    HandlerResult,
+)
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri, parse_datetime
+from rdmo_sensorsearch.naming import configuration_short_label
 from rdmo_sensorsearch.signals.device_set_sync import (
     SelectedDevice,
     sync_device_detail_blocks_from_payload,
@@ -44,7 +50,13 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     backend_link_marker = "/backend/api/v1/"
     uses_auth_token = True
 
-    def handle(self, id_: str, instance=None, auth_token: str | None = None) -> dict | HandlerResult:
+    def handle(
+        self,
+        id_: str,
+        instance=None,
+        auth_token: str | None = None,
+        context: HandlerExecutionContext | None = None,
+    ) -> dict | HandlerResult:
         configuration_data = fetch_json(
             self.configuration_url.format(base_url=self.base_url, id=id_),
             auth_token=auth_token,
@@ -62,15 +74,23 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if not isinstance(configuration_data.get("data"), dict):
             return {"errors": [f"SMS configuration request for ID {id_} returned no configuration data."]}
 
-        mount_action_data = self._fetch_jsonapi_collection(
-            self.device_mount_actions_url,
-            id_,
-            self.mounted_sensor_max_hits,
-            auth_token=auth_token,
-        )
-        if "errors" in mount_action_data:
-            logger.debug("Errors in device mount action data returned for ID %s: %s", id_, mount_action_data["errors"])
-            return mount_action_data
+        member_sensors_attribute_uri = getattr(self, "member_sensors_attribute_uri", None)
+        preserve_collections = bool(context and context.preserve_collections)
+        mount_action_data = None
+        if member_sensors_attribute_uri and not preserve_collections:
+            mount_action_data = self._fetch_jsonapi_collection(
+                self.device_mount_actions_url,
+                id_,
+                self.mounted_sensor_max_hits,
+                auth_token=auth_token,
+            )
+            if "errors" in mount_action_data:
+                logger.debug(
+                    "Errors in device mount action data returned for ID %s: %s",
+                    id_,
+                    mount_action_data["errors"],
+                )
+                return mount_action_data
 
         mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, configuration_data)
         self._set_configuration_links(mapped_values, configuration_data)
@@ -79,12 +99,10 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if location_errors:
             return {"errors": location_errors}
 
-        result = HandlerResult(
-            mapped_values=mapped_values,
-            collections=[],
-        )
+        collections = []
+        post_actions = []
 
-        if getattr(self, "member_sensors_attribute_uri", None):
+        if member_sensors_attribute_uri and mount_action_data is not None:
             cfg_period = self._get_cfg_period(instance)
             member_sensor_values, member_errors = self._build_member_sensor_values(
                 configuration_data=configuration_data,
@@ -94,11 +112,11 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             )
             if member_errors:
                 return {"errors": member_errors}
-            result.collections.append(
+            collections.append(
                 CollectionAssignment(
-                    attribute_uri=self.member_sensors_attribute_uri,
+                    attribute_uri=member_sensors_attribute_uri,
                     page_uri=self.selected_devices_page_uri,
-                    values=member_sensor_values,
+                    values=tuple(member_sensor_values),
                 )
             )
 
@@ -114,7 +132,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                     for value in member_sensor_values
                     if value.get("external_id")
                 ]
-                result.post_actions.append(
+                post_actions.append(
                     partial(
                         sync_device_detail_blocks_from_payload,
                         project=instance.project,
@@ -122,7 +140,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                         scope_prefix=instance.set_prefix,
                         source_set_index=instance.set_index,
                         selected_devices=selected_devices,
-                        selected_devices_attribute_uri=self.member_sensors_attribute_uri,
+                        selected_devices_attribute_uri=member_sensors_attribute_uri,
                         device_collection_attribute_uri=device_collection_attribute_uri,
                         configuration_search_attribute_uri=instance.attribute.uri,
                         configuration_external_id=instance.external_id,
@@ -131,7 +149,11 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                     )
                 )
 
-        return result
+        return HandlerResult(
+            mapped_values=mapped_values,
+            collections=tuple(collections),
+            post_actions=tuple(post_actions),
+        )
 
     def _set_configuration_links(self, mapped_values: dict[str, str | None], configuration_data: dict) -> None:
         raw_self_link = self._get_configuration_self_link(configuration_data)
@@ -385,8 +407,9 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         name = attrs.get("long_name") or attrs.get("short_name", "")
         serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
         sensor_text_prefix = getattr(self, "sensor_text_prefix", "SMS Sensor")
-        config_fragment = f" Config({configuration_id})" if configuration_id else ""
-        return f"{sensor_text_prefix}({sensor_id}){config_fragment}: {name}{serial}"
+        config_label = configuration_short_label(f"{self.id_prefix}:{configuration_id}") if configuration_id else None
+        config_prefix = f"{config_label} " if config_label else ""
+        return f"{config_prefix}{sensor_text_prefix}({sensor_id}): {name}{serial}"
 
     def _format_mount_timepoint(self, value) -> str | None:
         parsed = parse_datetime(value) if value else None

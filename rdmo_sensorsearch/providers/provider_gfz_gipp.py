@@ -22,7 +22,7 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
                             (post_save) to query more data, when using
                             different instances.
         text_prefix (str):  Prefix for displayed option text. Defaults to
-                            "GIPP:".
+                            "GFZ GIPP Instrument".
         max_hits (int):     Maximum number of search results to return.
                             Defaults to 10.
         base_url (str):     Base URL for the GIPP API endpoint. Defaults to
@@ -32,12 +32,12 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
     # max_hits = 10 from base provider
 
     id_prefix = "gfzgipp"
-    text_prefix = "GIPP:"
+    text_prefix = "GFZ GIPP Instrument"
     base_url = "https://gipp.gfz.de/instruments"
     instruments_url = "{base_url}/index.json?limit=10000&program=MOSES"
 
     option_id = "{prefix}:{id}"
-    option_text = "{prefix} {code}"
+    option_text = "{prefix}({id}): {code}"
 
     def get_options(self, project, search=None, user=None, site=None):
         """
@@ -90,7 +90,11 @@ class GeophysicalInstrumentPoolPotsdamProvider(BaseSensorProvider):
                 if query in str(value).lower():
                     return {
                         "id": self.option_id.format(prefix=self.id_prefix, id=inst_data["id"]),
-                        "text": self.option_text.format(prefix=self.text_prefix, code=inst_data["code"]),
+                        "text": self.option_text.format(
+                            prefix=self.text_prefix,
+                            id=inst_data["id"],
+                            code=inst_data["code"],
+                        ),
                     }
         except (KeyError, TypeError) as e:
             logger.debug("Skipping malformed instrument entry: %s", e)

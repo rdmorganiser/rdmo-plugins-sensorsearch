@@ -7,8 +7,14 @@ from urllib.parse import urlsplit
 from django.utils import timezone as django_timezone
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import CollectionAssignment, GenericSearchHandler, HandlerResult
+from rdmo_sensorsearch.handlers.base import (
+    CollectionAssignment,
+    GenericSearchHandler,
+    HandlerExecutionContext,
+    HandlerResult,
+)
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri, parse_datetime
+from rdmo_sensorsearch.naming import configuration_short_label
 from rdmo_sensorsearch.signals.device_set_sync import (
     SelectedDevice,
     sync_device_detail_blocks_from_payload,
@@ -33,7 +39,7 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
 
     item_id_prefix = "o2aregistry"
     item_text_prefix = "O2A Item"
-    item_text_template = "{prefix}({item_id}) Mission({mission_id}): {name}{serial}"
+    item_text_template = "{configuration} {prefix}({item_id}): {name}{serial}"
 
     mission_start_date_path = "startDate"
     mission_end_date_path = "endDate"
@@ -43,7 +49,12 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
     api_link_template = "{base_url}/missions/{id}"
     frontend_link_template = "{base_url_origin}/missions/{id}"
 
-    def handle(self, id_: str, instance=None) -> dict | HandlerResult:
+    def handle(
+        self,
+        id_: str,
+        instance=None,
+        context: HandlerExecutionContext | None = None,
+    ) -> dict | HandlerResult:
         mission_data = fetch_json(self.mission_url.format(base_url=self.base_url, id=id_))
         if isinstance(mission_data, dict) and "errors" in mission_data:
             logger.debug("Errors in O2A mission data returned for ID %s: %s", id_, mission_data["errors"])
@@ -54,6 +65,17 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
         if not mission_data:
             return {"errors": [f"O2A mission request for ID {id_} returned no mission data."]}
 
+        mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, mission_data)
+        self._set_mission_links(mapped_values, id_)
+        self._normalize_datetimes(mapped_values)
+
+        collections = []
+        post_actions = []
+        member_sensors_attribute_uri = getattr(self, "member_sensors_attribute_uri", None)
+        preserve_collections = bool(context and context.preserve_collections)
+        if not member_sensors_attribute_uri or preserve_collections:
+            return HandlerResult(mapped_values=mapped_values)
+
         mission_items_data = self._fetch_mission_items(id_)
         if isinstance(mission_items_data, dict) and "errors" in mission_items_data:
             logger.debug(
@@ -62,15 +84,6 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
                 mission_items_data["errors"],
             )
             return mission_items_data
-
-        mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, mission_data)
-        self._set_mission_links(mapped_values, id_)
-        self._normalize_datetimes(mapped_values)
-
-        result = HandlerResult(mapped_values=mapped_values, collections=[])
-        member_sensors_attribute_uri = getattr(self, "member_sensors_attribute_uri", None)
-        if not member_sensors_attribute_uri:
-            return result
 
         mission_period = (
             self._format_timepoint(mission_data.get(self.mission_start_date_path)),
@@ -84,11 +97,11 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
         )
         if member_errors:
             return {"errors": member_errors}
-        result.collections.append(
+        collections.append(
             CollectionAssignment(
                 attribute_uri=member_sensors_attribute_uri,
                 page_uri=self.selected_devices_page_uri,
-                values=member_sensor_values,
+                values=tuple(member_sensor_values),
             )
         )
 
@@ -104,7 +117,7 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
                 for value in member_sensor_values
                 if value.get("external_id")
             ]
-            result.post_actions.append(
+            post_actions.append(
                 partial(
                     sync_device_detail_blocks_from_payload,
                     project=instance.project,
@@ -120,7 +133,11 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
                 )
             )
 
-        return result
+        return HandlerResult(
+            mapped_values=mapped_values,
+            collections=tuple(collections),
+            post_actions=tuple(post_actions),
+        )
 
     def _set_mission_links(self, mapped_values: dict[str, str | None], mission_id: str) -> None:
         values = {
@@ -152,6 +169,14 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
             formatted = self._format_timepoint(value)
             if formatted is not None:
                 mapped_values[attribute_uri] = formatted
+
+    def get_member_device_period(self, mapped_values) -> tuple[str | None, str | None]:
+        start_attribute_uri = self.attribute_mapping.get(self.mission_start_date_path)
+        end_attribute_uri = self.attribute_mapping.get(self.mission_end_date_path)
+        return (
+            mapped_values.get(start_attribute_uri) if start_attribute_uri else None,
+            mapped_values.get(end_attribute_uri) if end_attribute_uri else None,
+        )
 
     def _build_member_sensor_values(
         self,
@@ -249,6 +274,7 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
             str,
             {
                 "prefix": self.item_text_prefix,
+                "configuration": configuration_short_label(f"{self.id_prefix}:{mission_id}") or f"M({mission_id})",
                 "mission_id": mission_id,
                 "mission_name": mission_data.get("name", ""),
                 "mission_uuid": mission_data.get("@uuid", ""),

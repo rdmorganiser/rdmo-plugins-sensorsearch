@@ -1,12 +1,21 @@
 import logging
+from dataclasses import replace
 
 from django.db import transaction
 
-from rdmo_sensorsearch.handlers.base import HandlerResult
+from rdmo.domain.models import Attribute
+
+from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers.factory import WILDCARD_CATALOG_URI, build_handlers_by_catalog
 from rdmo_sensorsearch.handlers.handler_sms import (
     INSTRUMENT_END_ATTRIBUTE_URI,
     INSTRUMENT_START_ATTRIBUTE_URI,
+)
+from rdmo_sensorsearch.naming import canonical_device_label
+from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionBindingError, CollectionScope
+from rdmo_sensorsearch.signals.device_set_sync import (
+    get_selected_device_values_for_configuration_scope,
+    sync_device_detail_blocks_from_configuration_values,
 )
 from rdmo_sensorsearch.signals.refresh_types import (
     RefreshError,
@@ -14,12 +23,8 @@ from rdmo_sensorsearch.signals.refresh_types import (
     combine_refresh_results,
 )
 from rdmo_sensorsearch.signals.value_updater import (
-    build_clear_payload,
-    clear_attribute_values,
-    clear_collection_attribute,
+    reconcile_handler_result,
     replace_scalar_value_in_scopes,
-    update_values_from_handler_result,
-    update_values_from_mapped_data,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,58 +49,48 @@ def _get_handler_candidates(catalog_uri: str) -> list:
     return merged_candidates
 
 
-def _clear_handler_targets(
-    instance,
-    handler,
-    preserved_collection_attribute_uris: set[str] | None = None,
-) -> None:
-    preserved_collection_attribute_uris = preserved_collection_attribute_uris or set()
-    reset_attribute_uris = set(getattr(handler, "reset_attribute_uris", []))
+def _empty_handler_result(handler) -> HandlerResult:
     member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
     selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
-
-    for attribute_uri_to_clear in getattr(handler, "reset_attribute_uris", []):
-        if attribute_uri_to_clear == member_sensors_attribute_uri:
-            continue
-        clear_attribute_values(instance, attribute_uri_to_clear)
-
-    clear_payload = {
-        attribute_uri: value
-        for attribute_uri, value in build_clear_payload(handler.attribute_mapping).items()
-        if attribute_uri not in reset_attribute_uris
-    }
-    update_values_from_mapped_data(instance, clear_payload)
-
-    if (
-        member_sensors_attribute_uri
-        and member_sensors_attribute_uri not in preserved_collection_attribute_uris
-        and selected_devices_page_uri
-    ):
-        clear_collection_attribute(instance, member_sensors_attribute_uri, selected_devices_page_uri)
+    collections = ()
+    if member_sensors_attribute_uri and selected_devices_page_uri:
+        collections = (
+            CollectionAssignment(
+                attribute_uri=member_sensors_attribute_uri,
+                page_uri=selected_devices_page_uri,
+                values=(),
+            ),
+        )
+    return HandlerResult(collections=collections)
 
 
-def _clear_handler_signature(handler) -> tuple:
-    reset_attribute_uris = tuple(sorted(getattr(handler, "reset_attribute_uris", [])))
+def _handler_ownership_signature(handler) -> tuple:
+    managed_attribute_uris = tuple(sorted(handler.managed_attribute_uris))
     mapped_attribute_uris = tuple(sorted(set(handler.attribute_mapping.values())))
     member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
     selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
-    return reset_attribute_uris, mapped_attribute_uris, member_sensors_attribute_uri, selected_devices_page_uri
+    return managed_attribute_uris, mapped_attribute_uris, member_sensors_attribute_uri, selected_devices_page_uri
 
 
 def _device_nested_questionset_scope(instance) -> tuple[str, int]:
     return str(instance.set_index), 0
 
 
-def _update_mapped_data(instance, mapped_data: dict) -> None:
-    mapped_data = dict(mapped_data)
-    scoped_scalar_values = {
-        INSTRUMENT_START_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
-        INSTRUMENT_END_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_END_ATTRIBUTE_URI, ""),
+def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
+    scoped_attribute_uris = {
+        attribute_uri
+        for attribute_uri in (INSTRUMENT_START_ATTRIBUTE_URI, INSTRUMENT_END_ATTRIBUTE_URI)
+        if attribute_uri in handler.managed_attribute_uris or attribute_uri in result.mapped_values
     }
-    update_values_from_mapped_data(instance, mapped_data)
+    post_actions = reconcile_handler_result(
+        instance,
+        handler,
+        result,
+        excluded_attribute_uris=scoped_attribute_uris,
+    )
+
+    scoped_scalar_values = {attribute_uri: result.mapped_values.get(attribute_uri, "") for attribute_uri in scoped_attribute_uris}
     for attribute_uri, value in scoped_scalar_values.items():
-        if attribute_uri not in {INSTRUMENT_START_ATTRIBUTE_URI, INSTRUMENT_END_ATTRIBUTE_URI}:
-            continue
         replace_scalar_value_in_scopes(
             instance,
             attribute_uri,
@@ -103,6 +98,7 @@ def _update_mapped_data(instance, mapped_data: dict) -> None:
             scopes_to_set=[_device_nested_questionset_scope(instance)],
             scopes_to_clear=[(instance.set_prefix or "", instance.set_index)],
         )
+    return post_actions
 
 
 def handle_post_save(instance, auth_token: str | None = None) -> None:
@@ -141,13 +137,14 @@ def handle_post_save(instance, auth_token: str | None = None) -> None:
         return
 
     if not instance.external_id and getattr(instance, "is_empty", False):
-        cleared_signatures = set()
+        reconciled_signatures = set()
         for candidate in attribute_handler_candidates:
-            signature = _clear_handler_signature(candidate.handler)
-            if signature in cleared_signatures:
+            signature = _handler_ownership_signature(candidate.handler)
+            if signature in reconciled_signatures:
                 continue
-            cleared_signatures.add(signature)
-            _clear_handler_targets(instance, candidate.handler)
+            reconciled_signatures.add(signature)
+            with transaction.atomic():
+                _reconcile_result(instance, candidate.handler, _empty_handler_result(candidate.handler))
         return
 
     result = refresh_value_from_backend(instance, auth_token=auth_token)
@@ -155,7 +152,11 @@ def handle_post_save(instance, auth_token: str | None = None) -> None:
         logger.error("Backend update failed for %s: %s", error.external_id, error.message)
 
 
-def refresh_value_from_backend(instance, auth_token: str | None = None) -> RefreshResult:
+def refresh_value_from_backend(
+    instance,
+    auth_token: str | None = None,
+    preserve_collections: bool = False,
+) -> RefreshResult:
     external_id = getattr(instance, "external_id", None) or ""
     if not external_id:
         return _failed_refresh(external_id, "Value has no external ID.")
@@ -182,11 +183,17 @@ def refresh_value_from_backend(instance, auth_token: str | None = None) -> Refre
         return _failed_refresh(external_id, "Multiple matching backend handlers are configured.")
 
     candidate = candidates[0]
+    context = HandlerExecutionContext(preserve_collections=preserve_collections)
     try:
         if getattr(candidate.handler, "uses_auth_token", False):
-            mapped_data = candidate.handler.handle(id_=backend_id, instance=instance, auth_token=auth_token)
+            mapped_data = candidate.handler.handle(
+                id_=backend_id,
+                instance=instance,
+                auth_token=auth_token,
+                context=context,
+            )
         else:
-            mapped_data = candidate.handler.handle(id_=backend_id, instance=instance)
+            mapped_data = candidate.handler.handle(id_=backend_id, instance=instance, context=context)
     except Exception as error:
         logger.exception(
             "Handler %s failed while processing external_id=%s for catalog=%s",
@@ -198,32 +205,32 @@ def refresh_value_from_backend(instance, auth_token: str | None = None) -> Refre
 
     if isinstance(mapped_data, dict) and "errors" in mapped_data:
         return _failed_refresh(external_id, _format_handler_errors(mapped_data["errors"]))
-    if not isinstance(mapped_data, (dict, HandlerResult)):
-        return _failed_refresh(external_id, f"Handler returned {type(mapped_data).__name__}, expected mapped data.")
+    if not isinstance(mapped_data, HandlerResult):
+        return _failed_refresh(external_id, f"Handler returned {type(mapped_data).__name__}, expected HandlerResult.")
 
-    post_actions = ()
     try:
-        preserved_collection_attribute_uris = (
-            {collection.attribute_uri for collection in mapped_data.collections}
-            if isinstance(mapped_data, HandlerResult)
-            else set()
-        )
-        with transaction.atomic():
-            _clear_handler_targets(
-                instance,
-                candidate.handler,
-                preserved_collection_attribute_uris=preserved_collection_attribute_uris,
+        if preserve_collections:
+            mapped_data = replace(
+                mapped_data,
+                collections=_preserved_collection_assignments(instance, candidate.handler),
             )
-            if isinstance(mapped_data, HandlerResult):
-                post_actions = update_values_from_handler_result(instance, mapped_data)
-            else:
-                _update_mapped_data(instance, mapped_data)
+        with transaction.atomic():
+            post_actions = _reconcile_result(instance, candidate.handler, mapped_data)
     except Exception as error:
         logger.exception("Failed to apply backend data for external_id=%s", external_id)
         return _failed_refresh(external_id, f"Could not store backend data: {error}")
 
     try:
-        post_action_results = tuple(post_action() for post_action in post_actions)
+        post_action_results = [post_action() for post_action in post_actions]
+        if preserve_collections:
+            post_action_results.append(
+                _refresh_selected_configuration_devices(
+                    instance,
+                    candidate.handler,
+                    mapped_data.mapped_values,
+                    auth_token=auth_token,
+                )
+            )
     except Exception as error:
         logger.exception("Failed to run post-update actions for external_id=%s", external_id)
         return _failed_refresh(external_id, f"Could not complete backend update: {error}")
@@ -236,6 +243,104 @@ def refresh_value_from_backend(instance, auth_token: str | None = None) -> Refre
         device_requested_count=device_result.requested_count,
         device_refreshed_count=device_result.refreshed_count,
     )
+
+
+def _refresh_selected_configuration_devices(
+    instance,
+    handler,
+    configuration_values,
+    auth_token: str | None = None,
+) -> RefreshResult:
+    selected_devices_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+    selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
+    device_collection_attribute_uri = getattr(handler, "device_collection_attribute_uri", None)
+    if not selected_devices_attribute_uri or not selected_devices_page_uri or not device_collection_attribute_uri:
+        return RefreshResult(requested_count=0, refreshed_count=0)
+
+    try:
+        binding = CollectionBinding.resolve(
+            instance.project,
+            _get_attribute(selected_devices_attribute_uri),
+            selected_devices_page_uri,
+        )
+    except (CollectionBindingError, ValueError) as error:
+        return RefreshResult(
+            requested_count=0,
+            refreshed_count=0,
+            errors=(
+                RefreshError(
+                    external_id=instance.external_id or "",
+                    message=f"Could not resolve the selected Device Set: {error}",
+                ),
+            ),
+        )
+
+    scope = CollectionScope(set_prefix=instance.set_prefix or "", set_index=instance.set_index)
+    selected_values = get_selected_device_values_for_configuration_scope(
+        binding,
+        scope.set_prefix,
+        scope.set_index,
+    )
+    period_resolver = getattr(handler, "get_member_device_period", None)
+    instrument_start, instrument_end = period_resolver(configuration_values) if callable(period_resolver) else (None, None)
+    return sync_device_detail_blocks_from_configuration_values(
+        project=instance.project,
+        catalog=instance.project.catalog,
+        scope_prefix=scope.set_prefix,
+        source_set_index=scope.set_index,
+        selected_values=selected_values,
+        selected_devices_attribute_uri=selected_devices_attribute_uri,
+        device_collection_attribute_uri=device_collection_attribute_uri,
+        configuration_search_attribute_uri=instance.attribute.uri,
+        auth_token=auth_token,
+        force_refresh=True,
+        instrument_start=instrument_start,
+        instrument_end=instrument_end,
+    )
+
+
+def _preserved_collection_assignments(instance, handler) -> tuple[CollectionAssignment, ...]:
+    selected_devices_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+    selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
+    if not selected_devices_attribute_uri or not selected_devices_page_uri:
+        return ()
+
+    attribute = _get_attribute(selected_devices_attribute_uri)
+    binding = CollectionBinding.resolve(
+        instance.project,
+        attribute,
+        selected_devices_page_uri,
+    )
+    scope = CollectionScope(set_prefix=instance.set_prefix or "", set_index=instance.set_index)
+    active_values = list(binding.values_for_scope(scope))
+    inactive_values = list(binding.opposite_values_for_scope(scope))
+    source_values = active_values if _has_collection_content(active_values) else inactive_values
+
+    return (
+        CollectionAssignment(
+            attribute_uri=selected_devices_attribute_uri,
+            page_uri=selected_devices_page_uri,
+            values=tuple(
+                {
+                    "text": canonical_device_label(value.text or "", value.external_id),
+                    "external_id": value.external_id or "",
+                }
+                for value in source_values
+                if value.text or value.external_id
+            ),
+        ),
+    )
+
+
+def _has_collection_content(values) -> bool:
+    return any(value.text or value.external_id for value in values)
+
+
+def _get_attribute(attribute_uri: str):
+    try:
+        return Attribute.objects.get(uri=attribute_uri)
+    except Attribute.DoesNotExist as error:
+        raise ValueError(f"Attribute not found: {attribute_uri}") from error
 
 
 def _failed_refresh(external_id: str, message: str) -> RefreshResult:

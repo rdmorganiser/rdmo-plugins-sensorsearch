@@ -220,7 +220,7 @@ def test_collection_questionset_uses_child_prefix_and_set_index():
         ),
     ],
 )
-def test_opposite_values_use_the_legacy_layout_coordinates(
+def test_opposite_values_use_the_inactive_layout_coordinates(
     monkeypatch,
     active_layout,
     parent_scope,

@@ -5,6 +5,7 @@ from rdmo.options.providers import Provider
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.config import catalog_matches, load_config
+from rdmo_sensorsearch.naming import canonical_device_label
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,12 @@ class BaseProjectAttributeOptionsProvider(Provider):
                 continue
 
             seen.add(option_id)
-            options.append({"id": option_id, "text": value.text})
+            options.append(
+                {
+                    "id": option_id,
+                    "text": canonical_device_label(value.text, value.external_id),
+                }
+            )
 
         return options
 

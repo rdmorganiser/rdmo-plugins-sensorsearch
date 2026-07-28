@@ -21,7 +21,7 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
                             handlers (post_save) to query more data, when
                             using different instances.
         text_prefix (str):  Prefix for displayed option text. Defaults to
-                            "O2A REGISTRY:".
+                            "O2A Item".
         max_hits (int):     Maximum number of search results to return.
                             Defaults to 10.
         base_url (str):     Base URL for the O2A Registry API endpoint.
@@ -31,7 +31,7 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
     # max_hits = 10 from base provider
 
     id_prefix = "o2aregistry"
-    text_prefix = "O2A REGISTRY:"
+    text_prefix = "O2A Item"
 
     base_url = "https://registry.o2a-data.de/index/rest/search/sensor-v2"
     query_url = "{base_url}?hits={hits}&q={query}"
@@ -87,8 +87,8 @@ class O2ARegistrySearchProvider(BaseSensorProvider):
         registry_id = data_set["id"]
 
         if serial:
-            text = f"{self.text_prefix} {title} (s/n: {serial}, id: {registry_id})"
+            text = f"{self.text_prefix}({unique_id}): {title} (s/n: {serial}, id: {registry_id})"
         else:
-            text = f"{self.text_prefix} {title} (id: {registry_id})"
+            text = f"{self.text_prefix}({unique_id}): {title} (id: {registry_id})"
 
         return {"id": f"{self.id_prefix}:{unique_id}", "text": text}

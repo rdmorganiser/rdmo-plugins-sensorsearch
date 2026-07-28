@@ -20,11 +20,11 @@ class SensorManagementSystemProvider(BaseSensorProvider):
     unique ID from the SMS.
 
     Attributes:
-        id_prefix (str):    Prefix for generated option IDs. Defaults to "sms".
-                            This id_prefix can be used by handlers (post_save)
-                            to query more data, when using different instances.
-        text_prefix (str):  Prefix for displayed option text. Defaults to
-                            "SMS:".
+        id_prefix (str):    Configured prefix for generated option IDs. This
+                            prefix can be used by handlers (post_save) to query
+                            more data when using different instances.
+        text_prefix (str):  Configured backend and entity label, for example
+                            "KIT Sensor".
         max_hits (int):     Maximum number of search results to return.
                             Defaults to 10.
         base_url (str):     Base URL for the SMS API endpoint. Must be set
@@ -32,8 +32,7 @@ class SensorManagementSystemProvider(BaseSensorProvider):
     """
 
     # The keys are set by config kwargs
-    # id_prefix: str = "sms"
-    # text_prefix = "SMS:"
+    # id_prefix and text_prefix are set by configuration.
     # base_url is set by config
     # max_hits = 10 from base provider
 

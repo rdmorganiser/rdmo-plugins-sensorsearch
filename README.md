@@ -169,29 +169,29 @@ timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refr
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "gfzsms"
-text_prefix = "GFZ Sensors:"
+text_prefix = "GFZ Sensor"
 base_url = "https://sensors.gfz.de/backend/api/v1/devices"
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "kitsms"
-text_prefix = "KIT Sensors:"
+text_prefix = "KIT Sensor"
 base_url = "https://sms.atmohub.kit.edu/backend/api/v1/devices"
 
 [[SensorsProvider.providers.SensorManagementSystemProvider]]
 id_prefix = "ufzsms"
-text_prefix = "UFZ Sensors:"
+text_prefix = "UFZ Sensor"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
 [[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]
 
 [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
 id_prefix = "gfzcfg"
-text_prefix = "GFZ Configurations:"
+text_prefix = "GFZ Cfg"
 base_url = "https://sensors.gfz.de/backend/api/v1/configurations"
 
 [[ConfigurationsProvider.providers.O2ARegistryMissionsProvider]]
 id_prefix = "o2amission"
-text_prefix = "O2A Mission"
+text_prefix = "O2A M"
 base_url = "https://registry.o2a-data.de/rest/v2/missions"
 where_template = "name=ILIKE=\"*{query}*\""
 
@@ -202,6 +202,7 @@ base_url = "https://sensors.gfz.de/backend/api/v1"
 sensor_id_prefix = "gfzsms"
 [handlers.SensorManagementSystemConfigurationsHandler.defaults]
 auto_complete_field_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
+configuration_collection_attribute_uri = "http://example.com/terms/domain/configuration-set"
 member_sensors_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 frontend_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/uri"
 api_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
@@ -219,10 +220,11 @@ catalog_uri = "http://example.com/terms/questions/example-configurations-earth-s
 [handlers.O2ARegistryMissionsHandler]
 [handlers.O2ARegistryMissionsHandler.defaults]
 auto_complete_field_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
+configuration_collection_attribute_uri = "http://example.com/terms/domain/configuration-set"
 member_sensors_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 device_collection_attribute_uri = "http://example.com/terms/domain/instruments/id"
 item_id_prefix = "o2aregistry"
-item_text_template = "{prefix}({item_id}) Mission({mission_id}): {name}{serial}"
+item_text_template = "{configuration} {prefix}({item_id}): {name}{serial}"
 [handlers.O2ARegistryMissionsHandler.defaults.attribute_mapping]
 "description" = "http://example.com/terms/domain/configuration-set/description"
 "startDate" = "http://example.com/terms/domain/configuration-set/start"
@@ -234,6 +236,31 @@ catalog_uri = "http://example.com/terms/questions/example-configurations-earth-s
 This configures all available providers with three SMS instances to query. The
 `SensorsProvider` will only query the configured providers if at least three
 characters are entered.
+
+Provider labels follow a common `<backend> <entity>(<id>): <label>` convention:
+
+- SMS devices: `GFZ Sensor(2212): ...`, `KIT Sensor(327): ...`, or
+  `UFZ Sensor(823): ...`
+- O2A items: `O2A Item(3581): ...`
+- GIPP instruments: `GFZ GIPP Instrument(1): ...`
+- SMS configurations: `GFZ Cfg(12): ...`, `KIT Cfg(49): ...`, or
+  `UFZ Cfg(310): ...`
+- O2A missions: `O2A M(30): ...`
+
+Devices imported through a configuration retain their compact relationship in
+the Device Set, with the configuration or mission first for easier scanning,
+for example `KIT Cfg(49) KIT Sensor(327): ...` or
+`O2A M(30) O2A Item(4152): ...`. Device Details tabs use the complete configuration
+label and omit the repeated compact relationship, for example
+`KIT Cfg(49) KIT Sensor(327): ...`.
+
+Selecting a backend configuration or mission also prefixes the shared
+configuration tab while preserving its user-defined alias. For example,
+`o2a-test` becomes `O2A M(30): o2a-test`. Replacing the selected backend changes
+only the managed prefix, while clearing it restores `o2a-test`. Since the
+Configuration/Mission and Device Set pages use the same collection attribute,
+the synchronized label identifies the same tab on both pages.
+
 By default, SMS device search is not restricted by configurations already
 selected in the project, so manual instrument searches query all configured SMS
 instances. Set `filter_sms_by_selected_configuration = true` in
@@ -249,7 +276,7 @@ authentication and external API calls. Partial or otherwise unmatched searches
 continue to query the configured backends normally.
 
 The `O2ARegistrySearchProvider` and `GeophysicalInstrumentPoolPotsdamProvider`
-uses their default values for `id_prefix`, `text_prefix`, `base_url` and
+use their default values for `id_prefix`, `text_prefix`, `base_url` and
 `max_hits`.
 
 There is no default `base_url` for `SensorManagementSystemProvider` defined,
@@ -339,17 +366,37 @@ message contains the refreshed target or aggregate counts and backend errors.
 Successful single-configuration messages also report how many associated
 devices were refreshed. The timestamp uses local server time.
 
+Each user-triggered refresh deduplicates identical backend GET requests for the
+duration of that action. This is especially relevant for shared reference
+endpoints such as the O2A unit list and for devices reused by more than one
+configuration. The cache is shared with the bounded device-fetch workers,
+returns isolated response copies to handlers, and is discarded as soon as the
+refresh finishes.
+
 The selected-device collection can be represented either by one collection
 Question or by a collection QuestionSet. The plugin resolves the active shape
-from `selected_devices_page_uri`. A successful configuration refresh writes
-the complete backend device list using that shape and removes values using the
-opposite shape in the same configuration scope. This allows an existing project
-to be reused after changing between the two catalog representations. After
-such a catalog change, refresh every configuration individually or run the
-`all_configurations` action. Failed backend requests leave both representations
-unchanged. Individual device refreshes do not normalize configuration
-membership, and manually added devices not returned by the configuration
-backend are removed by the authoritative configuration refresh.
+from `selected_devices_page_uri`. Initial configuration or mission selection
+imports the complete backend device list using that shape and removes values
+using the opposite shape in the same configuration scope. This allows an
+existing project to be reused after changing between the two catalog
+representations.
+
+User-triggered `configuration` and `all_configurations` refreshes treat the
+current Device Set as user-managed input. They refresh configuration metadata
+without replacing its membership, then refresh device details only for devices
+currently selected in that configuration scope. Consequently, manually removed
+devices are not reintroduced, manually added backend devices are included, and
+obsolete device-detail blocks are removed. Preserved membership is also moved
+to the active collection layout when the catalog representation has changed,
+and legacy device-first labels are normalized to the configuration-first
+convention during the refresh.
+Duplicate selected rows with the same device `external_id` are collapsed to
+their first row. Failed configuration requests leave the Device Set unchanged.
+
+Removing a device from the Device Set uses a targeted local cleanup: only that
+device's detail block is deleted, without refreshing the remaining devices or
+calling an external sensor backend. Adding or changing a selected device still
+runs the normal synchronization needed to materialize its detail metadata.
 
 Attach an optionset using `InterviewPageRefreshProvider` to every trigger
 question. Its `refresh = True` flag makes RDMO refetch the current page after
@@ -468,10 +515,12 @@ attributes of the catalog. It is possible to configure more than one catalog.
   to attributes
 - `auto_complete_field_uri` is the uri of the question with the option set
   provider used in the catalog
-- `reset_attribute_uris` can be used to clear additional attributes when the
-  selection changes or the search field is erased. This is useful for
-  sensor-related fields which are not filled by every backend but must still
-  be reset when replacing a sensor.
+- `managed_attribute_uris` adds attributes to the handler's ownership beyond
+  those in `attribute_mapping`. Every successful refresh is authoritative for
+  this complete set: returned values are created or updated in place, while
+  owned values omitted by the backend are removed. Unmanaged interview values
+  are left untouched. Clearing the source question applies the same ownership
+  rules with an empty result.
 - `sync_device_detail_blocks = true` marks an item/sensor handler as eligible
   for configuration or mission based detail-block synchronization.
 - `supports_mount_action_period_lookup = true` enables the SMS-specific

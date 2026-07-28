@@ -107,13 +107,19 @@ def _configure_provider(monkeypatch, config_key, providers, rows, min_search_len
 
 
 @pytest.mark.parametrize(
-    ("provider_class", "config_key", "external_id"),
+    ("provider_class", "config_key", "external_id", "expected_text"),
     (
-        (meta_provider.SensorsProvider, meta_provider.SENSORSPROVIDER_CONFIG_KEY, "kitsms:327"),
+        (
+            meta_provider.SensorsProvider,
+            meta_provider.SENSORSPROVIDER_CONFIG_KEY,
+            "kitsms:327",
+            "KIT Sensor(327): Existing project option",
+        ),
         (
             meta_provider.ConfigurationsProvider,
             meta_provider.CONFIGURATIONSPROVIDER_CONFIG_KEY,
             "kitcfg:49",
+            "KIT Cfg(49): Existing project option",
         ),
     ),
 )
@@ -122,6 +128,7 @@ def test_exact_project_value_skips_backend_and_auth(
     provider_class,
     config_key,
     external_id,
+    expected_text,
 ):
     project = object()
     text = "Existing project option"
@@ -140,7 +147,7 @@ def test_exact_project_value_skips_backend_and_auth(
 
     options = provider_class().get_options(project, search=text, user=object(), site=object())
 
-    assert options == [{"id": external_id, "text": text}]
+    assert options == [{"id": external_id, "text": expected_text}]
     assert backend.calls == []
 
 
@@ -162,8 +169,8 @@ def test_project_options_are_deduplicated_and_keep_distinct_external_ids(monkeyp
     options = meta_provider.SensorsProvider().get_options(project, search=text)
 
     assert options == [
-        {"id": "kitsms:1", "text": text},
-        {"id": "kitsms:2", "text": text},
+        {"id": "kitsms:1", "text": "KIT Sensor(1): Shared device label"},
+        {"id": "kitsms:2", "text": "KIT Sensor(2): Shared device label"},
     ]
     assert backend.calls == []
 

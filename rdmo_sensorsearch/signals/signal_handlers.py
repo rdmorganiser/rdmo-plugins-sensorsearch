@@ -13,6 +13,10 @@ from rdmo_sensorsearch.signals.collection_binding import (
     CollectionBindingError,
     CollectionScope,
 )
+from rdmo_sensorsearch.signals.configuration_tab_sync import (
+    sync_configuration_tab_from_root,
+    sync_configuration_tab_from_source,
+)
 from rdmo_sensorsearch.signals.data_collection_variable_sync import (
     get_data_collection_variable_sync_config,
     remove_stale_data_collection_variables,
@@ -21,6 +25,7 @@ from rdmo_sensorsearch.signals.data_collection_variable_sync import (
 from rdmo_sensorsearch.signals.device_set_sync import (
     get_configuration_scope_for_value,
     get_selected_device_values_for_configuration_scope,
+    remove_device_detail_block_for_selected_device,
     remove_orphaned_device_detail_blocks,
     sync_device_detail_blocks_from_configuration_values,
 )
@@ -68,6 +73,20 @@ def _schedule_orphaned_device_block_cleanup(instance) -> None:
         )
 
 
+def _configuration_tab_bindings(catalog_uri: str) -> set[tuple[str, str]]:
+    return {
+        (candidate.auto_complete_field_uri, collection_attribute_uri)
+        for candidate in _get_handler_candidates(catalog_uri)
+        if (
+            collection_attribute_uri := getattr(
+                candidate.handler,
+                "configuration_collection_attribute_uri",
+                None,
+            )
+        )
+    }
+
+
 @receiver(post_save, sender=Value)
 def post_save_project_values(sender, instance, **kwargs):
     if _is_muted():
@@ -85,6 +104,37 @@ def post_save_project_values(sender, instance, **kwargs):
         handle_post_save(instance, auth_token=auth_token)
 
     transaction.on_commit(handle_value_after_commit)
+
+
+@receiver(post_save, sender=Value)
+@receiver(post_delete, sender=Value)
+def sync_configuration_tab_labels(sender, instance, **kwargs):
+    if _is_muted() or _is_snapshot_value(instance):
+        return
+    if instance is None or instance.project is None or instance.attribute is None or instance.project.catalog is None:
+        return
+
+    signal = kwargs.get("signal")
+    attribute_uri = instance.attribute.uri
+    for source_attribute_uri, collection_attribute_uri in _configuration_tab_bindings(instance.project.catalog.uri):
+        if attribute_uri == source_attribute_uri:
+            clear = signal is post_delete or not instance.external_id or getattr(instance, "is_empty", False)
+            transaction.on_commit(
+                partial(
+                    sync_configuration_tab_from_source,
+                    source_value=instance,
+                    collection_attribute_uri=collection_attribute_uri,
+                    clear=clear,
+                )
+            )
+        elif signal is post_save and attribute_uri == collection_attribute_uri and instance.set_collection is True:
+            transaction.on_commit(
+                partial(
+                    sync_configuration_tab_from_root,
+                    root_value=instance,
+                    source_attribute_uri=source_attribute_uri,
+                )
+            )
 
 
 @receiver(post_save, sender=Value)
@@ -116,11 +166,11 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
             logger.warning("Cannot synchronize selected devices: %s", error)
             return
 
-        legacy_values = binding.opposite_values_for_scope(CollectionScope(set_prefix=scope_prefix, set_index=source_set_index))
-        if _has_meaningful_collection_values(legacy_values):
+        inactive_values = binding.opposite_values_for_scope(CollectionScope(set_prefix=scope_prefix, set_index=source_set_index))
+        if _has_meaningful_collection_values(inactive_values):
             logger.warning(
                 "Skipping selected-device synchronization for project %s, set_prefix=%r, set_index=%s because "
-                "legacy %s values still exist. Refresh the configuration to normalize its selected devices.",
+                "inactive %s layout values still exist. Refresh the configuration to normalize its selected devices.",
                 instance.project_id,
                 scope_prefix,
                 source_set_index,
@@ -129,6 +179,28 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
             return
 
         configuration_search_attribute_uri = candidate.auto_complete_field_uri
+
+        if kwargs.get("signal") is post_delete:
+            remaining_values = get_selected_device_values_for_configuration_scope(
+                binding=binding,
+                scope_prefix=scope_prefix,
+                source_set_index=source_set_index,
+            )
+            if any(value.external_id == instance.external_id for value in remaining_values):
+                break
+            transaction.on_commit(
+                partial(
+                    remove_device_detail_block_for_selected_device,
+                    project=instance.project,
+                    catalog=instance.project.catalog,
+                    scope_prefix=scope_prefix,
+                    source_set_index=source_set_index,
+                    device_external_id=instance.external_id or "",
+                    device_collection_attribute_uri=device_collection_attribute_uri,
+                    configuration_search_attribute_uri=configuration_search_attribute_uri,
+                )
+            )
+            break
 
         auth_token = get_sms_auth_token()
 

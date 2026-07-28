@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 
 from django.db import transaction
 from django.utils import timezone
@@ -6,7 +7,9 @@ from django.utils import timezone
 from rdmo.core.constants import VALUE_TYPE_BOOLEAN
 from rdmo.projects.models import Value
 
+from rdmo_sensorsearch.client import deduplicate_json_requests
 from rdmo_sensorsearch.config import catalog_matches, load_config
+from rdmo_sensorsearch.naming import canonical_configuration_label, canonical_device_label
 from rdmo_sensorsearch.signals.handler_post_save import refresh_value_from_backend
 from rdmo_sensorsearch.signals.refresh_types import (
     RefreshAction,
@@ -109,21 +112,22 @@ def handle_metadata_refresh_value(instance: Value, auth_token: str | None = None
         return
 
     refreshed_label = ""
-    if (
-        action.kind in {RefreshKind.CONFIGURATION, RefreshKind.ALL_CONFIGURATIONS}
-        and not action.configuration_search_attribute_uri
-    ):
-        result = _failed_result(instance, "The configuration search attribute is not configured.")
-    elif action.kind in {RefreshKind.DEVICE, RefreshKind.ALL_DEVICES} and not action.device_search_attribute_uri:
-        result = _failed_result(instance, "The device search attribute is not configured.")
-    elif action.kind is RefreshKind.CONFIGURATION:
-        result, refreshed_label = _refresh_current_configuration(instance, action, auth_token=auth_token)
-    elif action.kind is RefreshKind.DEVICE:
-        result, refreshed_label = _refresh_current_device(instance, action, auth_token=auth_token)
-    elif action.kind is RefreshKind.ALL_CONFIGURATIONS:
-        result = _refresh_all_configurations(instance, action, auth_token=auth_token)
-    else:
-        result = _refresh_all_devices(instance, action, auth_token=auth_token)
+    with deduplicate_json_requests():
+        if (
+            action.kind in {RefreshKind.CONFIGURATION, RefreshKind.ALL_CONFIGURATIONS}
+            and not action.configuration_search_attribute_uri
+        ):
+            result = _failed_result(instance, "The configuration search attribute is not configured.")
+        elif action.kind in {RefreshKind.DEVICE, RefreshKind.ALL_DEVICES} and not action.device_search_attribute_uri:
+            result = _failed_result(instance, "The device search attribute is not configured.")
+        elif action.kind is RefreshKind.CONFIGURATION:
+            result, refreshed_label = _refresh_current_configuration(instance, action, auth_token=auth_token)
+        elif action.kind is RefreshKind.DEVICE:
+            result, refreshed_label = _refresh_current_device(instance, action, auth_token=auth_token)
+        elif action.kind is RefreshKind.ALL_CONFIGURATIONS:
+            result = _refresh_all_configurations(instance, action, auth_token=auth_token)
+        else:
+            result = _refresh_all_devices(instance, action, auth_token=auth_token)
 
     logger.info(
         "Metadata refresh action %s refreshed %s of %s target(s)",
@@ -144,7 +148,9 @@ def _refresh_current_configuration(
         trigger,
         action.configuration_search_attribute_uri,
         "No backend configuration exists in this configuration scope.",
+        canonical_configuration_label,
         auth_token=auth_token,
+        preserve_collections=True,
     )
 
 
@@ -157,6 +163,7 @@ def _refresh_current_device(
         trigger,
         action.device_search_attribute_uri,
         "No backend device exists in this device scope.",
+        canonical_device_label,
         auth_token=auth_token,
     )
 
@@ -165,7 +172,9 @@ def _refresh_current_value(
     trigger: Value,
     source_attribute_uri: str,
     missing_value_message: str,
+    label_formatter: Callable[[str, str | None], str],
     auth_token: str | None = None,
+    preserve_collections: bool = False,
 ) -> tuple[RefreshResult, str]:
     source_value = (
         Value.objects.filter(
@@ -184,8 +193,12 @@ def _refresh_current_value(
         return _failed_result(trigger, missing_value_message), ""
 
     return (
-        refresh_value_from_backend(source_value, auth_token=auth_token),
-        source_value.text or source_value.external_id,
+        refresh_value_from_backend(
+            source_value,
+            auth_token=auth_token,
+            preserve_collections=preserve_collections,
+        ),
+        label_formatter(source_value.text or source_value.external_id, source_value.external_id),
     )
 
 
@@ -206,7 +219,12 @@ def _refresh_all_configurations(
     )
     configurations_by_scope = {(value.set_prefix or "", value.set_index): value for value in values}
     return combine_refresh_results(
-        refresh_value_from_backend(value, auth_token=auth_token) for value in configurations_by_scope.values()
+        refresh_value_from_backend(
+            value,
+            auth_token=auth_token,
+            preserve_collections=True,
+        )
+        for value in configurations_by_scope.values()
     )
 
 

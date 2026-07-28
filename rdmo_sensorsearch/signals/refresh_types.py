@@ -92,9 +92,14 @@ def format_refresh_message(kind: RefreshKind, result: RefreshResult, refreshed_l
             return _truncate_message(message)
         if result.requested_count == 0:
             return f"Success: No {target_name} were available to refresh."
-        return f"Success: {result.refreshed_count} of {result.requested_count} {target_name} refreshed."
+        message = f"Success: {result.refreshed_count} of {result.requested_count} {target_name} refreshed."
+        if kind is RefreshKind.ALL_CONFIGURATIONS:
+            message = f"{message} {_format_device_refresh_count(result.device_refreshed_count)}"
+        return _truncate_message(message)
 
     prefix = f"{result.status.capitalize()}: {result.refreshed_count} of {result.requested_count} {target_name} refreshed."
+    if kind is RefreshKind.ALL_CONFIGURATIONS:
+        prefix = f"{prefix} {_format_device_refresh_count(result.device_refreshed_count)}"
     details = "; ".join(
         f"{error.external_id}: {error.message}" if error.external_id else error.message for error in result.errors
     )

@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit
@@ -7,19 +7,37 @@ from urllib.parse import urlsplit
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True)
 class CollectionAssignment:
     attribute_uri: str
     page_uri: str
-    values: list[dict[str, Any]] = field(default_factory=list)
+    values: tuple[dict[str, Any], ...] = ()
     replace_existing: bool = True
 
 
-@dataclass
+@dataclass(frozen=True)
 class HandlerResult:
-    mapped_values: dict[str, Any] = field(default_factory=dict)
-    collections: list[CollectionAssignment] = field(default_factory=list)
-    post_actions: list[Callable[[], Any]] = field(default_factory=list)
+    mapped_values: Mapping[str, Any] = field(default_factory=dict)
+    collections: tuple[CollectionAssignment, ...] = ()
+    post_actions: tuple[Callable[[], Any], ...] = ()
+
+
+@dataclass(frozen=True)
+class HandlerExecutionContext:
+    preserve_collections: bool = False
+
+
+def deduplicate_collection_values(values: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...]:
+    unique_values = []
+    seen_external_ids = set()
+    for value in values:
+        external_id = value.get("external_id")
+        if external_id:
+            if external_id in seen_external_ids:
+                continue
+            seen_external_ids.add(external_id)
+        unique_values.append(value)
+    return tuple(unique_values)
 
 
 class GenericSearchHandler:
@@ -105,6 +123,47 @@ class GenericSearchHandler:
         if not isinstance(mapping, dict):
             raise TypeError("attribute_mapping must be a dictionary")
         self._attribute_mapping = mapping
+
+    @property
+    def managed_attribute_uris(self) -> frozenset[str]:
+        configured_uris = getattr(self, "_managed_attribute_uris", ())
+        return frozenset(self.attribute_mapping.values()) | frozenset(configured_uris)
+
+    @managed_attribute_uris.setter
+    def managed_attribute_uris(self, value) -> None:
+        if isinstance(value, str):
+            raise TypeError("managed_attribute_uris must be a collection of URI strings")
+        self._managed_attribute_uris = tuple(value)
+
+    def build_authoritative_mapped_values(
+        self,
+        mapped_values: Mapping[str, Any],
+        excluded_attribute_uris: set[str] | None = None,
+    ) -> dict[str, Any]:
+        excluded_attribute_uris = excluded_attribute_uris or set()
+        authoritative_values: dict[str, Any] = {}
+
+        for path, attribute_uri in self.attribute_mapping.items():
+            if attribute_uri in excluded_attribute_uris:
+                continue
+            default_value = [] if "[]" in path else None
+            if isinstance(authoritative_values.get(attribute_uri), list) or isinstance(default_value, list):
+                authoritative_values[attribute_uri] = []
+            else:
+                authoritative_values[attribute_uri] = None
+
+        for attribute_uri in self.managed_attribute_uris:
+            if attribute_uri not in excluded_attribute_uris:
+                authoritative_values.setdefault(attribute_uri, None)
+
+        authoritative_values.update(
+            {
+                attribute_uri: value
+                for attribute_uri, value in mapped_values.items()
+                if attribute_uri not in excluded_attribute_uris
+            }
+        )
+        return authoritative_values
 
     @property
     def base_url_origin(self) -> str:

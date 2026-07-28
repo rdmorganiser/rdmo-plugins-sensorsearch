@@ -2,7 +2,7 @@ import logging
 from urllib.parse import urlsplit
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import GenericSearchHandler
+from rdmo_sensorsearch.handlers.base import GenericSearchHandler, HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
             **kwargs,
         )
 
-    def handle(self, id_, instance=None):
+    def handle(self, id_, instance=None, context: HandlerExecutionContext | None = None):
         """
         Handles post_save for a specific ID.
 
@@ -103,7 +103,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         logger.debug("data: %s", data)
         mapped_data = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
         self.set_item_link(mapped_data, data)
-        return mapped_data
+        return HandlerResult(mapped_values=mapped_data)
 
     def _response_errors(self, responses, item_id: str) -> list[str]:
         errors = []

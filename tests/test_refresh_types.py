@@ -81,30 +81,30 @@ def test_single_configuration_success_uses_its_label():
     message = format_refresh_message(
         RefreshKind.CONFIGURATION,
         RefreshResult(1, 1, device_requested_count=3, device_refreshed_count=3),
-        "KIT Configuration(49): Energy Balance",
+        "KIT Cfg(49): Energy Balance",
     )
 
-    assert message == "Success: KIT Configuration(49): Energy Balance was refreshed. 3 devices were refreshed."
+    assert message == "Success: KIT Cfg(49): Energy Balance was refreshed. 3 devices were refreshed."
 
 
 def test_single_configuration_success_uses_singular_device_count():
     message = format_refresh_message(
         RefreshKind.CONFIGURATION,
         RefreshResult(1, 1, device_requested_count=1, device_refreshed_count=1),
-        "KIT Configuration(49): Energy Balance",
+        "KIT Cfg(49): Energy Balance",
     )
 
-    assert message == "Success: KIT Configuration(49): Energy Balance was refreshed. 1 device was refreshed."
+    assert message == "Success: KIT Cfg(49): Energy Balance was refreshed. 1 device was refreshed."
 
 
 def test_single_device_success_uses_its_label():
     message = format_refresh_message(
         RefreshKind.DEVICE,
         RefreshResult(1, 1),
-        "KIT Sensor(327) Config(49): SMT100 soil moisture/temperature (s/n: SMTEB23)",
+        "KIT Cfg(49) KIT Sensor(327): SMT100 soil moisture/temperature (s/n: SMTEB23)",
     )
 
-    assert message == ("Success: KIT Sensor(327) Config(49): SMT100 soil moisture/temperature (s/n: SMTEB23) was refreshed.")
+    assert message == ("Success: KIT Cfg(49) KIT Sensor(327): SMT100 soil moisture/temperature (s/n: SMTEB23) was refreshed.")
 
 
 def test_bulk_success_uses_aggregate_count():
@@ -113,10 +113,58 @@ def test_bulk_success_uses_aggregate_count():
     assert message == "Success: 18 of 18 devices refreshed."
 
 
+def test_all_configurations_success_includes_aggregate_device_count():
+    message = format_refresh_message(
+        RefreshKind.ALL_CONFIGURATIONS,
+        RefreshResult(4, 4, device_requested_count=27, device_refreshed_count=27),
+    )
+
+    assert message == "Success: 4 of 4 configurations refreshed. 27 devices were refreshed."
+
+
+def test_all_configurations_success_uses_singular_device_count():
+    message = format_refresh_message(
+        RefreshKind.ALL_CONFIGURATIONS,
+        RefreshResult(2, 2, device_requested_count=1, device_refreshed_count=1),
+    )
+
+    assert message == "Success: 2 of 2 configurations refreshed. 1 device was refreshed."
+
+
+def test_all_configurations_success_without_targets_omits_device_count():
+    message = format_refresh_message(
+        RefreshKind.ALL_CONFIGURATIONS,
+        RefreshResult(0, 0),
+    )
+
+    assert message == "Success: No configurations were available to refresh."
+
+
 def test_partial_result_includes_backend_error():
     message = format_refresh_message(
         RefreshKind.ALL_CONFIGURATIONS,
-        RefreshResult(3, 2, (RefreshError("kitcfg:50", "request timed out"),)),
+        RefreshResult(
+            3,
+            2,
+            (RefreshError("kitcfg:50", "request timed out"),),
+            device_requested_count=5,
+            device_refreshed_count=4,
+        ),
     )
 
-    assert message == "Partial: 2 of 3 configurations refreshed. kitcfg:50: request timed out"
+    assert message == ("Partial: 2 of 3 configurations refreshed. 4 devices were refreshed. kitcfg:50: request timed out")
+
+
+def test_failed_all_configurations_refresh_includes_zero_device_count_before_errors():
+    message = format_refresh_message(
+        RefreshKind.ALL_CONFIGURATIONS,
+        RefreshResult(
+            1,
+            0,
+            (RefreshError("ufzcfg:310", "unauthorized"),),
+            device_requested_count=1,
+            device_refreshed_count=0,
+        ),
+    )
+
+    assert message == ("Failed: 0 of 1 configurations refreshed. 0 devices were refreshed. ufzcfg:310: unauthorized")

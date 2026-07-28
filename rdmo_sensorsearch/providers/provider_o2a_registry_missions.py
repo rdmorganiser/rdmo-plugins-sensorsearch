@@ -14,7 +14,7 @@ class O2ARegistryMissionsProvider(BaseSensorProvider):
     """
 
     id_prefix = "o2amission"
-    text_prefix = "O2A Mission"
+    text_prefix = "O2A M"
     base_url = "https://registry.o2a-data.de/rest/v2/missions"
 
     query_url = "{base_url}?where={where}&sorts={sorts}&offset={offset}&hits={hits}"

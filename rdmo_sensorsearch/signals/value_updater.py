@@ -1,5 +1,4 @@
 import logging
-from collections.abc import Mapping
 from typing import Any
 
 from django.db import transaction
@@ -8,7 +7,7 @@ from rdmo.domain.models import Attribute
 from rdmo.projects.answers import AnswerTree
 from rdmo.projects.models import Value
 
-from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerResult
+from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerResult, deduplicate_collection_values
 from rdmo_sensorsearch.signals.collection_binding import (
     CollectionBinding,
     CollectionBindingError,
@@ -66,27 +65,19 @@ def _change_label(created: bool, changed: bool) -> str:
     return "Unchanged"
 
 
-def build_clear_payload(attribute_mapping: Mapping[str, str]) -> dict[str, object]:
-    clear = {}
-    for path, attribute_uri in attribute_mapping.items():
-        clear[attribute_uri] = [] if "[]" in path else ""
-    return clear
-
-
-def clear_attribute_values(instance, attribute_uri: str) -> None:
-    try:
-        attribute = Attribute.objects.get(uri=attribute_uri)
-    except Attribute.DoesNotExist:
-        logger.warning("Clear target attribute not found: %s", attribute_uri)
-        return
-
-    with transaction.atomic(), mute_value_post_save():
-        deleted_total = 0
-        for set_prefix, set_index in _scalar_scopes(instance, attribute):
-            queryset = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index)
-            deleted, _ = queryset.delete()
-            deleted_total += deleted
-        logger.info("Cleared values for attribute %s (%s rows)", attribute_uri, deleted_total)
+def reconcile_mapped_values(
+    instance,
+    handler,
+    mapped_values,
+    excluded_attribute_uris: set[str] | None = None,
+) -> None:
+    update_values_from_mapped_data(
+        instance,
+        handler.build_authoritative_mapped_values(
+            mapped_values,
+            excluded_attribute_uris=excluded_attribute_uris,
+        ),
+    )
 
 
 def update_scalar_value_across_scopes(
@@ -235,31 +226,6 @@ def replace_scalar_value_in_scopes(
                 set_index,
                 normalized_value,
             )
-
-
-def clear_collection_attribute(instance, attribute_uri: str, page_uri: str) -> None:
-    try:
-        attribute = Attribute.objects.get(uri=attribute_uri)
-    except Attribute.DoesNotExist:
-        logger.warning("Collection clear target attribute not found: %s", attribute_uri)
-        return
-
-    try:
-        binding = CollectionBinding.resolve(instance.project, attribute, page_uri)
-    except CollectionBindingError as error:
-        logger.warning("Cannot clear collection attribute: %s", error)
-        return
-
-    with transaction.atomic(), mute_value_post_save():
-        parent_scope = scope_from_value(instance)
-        active_deleted, _ = binding.values_for_scope(parent_scope).delete()
-        legacy_deleted, _ = binding.opposite_values_for_scope(parent_scope).delete()
-        logger.info(
-            "Cleared collection values for attribute %s (active=%s, legacy=%s)",
-            attribute_uri,
-            active_deleted,
-            legacy_deleted,
-        )
 
 
 def _qs_scalar_for_scope(instance, attribute, set_prefix: str, set_index: int):
@@ -430,8 +396,21 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
     delete_from(last_nonblank_index + 1)
 
 
-def update_values_from_handler_result(instance, result: HandlerResult) -> tuple:
-    update_values_from_mapped_data(instance, result.mapped_values)
+def reconcile_handler_result(
+    instance,
+    handler,
+    result: HandlerResult,
+    excluded_attribute_uris: set[str] | None = None,
+) -> tuple:
+    collection_attribute_uris = {collection.attribute_uri for collection in result.collections}
+    scalar_exclusions = set(excluded_attribute_uris or ())
+    scalar_exclusions.update(collection_attribute_uris)
+    reconcile_mapped_values(
+        instance,
+        handler,
+        result.mapped_values,
+        excluded_attribute_uris=scalar_exclusions,
+    )
 
     if result.collections:
         with transaction.atomic(), mute_value_post_save():
@@ -442,6 +421,19 @@ def update_values_from_handler_result(instance, result: HandlerResult) -> tuple:
 
 
 def _update_collection_assignment(instance, collection: CollectionAssignment):
+    invalid_value_types = {type(value).__name__ for value in collection.values if not isinstance(value, dict)}
+    if invalid_value_types:
+        raise TypeError(f"Collection values must be dictionaries, got {', '.join(sorted(invalid_value_types))}.")
+
+    collection_values = deduplicate_collection_values(collection.values)
+    duplicate_count = len(collection.values) - len(collection_values)
+    if duplicate_count:
+        logger.warning(
+            "Discarding %s duplicate collection value(s) for attribute %s",
+            duplicate_count,
+            collection.attribute_uri,
+        )
+
     try:
         attribute = Attribute.objects.get(uri=collection.attribute_uri)
     except Attribute.DoesNotExist as error:
@@ -454,19 +446,30 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
 
     parent_scope = scope_from_value(instance)
     desired_indexes = set()
+    existing_values = list(binding.values_for_scope(parent_scope))
+    existing_by_external_id = {}
+    for value in existing_values:
+        if value.external_id:
+            existing_by_external_id.setdefault(value.external_id, value)
+    existing_by_index = {getattr(value, binding.row_index_field): value for value in existing_values}
+    next_index = max(existing_by_index, default=-1) + 1
 
-    invalid_value_types = {type(value).__name__ for value in collection.values if not isinstance(value, dict)}
-    if invalid_value_types:
-        raise TypeError(f"Collection values must be dictionaries, got {', '.join(sorted(invalid_value_types))}.")
+    for desired_index, value in enumerate(collection_values):
+        external_id = value.get("external_id")
+        existing = existing_by_external_id.get(external_id) if external_id else existing_by_index.get(desired_index)
+        if existing is not None:
+            row_index = getattr(existing, binding.row_index_field)
+        else:
+            row_index = next_index
+            next_index += 1
 
-    for index, value in enumerate(collection.values):
-        desired_indexes.add(index)
+        desired_indexes.add(row_index)
         defaults = {"text": value.get("text", "")}
         if "external_id" in value:
             defaults["external_id"] = value.get("external_id")
 
         _, created, changed = upsert_value_if_changed(
-            binding.value_lookup(parent_scope, index),
+            binding.value_lookup(parent_scope, row_index),
             defaults,
         )
         logger.info(
@@ -475,13 +478,13 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
             attribute.uri,
             binding.layout.value,
             binding.row_index_field,
-            index,
+            row_index,
             defaults,
         )
 
     if collection.replace_existing:
         _delete_surplus_collection_values(binding, parent_scope, desired_indexes)
-        _delete_legacy_collection_values(binding, parent_scope)
+        _delete_inactive_collection_values(binding, parent_scope)
 
 
 def _delete_surplus_collection_values(binding, parent_scope, desired_indexes: set[int]):
@@ -494,11 +497,11 @@ def _delete_surplus_collection_values(binding, parent_scope, desired_indexes: se
         logger.info("Deleted surplus collection values for attribute %s (%s rows)", binding.attribute.uri, deleted)
 
 
-def _delete_legacy_collection_values(binding, parent_scope):
+def _delete_inactive_collection_values(binding, parent_scope):
     deleted, _ = binding.opposite_values_for_scope(parent_scope).delete()
     if deleted:
         logger.info(
-            "Deleted legacy %s collection values for attribute %s (%s rows)",
+            "Deleted inactive %s collection values for attribute %s (%s rows)",
             binding.opposite_layout.value,
             binding.attribute.uri,
             deleted,

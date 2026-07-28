@@ -6,7 +6,7 @@ from urllib.parse import urljoin, urlsplit
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import GenericSearchHandler
+from rdmo_sensorsearch.handlers.base import GenericSearchHandler, HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,13 @@ class SensorManagementSystemHandler(GenericSearchHandler):
     device_link_attribute_uri = DEVICE_LINK_ATTRIBUTE_URI
     uses_auth_token = True
 
-    def handle(self, id_: str, instance=None, auth_token: str | None = None) -> dict:
+    def handle(
+        self,
+        id_: str,
+        instance=None,
+        auth_token: str | None = None,
+        context: HandlerExecutionContext | None = None,
+    ) -> dict | HandlerResult:
         """
         Handles post_save for a specific device ID in the SMS.
 
@@ -76,7 +82,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         mount_period_errors = self._set_mount_period(mapped_data, id_, instance, auth_token=auth_token)
         if mount_period_errors:
             return {"errors": mount_period_errors}
-        return mapped_data
+        return HandlerResult(mapped_values=mapped_data)
 
     def _set_frontend_device_link(self, mapped_data: dict, device_data: dict) -> None:
         raw_self_link = device_data.get("data", {}).get("links", {}).get("self")

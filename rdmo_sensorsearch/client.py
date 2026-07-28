@@ -1,5 +1,11 @@
 import logging
+from collections.abc import Callable
+from contextlib import contextmanager
+from contextvars import ContextVar
+from copy import deepcopy
+from dataclasses import dataclass, field
 from functools import cache
+from threading import Event, Lock
 
 from django.conf import settings
 
@@ -10,7 +16,92 @@ from rdmo import __version__
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class _PendingRequest:
+    event: Event = field(default_factory=Event)
+    response: dict | list | None = None
+    error: BaseException | None = None
+
+
+class _RequestCache:
+    def __init__(self):
+        self._responses: dict[tuple[str, str | None], dict | list] = {}
+        self._pending: dict[tuple[str, str | None], _PendingRequest] = {}
+        self._lock = Lock()
+
+    def get_or_fetch(
+        self,
+        key: tuple[str, str | None],
+        fetcher: Callable[[], dict | list],
+    ) -> dict | list:
+        with self._lock:
+            cached = self._responses.get(key)
+            if cached is not None:
+                return deepcopy(cached)
+
+            pending = self._pending.get(key)
+            if pending is None:
+                pending = _PendingRequest()
+                self._pending[key] = pending
+                is_owner = True
+            else:
+                is_owner = False
+
+        if not is_owner:
+            pending.event.wait()
+            if pending.error is not None:
+                raise pending.error
+            return deepcopy(pending.response)
+
+        try:
+            response = fetcher()
+        except BaseException as error:
+            with self._lock:
+                pending.error = error
+                self._pending.pop(key, None)
+                pending.event.set()
+            raise
+
+        with self._lock:
+            stored_response = deepcopy(response)
+            self._responses[key] = stored_response
+            pending.response = stored_response
+            self._pending.pop(key, None)
+            pending.event.set()
+        return deepcopy(stored_response)
+
+
+_REQUEST_CACHE: ContextVar[_RequestCache | None] = ContextVar(
+    "rdmo_sensorsearch_request_cache",
+    default=None,
+)
+
+
+@contextmanager
+def deduplicate_json_requests():
+    existing_cache = _REQUEST_CACHE.get()
+    if existing_cache is not None:
+        yield
+        return
+
+    token = _REQUEST_CACHE.set(_RequestCache())
+    try:
+        yield
+    finally:
+        _REQUEST_CACHE.reset(token)
+
+
 def fetch_json(url: str, auth_token: str | None = None) -> dict | list:
+    request_cache = _REQUEST_CACHE.get()
+    if request_cache is not None:
+        return request_cache.get_or_fetch(
+            (url, auth_token),
+            lambda: _fetch_json_uncached(url, auth_token=auth_token),
+        )
+    return _fetch_json_uncached(url, auth_token=auth_token)
+
+
+def _fetch_json_uncached(url: str, auth_token: str | None = None) -> dict | list:
     timeout = get_request_timeout()
     logger.debug("Requesting JSON from %s with timeout=%s", url, timeout)
     headers = {"User-Agent": get_user_agent()}

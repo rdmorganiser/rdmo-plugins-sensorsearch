@@ -56,3 +56,55 @@ def test_data_collection_variable_sync_is_explicitly_catalog_scoped():
             in ([catalog_config["catalog_uri"]] if catalog_config.get("catalog_uri") else catalog_config["catalog_uris"])
             for catalog_config in catalog_configs
         )
+
+
+def test_handlers_declare_additional_owned_attributes_as_managed():
+    for path in CONFIG_PATHS:
+        config = _load_config(path)
+        handler_configs = config["handlers"]
+
+        def assert_managed(config_part):
+            if isinstance(config_part, dict):
+                assert "reset_attribute_uris" not in config_part
+                if "managed_attribute_uris" in config_part:
+                    assert all(config_part["managed_attribute_uris"])
+                for value in config_part.values():
+                    assert_managed(value)
+            elif isinstance(config_part, list):
+                for value in config_part:
+                    assert_managed(value)
+
+        assert_managed(handler_configs)
+
+
+def test_configuration_providers_use_compact_backend_labels():
+    expected_prefixes = {
+        "gfzcfg": "GFZ Cfg",
+        "kitcfg": "KIT Cfg",
+        "ufzcfg": "UFZ Cfg",
+        "o2amission": "O2A M",
+    }
+
+    for path in CONFIG_PATHS:
+        config = _load_config(path)
+        providers = config["ConfigurationsProvider"]["providers"]
+
+        for id_prefix, expected_prefix in expected_prefixes.items():
+            provider_name = (
+                "O2ARegistryMissionsProvider" if id_prefix == "o2amission" else "SensorManagementSystemConfigurationsProvider"
+            )
+            assert _backend(providers, provider_name, id_prefix)["text_prefix"] == expected_prefix
+
+
+def test_configuration_handlers_define_the_shared_tab_collection_attribute():
+    expected_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
+
+    for path in CONFIG_PATHS:
+        config = _load_config(path)
+        handlers = config["handlers"]
+
+        assert (
+            handlers["SensorManagementSystemConfigurationsHandler"]["defaults"]["configuration_collection_attribute_uri"]
+            == expected_uri
+        )
+        assert handlers["O2ARegistryMissionsHandler"]["defaults"]["configuration_collection_attribute_uri"] == expected_uri

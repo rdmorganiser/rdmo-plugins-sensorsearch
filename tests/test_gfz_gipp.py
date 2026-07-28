@@ -32,6 +32,7 @@ def _install_host_application_stubs():
 _install_host_application_stubs()
 
 handler_gfz_gipp = import_module("rdmo_sensorsearch.handlers.handler_gfz_gipp")
+handler_base = import_module("rdmo_sensorsearch.handlers.base")
 provider_gfz_gipp = import_module("rdmo_sensorsearch.providers.provider_gfz_gipp")
 
 
@@ -59,7 +60,12 @@ def test_provider_uses_current_gipp_hostname(monkeypatch):
     )
 
     assert requested_urls == ["https://gipp.gfz.de/instruments/index.json?limit=10000&program=MOSES"]
-    assert options == [{"id": "gfzgipp:1", "text": "GIPP: BASE_X2-26115"}]
+    assert options == [
+        {
+            "id": "gfzgipp:1",
+            "text": "GFZ GIPP Instrument(1): BASE_X2-26115",
+        }
+    ]
 
 
 def test_handler_uses_current_gipp_hostname(monkeypatch):
@@ -67,14 +73,15 @@ def test_handler_uses_current_gipp_hostname(monkeypatch):
 
     def fetch_json(url):
         requested_urls.append(url)
-        return {}
+        return {"Instrument": {"code": "BASE_X2-26115"}}
 
     monkeypatch.setattr(handler_gfz_gipp, "fetch_json", fetch_json)
 
     handler = handler_gfz_gipp.GeophysicalInstrumentPoolPotsdamHandler(attribute_mapping={"Instrument.code": "uri"})
-    handler.handle("1")
+    result = handler.handle("1")
 
     assert requested_urls == ["https://gipp.gfz.de/instruments/rest/1.json"]
+    assert isinstance(result, handler_base.HandlerResult)
 
 
 def test_handler_propagates_backend_errors(monkeypatch):

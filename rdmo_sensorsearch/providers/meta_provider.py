@@ -6,6 +6,7 @@ from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
 from rdmo_sensorsearch.config import get_config_file_path, load_config
+from rdmo_sensorsearch.naming import canonical_configuration_label, canonical_device_label
 from rdmo_sensorsearch.providers.factory import build_provider_instances
 
 logger = logging.getLogger(__name__)
@@ -127,8 +128,20 @@ class BaseMetaProvider(Provider):
                 continue
 
             seen_external_ids.add(external_id)
-            options.append({"id": external_id, "text": text})
+            options.append(
+                {
+                    "id": external_id,
+                    "text": self._canonical_option_text(text, external_id),
+                }
+            )
         return options
+
+    def _canonical_option_text(self, text: str, external_id: str) -> str:
+        if self.config_key == SENSORSPROVIDER_CONFIG_KEY:
+            return canonical_device_label(text, external_id)
+        if self.config_key == CONFIGURATIONSPROVIDER_CONFIG_KEY:
+            return canonical_configuration_label(text, external_id)
+        return text
 
     @staticmethod
     def _is_provider_external_id(external_id, provider_prefixes: set[str]) -> bool:

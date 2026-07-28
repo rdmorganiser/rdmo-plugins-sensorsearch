@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextvars import copy_context
 from dataclasses import dataclass
 from datetime import datetime
 from datetime import timezone as dt_timezone
@@ -12,13 +13,15 @@ from django.db.models import Q
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
+from rdmo_sensorsearch.handlers.base import HandlerResult
+from rdmo_sensorsearch.naming import configuration_short_label, device_detail_tab_label
 from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionScope
 from rdmo_sensorsearch.signals.refresh_types import RefreshError, RefreshResult
 from rdmo_sensorsearch.signals.utils import mute_value_post_save
 from rdmo_sensorsearch.signals.value_updater import (
     _change_label,
+    reconcile_mapped_values,
     replace_scalar_value_in_scopes,
-    update_values_from_mapped_data,
     upsert_value_if_changed,
 )
 
@@ -122,9 +125,19 @@ def sync_device_detail_blocks_from_configuration_values(
     device_collection_attribute_uri: str,
     configuration_search_attribute_uri: str,
     auth_token: str | None = None,
+    force_refresh: bool = False,
+    instrument_start: str | None = None,
+    instrument_end: str | None = None,
 ) -> RefreshResult:
     selected_devices = [
-        SelectedDevice(text=value.text or "", external_id=value.external_id) for value in selected_values if value.external_id
+        SelectedDevice(
+            text=value.text or "",
+            external_id=value.external_id,
+            instrument_start=instrument_start,
+            instrument_end=instrument_end,
+        )
+        for value in selected_values
+        if value.external_id
     ]
     return sync_device_detail_blocks(
         project=project,
@@ -142,6 +155,7 @@ def sync_device_detail_blocks_from_configuration_values(
             configuration_search_attribute_uri=configuration_search_attribute_uri,
         ),
         auth_token=auth_token,
+        force_refresh=force_refresh,
     )
 
 
@@ -327,7 +341,13 @@ def sync_device_detail_blocks(
             if fetched_payload is None:
                 continue
 
-            _write_device_fetch_payload(block_instance, fetched_payload, scope_prefix, plan.set_index)
+            _write_device_fetch_payload(
+                block_instance,
+                plan.sensor_candidate.handler,
+                fetched_payload,
+                scope_prefix,
+                plan.set_index,
+            )
 
         if stale_blocks:
             _compact_device_detail_blocks(project, catalog, scope_prefix, device_collection_attribute_uri)
@@ -367,6 +387,60 @@ def get_selected_device_values_for_configuration_scope(
         .exclude(external_id__isnull=True)
         .exclude(external_id__exact="")
     )
+
+
+def remove_device_detail_block_for_selected_device(
+    project,
+    catalog,
+    scope_prefix: str,
+    source_set_index: int,
+    device_external_id: str,
+    device_collection_attribute_uri: str,
+    configuration_search_attribute_uri: str,
+) -> bool:
+    if not device_external_id:
+        return False
+
+    config_context = _resolve_configuration_context(
+        project=project,
+        scope_prefix=scope_prefix,
+        source_set_index=source_set_index,
+        configuration_search_attribute_uri=configuration_search_attribute_uri,
+    )
+    if config_context is None:
+        logger.warning(
+            "Could not resolve configuration context while removing selected device %s",
+            device_external_id,
+        )
+        return False
+
+    root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
+    if root_attribute is None:
+        logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
+        return False
+
+    block_key = _compose_device_block_key(config_context.key, device_external_id)
+    block = _find_device_block(project, root_attribute, scope_prefix, block_key)
+    if block is None:
+        logger.debug("No device detail block exists for removed selected device %s", block_key)
+        return False
+
+    related_attribute_ids = _device_detail_related_attribute_ids(catalog)
+    if not related_attribute_ids:
+        logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
+        return False
+
+    with transaction.atomic(), mute_value_post_save():
+        deleted = _delete_device_block(
+            project,
+            scope_prefix,
+            block["set_index"],
+            related_attribute_ids,
+        )
+
+    if deleted:
+        logger.info("Removed device detail block for deselected device %s", block_key)
+    return bool(deleted)
 
 
 def remove_orphaned_device_detail_blocks(
@@ -441,11 +515,20 @@ def _device_block_instance(project, root_attribute_id: int, set_prefix: str, set
 
 def _write_device_fetch_payload(
     block_instance,
+    handler,
     fetched_payload: DeviceFetchResult,
     scope_prefix: str,
     set_index: int,
 ) -> None:
-    update_values_from_mapped_data(block_instance, fetched_payload.mapped_data)
+    reconcile_mapped_values(
+        block_instance,
+        handler,
+        fetched_payload.mapped_data,
+        excluded_attribute_uris={
+            INSTRUMENT_START_ATTRIBUTE_URI,
+            INSTRUMENT_END_ATTRIBUTE_URI,
+        },
+    )
     for attribute_uri, value in fetched_payload.scoped_scalar_values.items():
         replace_scalar_value_in_scopes(
             block_instance,
@@ -473,6 +556,7 @@ def _fetch_device_detail_payloads(
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_plan = {
             executor.submit(
+                copy_context().run,
                 _fetch_device_detail_payload,
                 plan,
                 root_attribute_id,
@@ -513,26 +597,28 @@ def _fetch_device_detail_payload(
 
     fetch_instance = _device_block_instance(None, root_attribute_id, "", plan.set_index)
     if getattr(plan.sensor_candidate.handler, "uses_auth_token", False):
-        mapped_data = plan.sensor_candidate.handler.handle(
+        handler_result = plan.sensor_candidate.handler.handle(
             id_=device_id,
             instance=fetch_instance,
             auth_token=auth_token,
         )
     else:
-        mapped_data = plan.sensor_candidate.handler.handle(id_=device_id, instance=fetch_instance)
-    if isinstance(mapped_data, dict) and "errors" in mapped_data:
-        logger.error("Sensor handler returned errors for %s: %s", plan.device.external_id, mapped_data["errors"])
-        return DeviceFetchFailure(message=_format_handler_errors(mapped_data["errors"]))
-    if not isinstance(mapped_data, dict):
-        message = f"Sensor handler returned unexpected payload type: {type(mapped_data).__name__}."
+        handler_result = plan.sensor_candidate.handler.handle(id_=device_id, instance=fetch_instance)
+    if isinstance(handler_result, dict) and "errors" in handler_result:
+        logger.error("Sensor handler returned errors for %s: %s", plan.device.external_id, handler_result["errors"])
+        return DeviceFetchFailure(message=_format_handler_errors(handler_result["errors"]))
+    if not isinstance(handler_result, HandlerResult):
+        message = f"Sensor handler returned unexpected payload type: {type(handler_result).__name__}."
         logger.warning(
             "Sensor handler returned unexpected payload for %s: %s",
             plan.device.external_id,
-            type(mapped_data).__name__,
+            type(handler_result).__name__,
         )
         return DeviceFetchFailure(message=message)
+    if handler_result.collections or handler_result.post_actions:
+        return DeviceFetchFailure(message="Sensor handlers cannot return collections or post-actions during block sync.")
 
-    mapped_data = dict(mapped_data)
+    mapped_data = dict(handler_result.mapped_values)
     _merge_mounting_period_values(
         mapped_data,
         plan.device,
@@ -622,6 +708,27 @@ def _existing_device_blocks(project, root_attribute, scope_prefix: str, config_k
     return {block_key: block for block_key, block in all_blocks.items() if _parse_block_external_id(block_key)[0] == config_key}
 
 
+def _find_device_block(project, root_attribute, scope_prefix: str, block_key: str) -> dict | None:
+    value = (
+        Value.objects.filter(
+            project=project,
+            snapshot=None,
+            attribute=root_attribute,
+            set_collection=True,
+            set_prefix=scope_prefix,
+            external_id=block_key,
+        )
+        .order_by("id")
+        .first()
+    )
+    if value is None:
+        return None
+    return {
+        "set_index": value.set_index,
+        "value_id": value.id,
+    }
+
+
 def _all_existing_device_blocks(project, root_attribute, scope_prefix: str) -> dict[str, dict]:
     blocks: dict[str, dict] = {}
     queryset = (
@@ -665,7 +772,7 @@ def _next_device_set_index(project, root_attribute, scope_prefix: str) -> int:
     return max(existing_indexes) + 1
 
 
-def _delete_device_block(project, scope_prefix: str, set_index: int, attribute_ids: set[int]) -> None:
+def _delete_device_block(project, scope_prefix: str, set_index: int, attribute_ids: set[int]) -> int:
     value_ids = list(
         Value.objects.filter(
             project=project,
@@ -678,7 +785,7 @@ def _delete_device_block(project, scope_prefix: str, set_index: int, attribute_i
         .distinct()
     )
     if not value_ids:
-        return
+        return 0
 
     deleted, _ = Value.objects.filter(
         project=project,
@@ -693,6 +800,7 @@ def _delete_device_block(project, scope_prefix: str, set_index: int, attribute_i
             deleted,
             value_ids,
         )
+    return deleted
 
 
 def _upsert_root_device_value(
@@ -979,7 +1087,11 @@ def _compose_device_block_key(config_key: str, device_external_id: str) -> str:
 
 
 def _device_root_text(config_label: str, device: SelectedDevice) -> str:
-    return device.text or f"{config_label}: {_base_device_text(device.text)}"
+    return device_detail_tab_label(
+        config_label,
+        device.text or device.external_id,
+        device.external_id,
+    )
 
 
 def _base_device_text(text: str) -> str:
@@ -1041,17 +1153,17 @@ def _configuration_label(
     configuration_set_value: Value | None,
     source_set_index: int,
 ) -> str:
+    backend_label = configuration_short_label(_configuration_external_id(config_search_value))
+    if backend_label:
+        return backend_label
+
     if configuration_set_value is not None and configuration_set_value.text:
         return configuration_set_value.text.strip()
 
-    raw_label = None
-    if config_search_value is not None:
-        raw_label = config_search_value.external_id or config_search_value.text
-
-    if isinstance(raw_label, str) and ":" in raw_label:
-        return raw_label.split(":", 1)[1].strip() or str(source_set_index)
-    if isinstance(raw_label, str) and raw_label.strip():
-        return raw_label.strip()
+    if config_search_value is not None and isinstance(config_search_value.text, str):
+        text = config_search_value.text.strip()
+        if text:
+            return text.split(":", 1)[0].strip() or str(source_set_index)
     return str(source_set_index)
 
 

@@ -1,6 +1,6 @@
 import logging
 
-from rdmo_sensorsearch.handlers.base import GenericSearchHandler
+from rdmo_sensorsearch.handlers.base import GenericSearchHandler, HandlerExecutionContext, HandlerResult
 
 from ..client import fetch_json
 from .parser import map_jamespath_to_attribute_uri
@@ -24,7 +24,7 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
 
     json_url = "{base_url}/{id}.json"
 
-    def handle(self, id_, instance=None):
+    def handle(self, id_, instance=None, context: HandlerExecutionContext | None = None):
         """
         Handles post_save for a specific instrument ID in GIPP.
 
@@ -46,4 +46,4 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
             return {"errors": [f"GIPP request for instrument {id_} returned no instrument data."]}
 
         logger.debug("data: %s", data)
-        return map_jamespath_to_attribute_uri(self.attribute_mapping, data)
+        return HandlerResult(mapped_values=map_jamespath_to_attribute_uri(self.attribute_mapping, data))

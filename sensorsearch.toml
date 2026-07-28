@@ -86,7 +86,7 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 [[handlers.O2ARegistrySearchHandler.catalogs]]
 catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-reset_attribute_uris = [
+managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
@@ -112,7 +112,7 @@ reset_attribute_uris = [
 [[handlers.O2ARegistrySearchHandler.catalogs]]
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-reset_attribute_uris = [
+managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
@@ -168,7 +168,7 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 [[handlers.SensorManagementSystemHandler.catalogs]]
 catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-reset_attribute_uris = [
+managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
@@ -195,7 +195,7 @@ reset_attribute_uris = [
 [[handlers.SensorManagementSystemHandler.catalogs]]
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-reset_attribute_uris = [
+managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
@@ -236,14 +236,14 @@ sensor_id_prefix = "ufzsms"
 sensor_text_prefix = "UFZ Sensor"
 [handlers.SensorManagementSystemConfigurationsHandler.defaults]
 auto_complete_field_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
+configuration_collection_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
 member_sensors_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 selected_devices_page_uri = "https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set"
 device_collection_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 frontend_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link"
 latitude_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lat"
 longitude_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lon"
-reset_attribute_uris = [
-    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices",
+managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lat",
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lon",
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description",
@@ -268,6 +268,7 @@ reset_attribute_uris = [
 [handlers.O2ARegistryMissionsHandler]
 [handlers.O2ARegistryMissionsHandler.defaults]
 auto_complete_field_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
+configuration_collection_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
 member_sensors_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 selected_devices_page_uri = "https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set"
 device_collection_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
@@ -278,14 +279,13 @@ item_url = "{base_url}/items/{id}"
 mission_item_max_hits = 100
 item_id_prefix = "o2aregistry"
 item_text_prefix = "O2A Item"
-item_text_template = "{prefix}({item_id}) Mission({mission_id}): {name}{serial}"
+item_text_template = "{configuration} {prefix}({item_id}): {name}{serial}"
 mission_start_date_path = "startDate"
 mission_end_date_path = "endDate"
 date_mapping_paths = ["startDate", "endDate"]
 api_link_template = "{base_url}/missions/{id}"
 frontend_link_template = "{base_url_origin}/missions/{id}"
-reset_attribute_uris = [
-    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices",
+managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description",
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link",
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
@@ -313,7 +313,7 @@ auto_complete_field_uri = "https://rdmorganiser.github.io/terms/domain/project/d
 [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
 catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-reset_attribute_uris = [
+managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
@@ -335,7 +335,7 @@ reset_attribute_uris = [
 [[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-reset_attribute_uris = [
+managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
@@ -375,22 +375,22 @@ base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
 [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
 id_prefix = "gfzcfg"
-text_prefix = "GFZ Config"
+text_prefix = "GFZ Cfg"
 base_url = "https://sensors.gfz.de/backend/api/v1/configurations"
 
 [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
 id_prefix = "kitcfg"
-text_prefix = "KIT Config"
+text_prefix = "KIT Cfg"
 base_url = "https://sms.atmohub.kit.edu/backend/api/v1/configurations"
 
 [[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
 id_prefix = "ufzcfg"
-text_prefix = "UFZ Config"
+text_prefix = "UFZ Cfg"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1/configurations"
 
 [[ConfigurationsProvider.providers.O2ARegistryMissionsProvider]]
 id_prefix = "o2amission"
-text_prefix = "O2A Mission"
+text_prefix = "O2A M"
 base_url = "https://registry.o2a-data.de/rest/v2/missions"
 query_url = "{base_url}?where={where}&sorts={sorts}&offset={offset}&hits={hits}"
 where_template = "name=ILIKE=\"*{query}*\""
