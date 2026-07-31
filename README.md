@@ -25,6 +25,17 @@ This plugin is based on the [RDMO Sensor AWI option set plugin](https://github.c
 with a complete refactoring, to allow configuration and easy extension with
 more registries if needed.
 
+## Documentation for catalog editors
+
+The [`docs`](docs/index.md) directory documents how RDMO catalog elements and
+`sensorsearch.toml` work together. Start with the
+[catalog editor guide](docs/catalog-editor-guide.md), use the
+[configuration reference](docs/configuration-reference.md) for TOML settings,
+and consult the [Earth Sensor URI map](docs/earth-sensor-catalog.md) to find the
+exact pages, questions, attributes, optionsets, and conditions in
+`xml/earth-sensor+refresh.xml`. Runtime costs and backend constraints are
+covered in [operations and limitations](docs/operations-and-limitations.md).
+
 ## Setup
 
 Install the plugins in your RDMO virtual environment using pip (directly from
@@ -145,6 +156,19 @@ message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-s
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
 
 [[MetadataRefresh.actions]]
+kind = "configuration"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range"
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
+replace_collections = true
+require_configuration_period = true
+input_attribute_uris = [
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime",
+]
+
+[[MetadataRefresh.actions]]
 kind = "device"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"
 status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"
@@ -227,10 +251,11 @@ item_id_prefix = "o2aregistry"
 item_text_template = "{configuration} {prefix}({item_id}): {name}{serial}"
 [handlers.O2ARegistryMissionsHandler.defaults.attribute_mapping]
 "description" = "http://example.com/terms/domain/configuration-set/description"
-"startDate" = "http://example.com/terms/domain/configuration-set/start"
-"endDate" = "http://example.com/terms/domain/configuration-set/end"
 [[handlers.O2ARegistryMissionsHandler.catalogs]]
 catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
+# These are user-entered filtering inputs, not mission metadata outputs.
+cfg_start_uri = "http://example.com/terms/domain/configuration-set/start"
+cfg_end_uri = "http://example.com/terms/domain/configuration-set/end"
 ```
 
 This configures all available providers with three SMS instances to query. The
@@ -357,6 +382,13 @@ while its own value signals are muted. Four action kinds are supported:
   project;
 - `all_devices` refreshes every materialized device detail block stored in the
   project.
+
+More than one action can use the `configuration` kind. The Earth Sensor catalog
+uses a second configuration action to apply user-entered start and end values
+and replace device membership with the matching period. Free-text date changes
+do not call a backend. See the
+[date-range workflow](docs/catalog-editor-guide.md#optional-date-range-workflow)
+and [exact Earth Sensor date URIs](docs/earth-sensor-catalog.md#user-entered-configuration-period).
 
 Place the `configuration` and `device` triggers directly on their respective
 collection pages. Place the two bulk triggers on a non-collection maintenance
