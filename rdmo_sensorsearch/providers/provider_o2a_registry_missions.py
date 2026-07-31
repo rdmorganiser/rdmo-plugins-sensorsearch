@@ -3,12 +3,12 @@ from collections import defaultdict
 from urllib.parse import quote
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.providers.base import BaseSensorProvider
+from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 
 logger = logging.getLogger(__name__)
 
 
-class O2ARegistryMissionsProvider(BaseSensorProvider):
+class O2ARegistryMissionsProvider(BaseRemoteSearchProvider):
     """
     Searches the O2A Registry missions API and returns options for selection.
     """

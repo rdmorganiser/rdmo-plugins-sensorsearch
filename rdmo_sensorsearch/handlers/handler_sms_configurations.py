@@ -8,28 +8,28 @@ from django.utils import timezone as django_timezone
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import (
+    BackendRecordHandler,
     CollectionAssignment,
-    GenericSearchHandler,
     HandlerExecutionContext,
     HandlerResult,
 )
 from rdmo_sensorsearch.handlers.configuration_period import (
     ConfigurationPeriod,
-    catalog_uses_explicit_configuration_period,
+    catalog_has_date_range_trigger,
     read_configuration_period,
 )
-from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri, parse_datetime
-from rdmo_sensorsearch.handlers.sms_mounting import resolve_vertical_position
+from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping, parse_datetime
+from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location
 from rdmo_sensorsearch.naming import configuration_short_label
-from rdmo_sensorsearch.signals.device_set_sync import (
+from rdmo_sensorsearch.signals.device_detail_sync import (
     SelectedDevice,
-    sync_device_detail_blocks_from_payload,
+    reconcile_device_details_from_selected_devices,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
+class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
     """
     Resolves one SMS configuration and materializes its mounted devices.
     """
@@ -61,44 +61,48 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
     def handle(
         self,
-        id_: str,
+        backend_id: str,
         instance=None,
         auth_token: str | None = None,
         context: HandlerExecutionContext | None = None,
     ) -> dict | HandlerResult:
         configuration_data = fetch_json(
-            self.configuration_url.format(base_url=self.base_url, id=id_),
+            self.configuration_url.format(base_url=self.base_url, id=backend_id),
             auth_token=auth_token,
         )
         logger.debug(
             "Fetched SMS configuration payload for ID %s with top-level keys: %s",
-            id_,
+            backend_id,
             sorted(configuration_data.keys()) if isinstance(configuration_data, dict) else type(configuration_data),
         )
         if isinstance(configuration_data, dict) and "errors" in configuration_data:
-            logger.debug("Errors in configuration data returned for ID %s: %s", id_, configuration_data["errors"])
+            logger.debug("Errors in configuration data returned for ID %s: %s", backend_id, configuration_data["errors"])
             return configuration_data
         if not isinstance(configuration_data, dict):
-            return {"errors": [f"Unexpected SMS configuration payload for ID {id_}: {type(configuration_data).__name__}"]}
+            return {"errors": [f"Unexpected SMS configuration payload for ID {backend_id}: {type(configuration_data).__name__}"]}
         if not isinstance(configuration_data.get("data"), dict):
-            return {"errors": [f"SMS configuration request for ID {id_} returned no configuration data."]}
+            return {"errors": [f"SMS configuration request for ID {backend_id} returned no configuration data."]}
 
         member_sensors_attribute_uri = getattr(self, "member_sensors_attribute_uri", None)
         preserve_collections = bool(context and context.preserve_collections)
         require_configuration_period = bool(context and context.require_configuration_period)
-        cfg_start_uri = getattr(self, "cfg_start_uri", None)
-        cfg_end_uri = getattr(self, "cfg_end_uri", None)
+        period_start_attribute_uri = getattr(self, "cfg_start_uri", None)
+        period_end_attribute_uri = getattr(self, "cfg_end_uri", None)
         use_configuration_period = require_configuration_period or (
-            instance is not None and catalog_uses_explicit_configuration_period(instance)
+            instance is not None and catalog_has_date_range_trigger(instance)
         )
-        period_inputs_are_configured = instance is not None and bool(cfg_start_uri and cfg_end_uri)
+        period_inputs_are_configured = instance is not None and bool(period_start_attribute_uri and period_end_attribute_uri)
 
-        cfg_period = None
+        configuration_period = None
         period_error = None
         if use_configuration_period and not period_inputs_are_configured:
             period_error = "The configuration or mission date-range inputs are not configured for this catalog."
         elif use_configuration_period:
-            cfg_period, period_error = read_configuration_period(instance, cfg_start_uri, cfg_end_uri)
+            configuration_period, period_error = read_configuration_period(
+                instance,
+                period_start_attribute_uri,
+                period_end_attribute_uri,
+            )
         if require_configuration_period and period_error:
             return {"errors": [period_error]}
 
@@ -108,7 +112,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if defer_member_collection:
             logger.info(
                 "Deferring SMS device assignments for configuration %s until its date range is applied: %s",
-                id_,
+                backend_id,
                 period_error,
             )
 
@@ -117,28 +121,28 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if member_sensors_attribute_uri and not preserve_collections and not defer_member_collection:
             mount_action_data = self._fetch_jsonapi_collection(
                 self.device_mount_actions_url,
-                id_,
+                backend_id,
                 self.mounted_sensor_max_hits,
                 auth_token=auth_token,
             )
             if "errors" in mount_action_data:
                 logger.debug(
                     "Errors in device mount action data returned for ID %s: %s",
-                    id_,
+                    backend_id,
                     mount_action_data["errors"],
                 )
                 return mount_action_data
 
             platform_mount_action_data = self._fetch_jsonapi_collection(
                 self.platform_mount_actions_url,
-                id_,
+                backend_id,
                 self.mounted_platform_max_hits,
                 auth_token=auth_token,
             )
             if "errors" in platform_mount_action_data:
                 logger.debug(
                     "Errors in platform mount action data returned for ID %s: %s",
-                    id_,
+                    backend_id,
                     platform_mount_action_data["errors"],
                 )
                 return platform_mount_action_data
@@ -155,28 +159,28 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if needs_configuration_location or mount_action_data is not None:
             location_actions_data = self._fetch_jsonapi_collection(
                 self.static_location_actions_url,
-                id_,
+                backend_id,
                 self.static_location_max_hits,
                 auth_token=auth_token,
             )
             if "errors" in location_actions_data:
                 return {
                     "errors": [
-                        f"SMS static location request for configuration {id_} failed: {error}"
+                        f"SMS static location request for configuration {backend_id} failed: {error}"
                         for error in location_actions_data["errors"]
                     ]
                 }
 
-        mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, configuration_data)
-        if cfg_start_uri:
-            mapped_values.pop(cfg_start_uri, None)
-        if cfg_end_uri:
-            mapped_values.pop(cfg_end_uri, None)
+        mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, configuration_data)
+        if period_start_attribute_uri:
+            mapped_values.pop(period_start_attribute_uri, None)
+        if period_end_attribute_uri:
+            mapped_values.pop(period_end_attribute_uri, None)
         self._set_configuration_links(mapped_values, configuration_data)
         self._normalize_configuration_datetimes(mapped_values)
         location_errors = self._set_configuration_location(
             mapped_values,
-            id_,
+            backend_id,
             auth_token=auth_token,
             location_actions_data=location_actions_data,
         )
@@ -196,12 +200,12 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             )
 
         if member_sensors_attribute_uri and mount_action_data is not None:
-            member_sensor_values, member_errors = self._build_member_sensor_values(
+            selected_device_values, member_errors = self._build_selected_device_values(
                 configuration_data=configuration_data,
                 mount_action_data=mount_action_data,
                 platform_mount_action_data=platform_mount_action_data,
                 static_location_action_data=location_actions_data,
-                cfg_period=cfg_period,
+                configuration_period=configuration_period,
                 auth_token=auth_token,
             )
             if member_errors:
@@ -210,7 +214,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 CollectionAssignment(
                     attribute_uri=member_sensors_attribute_uri,
                     page_uri=self.selected_devices_page_uri,
-                    values=tuple(member_sensor_values),
+                    values=tuple(selected_device_values),
                 )
             )
 
@@ -222,17 +226,17 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                         external_id=value["external_id"],
                         instrument_start=value.get("instrument_start"),
                         instrument_end=value.get("instrument_end"),
-                        instrument_location_amsl=value.get("instrument_location_amsl"),
-                        surface_offset_z=value.get("surface_offset_z"),
+                        height_amsl=value.get("height_amsl"),
+                        vertical_surface_offset=value.get("vertical_surface_offset"),
                         site_name=value.get("site_name"),
-                        mount_metadata_resolved=True,
+                        mount_location_resolved=True,
                     )
-                    for value in member_sensor_values
+                    for value in selected_device_values
                     if value.get("external_id")
                 ]
                 post_actions.append(
                     partial(
-                        sync_device_detail_blocks_from_payload,
+                        reconcile_device_details_from_selected_devices,
                         project=instance.project,
                         catalog=instance.project.catalog,
                         scope_prefix=instance.set_prefix,
@@ -276,7 +280,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         for source_path, attribute_uri in self.attribute_mapping.items():
             if source_path != self.configuration_self_link_path:
                 continue
-            value = map_jamespath_to_attribute_uri({source_path: attribute_uri}, configuration_data).get(attribute_uri)
+            value = evaluate_jmespath_mapping({source_path: attribute_uri}, configuration_data).get(attribute_uri)
             if isinstance(value, str) and value:
                 return value
         return None
@@ -447,19 +451,19 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             return max(active_actions, key=parse_begin_timestamp)
         return max(actions, key=parse_begin_timestamp)
 
-    def _build_member_sensor_values(
+    def _build_selected_device_values(
         self,
         configuration_data: dict,
         mount_action_data: dict,
         platform_mount_action_data: dict | None = None,
         static_location_action_data: dict | None = None,
-        cfg_period: ConfigurationPeriod | None = None,
+        configuration_period: ConfigurationPeriod | None = None,
         auth_token: str | None = None,
     ) -> tuple[list[dict[str, object]], list[str]]:
         included_devices = {item["id"]: item for item in mount_action_data.get("included", []) if item.get("type") == "device"}
 
-        sensor_id_prefix = getattr(self, "sensor_id_prefix", self.id_prefix)
-        member_sensor_values = []
+        device_id_prefix = getattr(self, "sensor_id_prefix", self.id_prefix)
+        selected_device_values = []
 
         mount_actions, errors = self._get_mount_actions(
             configuration_data,
@@ -476,8 +480,8 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             static_location_action_data.get("data", []) if isinstance(static_location_action_data, dict) else []
         )
 
-        selected_mount_actions = self._select_member_mount_actions(mount_actions, cfg_period)
-        reference_time = cfg_period.end if cfg_period is not None else None
+        selected_mount_actions = self._select_member_mount_actions(mount_actions, configuration_period)
+        reference_time = configuration_period.end if configuration_period is not None else None
         for mount_action in selected_mount_actions:
             device_ref = mount_action.get("relationships", {}).get("device", {}).get("data")
             if not device_ref:
@@ -491,43 +495,43 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                     continue
 
             attrs = mount_action.get("attributes", {})
-            vertical_position = resolve_vertical_position(
+            mount_location = resolve_mount_location(
                 mount_action,
                 mount_actions,
                 platform_mount_actions,
                 static_location_actions,
                 reference_time=reference_time,
             )
-            member_sensor_values.append(
+            selected_device_values.append(
                 {
-                    "text": self._format_sensor_text(
+                    "text": self._format_device_text(
                         configuration_id=configuration_data.get("data", {}).get("id"),
-                        sensor_id=device["id"],
+                        device_id=device["id"],
                         attrs=device.get("attributes", {}),
                     ),
-                    "external_id": f"{sensor_id_prefix}:{device['id']}",
+                    "external_id": f"{device_id_prefix}:{device['id']}",
                     "instrument_start": self._format_mount_timepoint(attrs.get("begin_date")),
                     "instrument_end": self._format_mount_timepoint(attrs.get("end_date")),
-                    "instrument_location_amsl": vertical_position.absolute_height,
-                    "surface_offset_z": vertical_position.surface_offset,
-                    "site_name": vertical_position.site_name,
+                    "height_amsl": mount_location.height_amsl,
+                    "vertical_surface_offset": mount_location.vertical_surface_offset,
+                    "site_name": mount_location.site_name,
                 }
             )
 
-        return member_sensor_values, errors
+        return selected_device_values, errors
 
-    def _format_sensor_text(
+    def _format_device_text(
         self,
         configuration_id: str | None,
-        sensor_id: str,
+        device_id: str,
         attrs: dict,
     ) -> str:
         name = attrs.get("long_name") or attrs.get("short_name", "")
         serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
-        sensor_text_prefix = getattr(self, "sensor_text_prefix", "SMS Sensor")
-        config_label = configuration_short_label(f"{self.id_prefix}:{configuration_id}") if configuration_id else None
-        config_prefix = f"{config_label} " if config_label else ""
-        return f"{config_prefix}{sensor_text_prefix}({sensor_id}): {name}{serial}"
+        device_text_prefix = getattr(self, "sensor_text_prefix", "SMS Sensor")
+        configuration_label = configuration_short_label(f"{self.id_prefix}:{configuration_id}") if configuration_id else None
+        configuration_prefix = f"{configuration_label} " if configuration_label else ""
+        return f"{configuration_prefix}{device_text_prefix}({device_id}): {name}{serial}"
 
     def _format_mount_timepoint(self, value) -> str | None:
         parsed = parse_datetime(value) if value else None
@@ -592,7 +596,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             return None, [f"Unexpected SMS device data for mounted device {device_id}: {type(device).__name__}"]
         return device, []
 
-    def _parse_cfg_timepoint(self, value: str | None) -> datetime | None:
+    def _parse_configuration_timepoint(self, value: str | None) -> datetime | None:
         if value is None:
             return None
         parsed = parse_datetime(value)
@@ -605,11 +609,11 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
     def _select_member_mount_actions(
         self,
         mount_actions: list[dict],
-        cfg_period: ConfigurationPeriod | None,
+        configuration_period: ConfigurationPeriod | None,
     ) -> list[dict]:
         selected_by_device: dict[str, dict] = {}
         for mount_action in mount_actions:
-            if cfg_period is not None and not self._is_mount_action_in_period(mount_action, cfg_period):
+            if configuration_period is not None and not self._is_mount_action_in_period(mount_action, configuration_period):
                 continue
 
             device_ref = mount_action.get("relationships", {}).get("device", {}).get("data")
@@ -622,31 +626,31 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         return list(selected_by_device.values())
 
     def _mount_action_begin_sort_key(self, mount_action: dict) -> float:
-        parsed = self._parse_cfg_timepoint(mount_action.get("attributes", {}).get("begin_date"))
+        parsed = self._parse_configuration_timepoint(mount_action.get("attributes", {}).get("begin_date"))
         return parsed.timestamp() if parsed is not None else float("-inf")
 
     def _is_mount_action_in_period(
         self,
         mount_action: dict,
-        cfg_period: ConfigurationPeriod,
+        configuration_period: ConfigurationPeriod,
     ) -> bool:
         attrs = mount_action.get("attributes", {})
         begin_date = attrs.get("begin_date")
         if not begin_date:
             return False
 
-        mount_start = self._parse_cfg_timepoint(begin_date)
+        mount_start = self._parse_configuration_timepoint(begin_date)
         if mount_start is None:
             return False
 
         end_date = attrs.get("end_date")
         if end_date:
-            mount_end = self._parse_cfg_timepoint(end_date)
+            mount_end = self._parse_configuration_timepoint(end_date)
             if mount_end is None:
                 return False
         else:
             mount_end = None
 
-        if cfg_period.end is not None and mount_start > cfg_period.end:
+        if configuration_period.end is not None and mount_start > configuration_period.end:
             return False
-        return mount_end is None or mount_end > cfg_period.start
+        return mount_end is None or mount_end > configuration_period.start

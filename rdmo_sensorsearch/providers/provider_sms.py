@@ -4,12 +4,12 @@ from urllib.parse import quote
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.providers.base import BaseSensorProvider
+from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 
 logger = logging.getLogger(__name__)
 
 
-class SensorManagementSystemProvider(BaseSensorProvider):
+class SensorManagementSystemProvider(BaseRemoteSearchProvider):
     """
     Searches a Sensor Management System (SMS) API for sensor data and returns
     options for selection.
@@ -73,22 +73,22 @@ class SensorManagementSystemProvider(BaseSensorProvider):
 
         optionset = []
 
-        for sensor in json_data[: self.max_hits]:
+        for device in json_data[: self.max_hits]:
             optionset.append(
                 {
-                    "id": self.option_id.format(id_prefix=self.id_prefix, id=sensor["id"]),
-                    "text": self._format_sensor_text(sensor["id"], sensor["attributes"]),
-                    "help": self._format_sensor_help(sensor["attributes"]),
+                    "id": self.option_id.format(id_prefix=self.id_prefix, id=device["id"]),
+                    "text": self._format_device_text(device["id"], device["attributes"]),
+                    "help": self._format_device_help(device["attributes"]),
                 }
             )
         return optionset
 
-    def _format_sensor_text(self, sensor_id: str, attrs: dict) -> str:
+    def _format_device_text(self, device_id: str, attrs: dict) -> str:
         name = attrs.get("long_name") or attrs.get("short_name", "")
         serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
-        return self.option_text.format(prefix=self.text_prefix, id=sensor_id, name=name, serial=serial)
+        return self.option_text.format(prefix=self.text_prefix, id=device_id, name=name, serial=serial)
 
-    def _format_sensor_help(self, attrs: dict) -> str:
+    def _format_device_help(self, attrs: dict) -> str:
         parts = [
             self._format_status(attrs),
             self._format_visibility(attrs),

@@ -41,9 +41,9 @@ def deduplicate_collection_values(values: tuple[dict[str, Any], ...]) -> tuple[d
     return tuple(unique_values)
 
 
-class GenericSearchHandler:
+class BackendRecordHandler:
     """
-    Base class for handling post_saves.
+    Base class for synchronizing a selected backend record with RDMO values.
 
     Derived classes are used to gather additional information from the
     implemented API provider and map them to attributes in a catalog using
@@ -58,11 +58,11 @@ class GenericSearchHandler:
         **kwargs,
     ):
         """
-        Initializes the GenericSearchHandler.
+        Initializes the BackendRecordHandler.
 
         Args:
 
-            attribute_mapping (dict, optional): A dictionary mapping JamesPath
+            attribute_mapping (dict, optional): A dictionary mapping JMESPath
                                                 expressions to attribute URIs.
                                                 Defaults to an empty dictionary.
             **kwargs:                           Additional keyword arguments.

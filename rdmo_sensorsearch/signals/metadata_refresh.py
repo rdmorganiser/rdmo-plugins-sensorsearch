@@ -10,7 +10,8 @@ from rdmo.projects.models import Value
 from rdmo_sensorsearch.client import deduplicate_json_requests
 from rdmo_sensorsearch.config import catalog_matches, load_config
 from rdmo_sensorsearch.naming import canonical_configuration_label, canonical_device_label
-from rdmo_sensorsearch.signals.handler_post_save import refresh_value_from_backend
+from rdmo_sensorsearch.signals.backend_value_sync import refresh_value_from_backend
+from rdmo_sensorsearch.signals.muting import mute_value_post_save
 from rdmo_sensorsearch.signals.refresh_types import (
     RefreshAction,
     RefreshError,
@@ -19,8 +20,7 @@ from rdmo_sensorsearch.signals.refresh_types import (
     combine_refresh_results,
     format_refresh_message,
 )
-from rdmo_sensorsearch.signals.utils import mute_value_post_save
-from rdmo_sensorsearch.signals.value_updater import replace_scalar_value_in_scopes, update_value_if_changed
+from rdmo_sensorsearch.signals.value_reconciliation import replace_scalar_value_in_scopes, update_value_if_changed
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +41,12 @@ def get_refresh_actions_for_input(catalog_uri: str, attribute_uri: str) -> tuple
 
 
 def _get_refresh_actions(catalog_uri: str) -> tuple[RefreshAction, ...]:
-    configuration = load_config().get("MetadataRefresh", {})
-    configuration_search_attribute_uri = configuration.get("configuration_search_attribute_uri", "")
-    device_search_attribute_uri = configuration.get("device_search_attribute_uri", "")
+    refresh_config = load_config().get("MetadataRefresh", {})
+    configuration_search_attribute_uri = refresh_config.get("configuration_search_attribute_uri", "")
+    device_search_attribute_uri = refresh_config.get("device_search_attribute_uri", "")
     actions = []
 
-    for action_config in configuration.get("actions", []):
+    for action_config in refresh_config.get("actions", []):
         if not catalog_matches(action_config, catalog_uri):
             continue
 
@@ -114,7 +114,7 @@ def clear_refresh_state_for_source(instance: Value, actions: tuple[RefreshAction
         )
 
 
-def handle_metadata_refresh_value(instance: Value, auth_token: str | None = None) -> None:
+def run_metadata_refresh_action(instance: Value, auth_token: str | None = None) -> None:
     if instance.project is None or instance.project.catalog is None or instance.attribute is None:
         return
 

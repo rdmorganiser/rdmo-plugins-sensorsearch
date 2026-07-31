@@ -3,12 +3,12 @@ from urllib.parse import quote
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.providers.base import BaseSensorProvider
+from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 
 logger = logging.getLogger(__name__)
 
 
-class SensorManagementSystemConfigurationsProvider(BaseSensorProvider):
+class SensorManagementSystemConfigurationsProvider(BaseRemoteSearchProvider):
     """
     Searches a Sensor Management System (SMS) API for configurations.
 

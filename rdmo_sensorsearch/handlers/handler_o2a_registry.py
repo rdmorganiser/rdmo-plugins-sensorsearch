@@ -2,15 +2,15 @@ import logging
 from urllib.parse import urlsplit
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import GenericSearchHandler, HandlerExecutionContext, HandlerResult
-from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
+from rdmo_sensorsearch.handlers.base import BackendRecordHandler, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
 
 logger = logging.getLogger(__name__)
 
 
-class O2ARegistrySearchHandler(GenericSearchHandler):
+class O2ARegistrySearchHandler(BackendRecordHandler):
     """
-    Handles the O2A Registry to gather additional information about a sensor.
+    Synchronizes an item and its related metadata from the O2A Registry.
 
     To fetch additional data from the O2A REGISTRY at least three API calls
     must be made:
@@ -43,7 +43,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
 
         Args:
 
-            attribute_mapping (dict, optional): A dictionary mapping JamesPath
+            attribute_mapping (dict, optional): A dictionary mapping JMESPath
                                                 expressions to attribute URIs.
                                                 Defaults to an empty dictionary.
             **kwargs: Additional keyword arguments.
@@ -58,12 +58,12 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
             **kwargs,
         )
 
-    def handle(self, id_, instance=None, context: HandlerExecutionContext | None = None):
+    def handle(self, backend_id, instance=None, context: HandlerExecutionContext | None = None):
         """
-        Handles post_save for a specific ID.
+        Synchronizes one O2A item with its RDMO value.
 
         Args:
-            id_ (str): The (sensor) ID to get additional information for.
+            backend_id (str): The item ID to get additional information for.
 
         Returns:
             dict: A dictionary containing the mapped values from the O2A
@@ -72,11 +72,11 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         """
         base_url = self.base_url
         # basic data
-        data = fetch_json(self.item_url.format(base_url=base_url, id=id_))
+        data = fetch_json(self.item_url.format(base_url=base_url, id=backend_id))
         # contacts
-        contacts_data = fetch_json(self.contacts_url.format(base_url=base_url, id=id_))
+        contacts_data = fetch_json(self.contacts_url.format(base_url=base_url, id=backend_id))
         # parameters
-        parameters_data = fetch_json(self.parameters_url.format(base_url=base_url, id=id_))
+        parameters_data = fetch_json(self.parameters_url.format(base_url=base_url, id=backend_id))
         # units
         units_data = fetch_json(self.units_url.format(base_url=base_url))
 
@@ -87,7 +87,7 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
                 ("parameters", parameters_data),
                 ("units", units_data),
             ),
-            id_,
+            backend_id,
         )
         if response_errors:
             return {"errors": response_errors}
@@ -98,12 +98,12 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         # extend basic data with parameters
         self.add_parameters_to_data(data, parameters_data, units_data)
 
-        self.add_links_to_data(data, id_)
+        self.add_links_to_data(data, backend_id)
 
         logger.debug("data: %s", data)
-        mapped_data = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
-        self.set_item_link(mapped_data, data)
-        return HandlerResult(mapped_values=mapped_data)
+        mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, data)
+        self.set_item_link(mapped_values, data)
+        return HandlerResult(mapped_values=mapped_values)
 
     def _response_errors(self, responses, item_id: str) -> list[str]:
         errors = []
@@ -131,13 +131,13 @@ class O2ARegistrySearchHandler(GenericSearchHandler):
         data["links"]["api"] = self.item_api_link_template.format(**values)
         data["links"]["frontend"] = self.item_frontend_link_template.format(**values)
 
-    def set_item_link(self, mapped_data: dict, data: dict) -> None:
+    def set_item_link(self, mapped_values: dict, data: dict) -> None:
         device_link_attribute_uri = getattr(self, "device_link_attribute_uri", None)
         if not device_link_attribute_uri:
             return
         frontend_link = data.get("links", {}).get("frontend")
         if isinstance(frontend_link, str) and frontend_link:
-            mapped_data[device_link_attribute_uri] = frontend_link
+            mapped_values[device_link_attribute_uri] = frontend_link
 
     def add_contacts_to_data(self, data: dict, contacts_data: dict) -> None:
         contacts = []

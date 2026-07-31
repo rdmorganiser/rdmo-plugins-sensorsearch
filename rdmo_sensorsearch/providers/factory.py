@@ -16,8 +16,8 @@ def build_provider_instances(config_section_name: str) -> list:
     Returns:
         list: List of instantiated provider objects.
     """
-    configuration = load_config()
-    section_config = configuration.get(config_section_name, {})
+    plugin_config = load_config()
+    section_config = plugin_config.get(config_section_name, {})
     provider_definitions = section_config.get("providers", {})
     provider_defaults = section_config.get("provider_defaults", {})
     logger.debug(
@@ -27,9 +27,9 @@ def build_provider_instances(config_section_name: str) -> list:
     )
 
     flattened_provider_definitions = [
-        (provider_name, merge_config(provider_defaults.get(provider_name, {}), config))
+        (provider_name, merge_config(provider_defaults.get(provider_name, {}), provider_config))
         for provider_name, configs in provider_definitions.items()
-        for config in configs
+        for provider_config in configs
     ]
 
     instances = []

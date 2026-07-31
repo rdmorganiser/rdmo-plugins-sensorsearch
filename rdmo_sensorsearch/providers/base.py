@@ -5,9 +5,9 @@ from rdmo.options.providers import Provider
 logger = logging.getLogger(__name__)
 
 
-class BaseSensorProvider(Provider):
+class BaseRemoteSearchProvider(Provider):
     """
-    A common base class for sensor providers.
+    A common base class for remote search providers.
 
     Subclasses must define the following class attributes:
     - id_prefix

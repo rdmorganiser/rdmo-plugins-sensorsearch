@@ -13,7 +13,7 @@ from rdmo_sensorsearch.signals.collection_binding import (
     CollectionBindingError,
     scope_from_value,
 )
-from rdmo_sensorsearch.signals.utils import mute_value_post_save
+from rdmo_sensorsearch.signals.muting import mute_value_post_save
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ def upsert_value_if_changed(lookup: dict[str, Any], defaults: dict[str, Any]) ->
     return value, False, update_value_if_changed(value, **defaults)
 
 
-def _change_label(created: bool, changed: bool) -> str:
+def format_change_label(created: bool, changed: bool) -> str:
     if created:
         return "Created"
     if changed:
@@ -71,7 +71,7 @@ def reconcile_mapped_values(
     mapped_values,
     excluded_attribute_uris: set[str] | None = None,
 ) -> None:
-    update_values_from_mapped_data(
+    apply_mapped_values(
         instance,
         handler.build_authoritative_mapped_values(
             mapped_values,
@@ -139,7 +139,7 @@ def update_scalar_value_across_scopes(
 
             logger.info(
                 "%s scalar value across scope for attribute %s (set_prefix=%s, set_index=%s): %r",
-                _change_label(created, changed),
+                format_change_label(created, changed),
                 attribute.uri,
                 set_prefix,
                 set_index,
@@ -220,7 +220,7 @@ def replace_scalar_value_in_scopes(
 
             logger.info(
                 "%s scoped scalar value for attribute %s (set_prefix=%s, set_index=%s): %r",
-                _change_label(created, changed),
+                format_change_label(created, changed),
                 attribute.uri,
                 set_prefix,
                 set_index,
@@ -240,13 +240,13 @@ def _qs_scalar_for_scope(instance, attribute, set_prefix: str, set_index: int):
     return queryset
 
 
-def update_values_from_mapped_data(instance, data: dict):
-    if not data:
+def apply_mapped_values(instance, mapped_values: dict):
+    if not mapped_values:
         return
 
     with transaction.atomic(), mute_value_post_save():
         scope_cache: dict[int, list[tuple[str, int]]] = {}
-        for attribute_uri, value in data.items():
+        for attribute_uri, value in mapped_values.items():
             try:
                 attribute = Attribute.objects.get(uri=attribute_uri)
             except Attribute.DoesNotExist:
@@ -322,7 +322,7 @@ def update_values_from_mapped_data(instance, data: dict):
                     )
             logger.info(
                 "%s scalar value for attribute %s: %r",
-                _change_label(created, changed),
+                format_change_label(created, changed),
                 attribute.uri,
                 normalized_value,
             )
@@ -353,7 +353,7 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
         )
         logger.info(
             "%s collection value for attribute %s at %s=%s: %r",
-            _change_label(created, changed),
+            format_change_label(created, changed),
             attribute.uri,
             row_index_field,
             index,
@@ -474,7 +474,7 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
         )
         logger.info(
             "%s handler collection value for attribute %s using %s at %s=%s: %r",
-            _change_label(created, changed),
+            format_change_label(created, changed),
             attribute.uri,
             binding.layout.value,
             binding.row_index_field,

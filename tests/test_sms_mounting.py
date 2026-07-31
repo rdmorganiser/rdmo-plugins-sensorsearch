@@ -2,7 +2,7 @@ from datetime import datetime
 from datetime import timezone as dt_timezone
 
 from rdmo_sensorsearch.handlers.sms_mounting import (
-    resolve_vertical_position,
+    resolve_mount_location,
     select_latest_device_mount_action,
 )
 
@@ -64,7 +64,7 @@ def _static_location(
 def test_configuration_height_plus_device_offset_matches_tower_example():
     device_action = _action("647", device_id="607", offset_z=50)
 
-    position = resolve_vertical_position(
+    mount_location = resolve_mount_location(
         device_action,
         [device_action],
         [],
@@ -72,38 +72,38 @@ def test_configuration_height_plus_device_offset_matches_tower_example():
         now=datetime(2026, 7, 30, tzinfo=dt_timezone.utc),
     )
 
-    assert position.absolute_height == 160
-    assert position.surface_offset == 50
-    assert position.site_name == "Wettermast_CN"
+    assert mount_location.height_amsl == 160
+    assert mount_location.vertical_surface_offset == 50
+    assert mount_location.site_name == "Wettermast_CN"
 
 
 def test_negative_offset_is_preserved_as_depth_below_surface():
     device_action = _action("742", device_id="324", configuration_id="88", offset_z=-0.4)
 
-    position = resolve_vertical_position(
+    mount_location = resolve_mount_location(
         device_action,
         [device_action],
         [],
         [_static_location("66", z=96, label="")],
     )
 
-    assert position.absolute_height == 95.6
-    assert position.surface_offset == -0.4
-    assert position.site_name == ""
+    assert mount_location.height_amsl == 95.6
+    assert mount_location.vertical_surface_offset == -0.4
+    assert mount_location.site_name == ""
 
 
 def test_explicit_mount_height_overrides_configuration_height():
     device_action = _action("652", device_id="49", offset_z=0, z=140)
 
-    position = resolve_vertical_position(
+    mount_location = resolve_mount_location(
         device_action,
         [device_action],
         [],
         [_static_location("14", z=110)],
     )
 
-    assert position.absolute_height == 140
-    assert position.surface_offset == 0
+    assert mount_location.height_amsl == 140
+    assert mount_location.vertical_surface_offset == 0
 
 
 def test_nested_platform_offsets_are_summed_to_configuration_root():
@@ -120,15 +120,15 @@ def test_nested_platform_offsets_are_summed_to_configuration_root():
         offset_z=-2,
     )
 
-    position = resolve_vertical_position(
+    mount_location = resolve_mount_location(
         device_action,
         [device_action],
         [platform_action],
         [_static_location("location-1", z=100)],
     )
 
-    assert position.absolute_height == 108
-    assert position.surface_offset == 8
+    assert mount_location.height_amsl == 108
+    assert mount_location.vertical_surface_offset == 8
 
 
 def test_nearest_explicit_parent_height_anchors_child_offset():
@@ -146,15 +146,15 @@ def test_nearest_explicit_parent_height_anchors_child_offset():
         offset_z=-2,
     )
 
-    position = resolve_vertical_position(
+    mount_location = resolve_mount_location(
         device_action,
         [device_action],
         [platform_action],
         [_static_location("location-1", z=100)],
     )
 
-    assert position.absolute_height == 118
-    assert position.surface_offset == 8
+    assert mount_location.height_amsl == 118
+    assert mount_location.vertical_surface_offset == 8
 
 
 def test_historical_mount_uses_static_location_at_end_of_mount():
@@ -179,15 +179,15 @@ def test_historical_mount_uses_static_location_at_end_of_mount():
         label="New site",
     )
 
-    position = resolve_vertical_position(
+    mount_location = resolve_mount_location(
         device_action,
         [device_action],
         [],
         [old_location, new_location],
     )
 
-    assert position.absolute_height == 202
-    assert position.site_name == "New site"
+    assert mount_location.height_amsl == 202
+    assert mount_location.site_name == "New site"
 
 
 def test_missing_parent_does_not_publish_partial_offset_or_derived_height():
@@ -198,15 +198,15 @@ def test_missing_parent_does_not_publish_partial_offset_or_derived_height():
         offset_z=-2,
     )
 
-    position = resolve_vertical_position(
+    mount_location = resolve_mount_location(
         device_action,
         [device_action],
         [],
         [_static_location("location-1", z=100)],
     )
 
-    assert position.absolute_height is None
-    assert position.surface_offset is None
+    assert mount_location.height_amsl is None
+    assert mount_location.vertical_surface_offset is None
 
 
 def test_expired_static_location_is_not_reused_during_dynamic_location_period():
@@ -224,7 +224,7 @@ def test_expired_static_location_is_not_reused_during_dynamic_location_period():
         label="Former site",
     )
 
-    position = resolve_vertical_position(
+    mount_location = resolve_mount_location(
         device_action,
         [device_action],
         [],
@@ -232,9 +232,9 @@ def test_expired_static_location_is_not_reused_during_dynamic_location_period():
         now=datetime(2026, 7, 30, tzinfo=dt_timezone.utc),
     )
 
-    assert position.absolute_height is None
-    assert position.surface_offset == -2
-    assert position.site_name is None
+    assert mount_location.height_amsl is None
+    assert mount_location.vertical_surface_offset == -2
+    assert mount_location.site_name is None
 
 
 def test_latest_device_mount_action_is_selected_for_configuration():

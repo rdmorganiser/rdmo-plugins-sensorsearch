@@ -1,14 +1,14 @@
 import logging
 
-from rdmo_sensorsearch.handlers.base import GenericSearchHandler, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.handlers.base import BackendRecordHandler, HandlerExecutionContext, HandlerResult
 
 from ..client import fetch_json
-from .parser import map_jamespath_to_attribute_uri
+from .parser import evaluate_jmespath_mapping
 
 logger = logging.getLogger(__name__)
 
 
-class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
+class GeophysicalInstrumentPoolPotsdamHandler(BackendRecordHandler):
     """
     Handles for the Geophysical Instrument Pool Potsdam (GIPP).
 
@@ -24,12 +24,12 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
 
     json_url = "{base_url}/{id}.json"
 
-    def handle(self, id_, instance=None, context: HandlerExecutionContext | None = None):
+    def handle(self, backend_id, instance=None, context: HandlerExecutionContext | None = None):
         """
-        Handles post_save for a specific instrument ID in GIPP.
+        Synchronizes one GIPP instrument with its RDMO value.
 
         Args:
-            id_ (str): The ID of the instrument to get information for.
+            backend_id (str): The ID of the instrument to get information for.
 
         Returns:
             dict: A dictionary containing the mapped values from the GIPP API
@@ -37,13 +37,13 @@ class GeophysicalInstrumentPoolPotsdamHandler(GenericSearchHandler):
 
         """
 
-        data = fetch_json(self.json_url.format(base_url=self.base_url, id=id_))
+        data = fetch_json(self.json_url.format(base_url=self.base_url, id=backend_id))
         if isinstance(data, dict) and "errors" in data:
             return data
         if not isinstance(data, dict):
-            return {"errors": [f"Unexpected GIPP payload for instrument {id_}: {type(data).__name__}"]}
+            return {"errors": [f"Unexpected GIPP payload for instrument {backend_id}: {type(data).__name__}"]}
         if not data:
-            return {"errors": [f"GIPP request for instrument {id_} returned no instrument data."]}
+            return {"errors": [f"GIPP request for instrument {backend_id} returned no instrument data."]}
 
         logger.debug("data: %s", data)
-        return HandlerResult(mapped_values=map_jamespath_to_attribute_uri(self.attribute_mapping, data))
+        return HandlerResult(mapped_values=evaluate_jmespath_mapping(self.attribute_mapping, data))

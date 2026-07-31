@@ -5,9 +5,9 @@ from typing import Any
 
 
 @dataclass(frozen=True)
-class VerticalPosition:
-    absolute_height: float | None
-    surface_offset: float | None
+class ResolvedMountLocation:
+    height_amsl: float | None
+    vertical_surface_offset: float | None
     site_name: str | None
 
 
@@ -26,7 +26,7 @@ def select_latest_device_mount_action(
     return max(matching_actions, key=_action_begin_sort_key)
 
 
-def resolve_vertical_position(
+def resolve_mount_location(
     device_action: dict,
     device_actions: list[dict],
     platform_actions: list[dict],
@@ -34,7 +34,7 @@ def resolve_vertical_position(
     *,
     now: datetime | None = None,
     reference_time: datetime | None = None,
-) -> VerticalPosition:
+) -> ResolvedMountLocation:
     if reference_time is None:
         reference_time = _action_reference_time(device_action, now=now)
     else:
@@ -46,22 +46,22 @@ def resolve_vertical_position(
         reference_time,
     )
 
-    surface_offset = sum(_offset_z(action) for action in mount_chain) if chain_complete else None
+    vertical_surface_offset = sum(_offset_z(action) for action in mount_chain) if chain_complete else None
 
     offset_below_anchor = 0.0
-    absolute_height = None
+    height_amsl = None
     for action in mount_chain:
         explicit_height = _number(action.get("attributes", {}).get("z"))
         if explicit_height is not None:
-            absolute_height = explicit_height + offset_below_anchor
+            height_amsl = explicit_height + offset_below_anchor
             break
         offset_below_anchor += _offset_z(action)
 
     static_location = select_static_location_action(static_location_actions, reference_time)
-    if absolute_height is None and chain_complete and static_location is not None:
+    if height_amsl is None and chain_complete and static_location is not None:
         base_height = _number(static_location.get("attributes", {}).get("z"))
-        if base_height is not None and surface_offset is not None:
-            absolute_height = base_height + surface_offset
+        if base_height is not None and vertical_surface_offset is not None:
+            height_amsl = base_height + vertical_surface_offset
 
     site_name = None
     if static_location is not None:
@@ -69,9 +69,9 @@ def resolve_vertical_position(
         if isinstance(label, str):
             site_name = label
 
-    return VerticalPosition(
-        absolute_height=absolute_height,
-        surface_offset=surface_offset,
+    return ResolvedMountLocation(
+        height_amsl=height_amsl,
+        vertical_surface_offset=vertical_surface_offset,
         site_name=site_name,
     )
 

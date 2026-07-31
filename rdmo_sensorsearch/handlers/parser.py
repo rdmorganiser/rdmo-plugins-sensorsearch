@@ -7,15 +7,15 @@ from jmespath.exceptions import JMESPathError
 logger = logging.getLogger(__name__)
 
 
-def map_jamespath_to_attribute_uri(attribute_mapping: dict, data: dict) -> dict:
+def evaluate_jmespath_mapping(attribute_mapping: dict, data: dict) -> dict:
     """
-    Maps values from the response data to attribute URIs using JamesPath
+    Maps values from the response data to attribute URIs using JMESPath
     expressions.
 
     The mapping is usually provided by the configuration file.
 
     Args:
-        attribute_mapping (dict): The mapping of attribute names to JamesPath URIs.
+        attribute_mapping (dict): The mapping of JMESPath expressions to attribute URIs.
         data (dict): The JSON response data.
 
     Returns:

@@ -4,7 +4,7 @@ from contextvars import ContextVar
 _MUTE_POST_SAVE: ContextVar[bool] = ContextVar("rdmo_sensorsearch_mute_post_save", default=False)
 
 
-def _is_muted() -> bool:
+def is_value_post_save_muted() -> bool:
     return _MUTE_POST_SAVE.get()
 
 

@@ -18,11 +18,11 @@ class BaseProjectAttributeOptionsProvider(Provider):
     search = False
     refresh = True
 
-    config_key: str | None = None
+    config_section_name: str | None = None
 
     def get_options(self, project, search=None, user=None, site=None):
-        if self.config_key is None:
-            raise NotImplementedError(f"{type(self).__name__} must define `config_key`")
+        if self.config_section_name is None:
+            raise NotImplementedError(f"{type(self).__name__} must define `config_section_name`")
 
         if project is None or project.catalog is None:
             return []
@@ -68,8 +68,8 @@ class BaseProjectAttributeOptionsProvider(Provider):
         return catalog.get("source_attribute_uri") if catalog else None
 
     def _get_catalog_config(self, catalog_uri: str) -> dict | None:
-        configuration = load_config()
-        catalogs = configuration.get(self.config_key, {}).get("catalogs", [])
+        plugin_config = load_config()
+        catalogs = plugin_config.get(self.config_section_name, {}).get("catalogs", [])
 
         for catalog in catalogs:
             if catalog_matches(catalog, catalog_uri):
@@ -83,7 +83,7 @@ class ProjectConfigurationSensorsProvider(BaseProjectAttributeOptionsProvider):
     Provides project-local sensor options that were materialized from a selected configuration.
     """
 
-    config_key = "ProjectConfigurationSensorsProvider"
+    config_section_name = "ProjectConfigurationSensorsProvider"
 
 
 class ProjectDataCollectionDevicesProvider(BaseProjectAttributeOptionsProvider):
@@ -91,4 +91,4 @@ class ProjectDataCollectionDevicesProvider(BaseProjectAttributeOptionsProvider):
     Provides project-local device options for data collection questions.
     """
 
-    config_key = "ProjectDataCollectionDevicesProvider"
+    config_section_name = "ProjectDataCollectionDevicesProvider"

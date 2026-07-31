@@ -2,12 +2,12 @@ import logging
 from urllib.parse import quote
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.providers.base import BaseSensorProvider
+from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 
 logger = logging.getLogger(__name__)
 
 
-class O2ARegistrySearchProvider(BaseSensorProvider):
+class O2ARegistrySearchProvider(BaseRemoteSearchProvider):
     """
     Searches the O2A REGISTRY for sensor data and returns options for selection.
 

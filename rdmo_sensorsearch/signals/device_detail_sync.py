@@ -15,15 +15,15 @@ from rdmo.projects.models import Value
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import HandlerResult
 from rdmo_sensorsearch.handlers.sms_mounting import (
-    resolve_vertical_position,
+    resolve_mount_location,
     select_latest_device_mount_action,
 )
 from rdmo_sensorsearch.naming import configuration_short_label, device_detail_tab_label
 from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionScope
+from rdmo_sensorsearch.signals.muting import mute_value_post_save
 from rdmo_sensorsearch.signals.refresh_types import RefreshError, RefreshResult
-from rdmo_sensorsearch.signals.utils import mute_value_post_save
-from rdmo_sensorsearch.signals.value_updater import (
-    _change_label,
+from rdmo_sensorsearch.signals.value_reconciliation import (
+    format_change_label,
     reconcile_mapped_values,
     replace_scalar_value_in_scopes,
     upsert_value_if_changed,
@@ -55,15 +55,15 @@ class SelectedDevice:
     external_id: str
     instrument_start: str | None = None
     instrument_end: str | None = None
-    instrument_location_amsl: float | None = None
-    surface_offset_z: float | None = None
+    height_amsl: float | None = None
+    vertical_surface_offset: float | None = None
     site_name: str | None = None
-    mount_metadata_resolved: bool = False
+    mount_location_resolved: bool = False
 
 
 @dataclass(frozen=True)
-class ConfigurationContext:
-    key: str
+class ConfigurationIdentity:
+    configuration_key: str
     label: str
     external_id: str | None
 
@@ -73,7 +73,7 @@ class DeviceBlockPlan:
     device: SelectedDevice
     block_key: str
     set_index: int
-    sensor_candidate: Any
+    handler_binding: Any
     needs_metadata_write: bool
     needs_refresh: bool
     set_prefix: str = ""
@@ -90,7 +90,7 @@ class DeviceBlockInstance:
 
 @dataclass(frozen=True)
 class DeviceFetchResult:
-    mapped_data: dict[str, Any]
+    mapped_values: dict[str, Any]
     scoped_scalar_values: dict[str, Any]
 
 
@@ -105,28 +105,7 @@ class DeviceFetchBatchResult:
     errors: tuple[RefreshError, ...] = ()
 
 
-def sync_device_detail_blocks_from_values(
-    instance,
-    selected_values: Iterable[Value],
-    selected_devices_attribute_uri: str,
-    device_collection_attribute_uri: str,
-    configuration_search_attribute_uri: str,
-    auth_token: str | None = None,
-) -> RefreshResult:
-    return sync_device_detail_blocks_from_configuration_values(
-        project=instance.project,
-        catalog=instance.project.catalog,
-        scope_prefix=instance.set_prefix or "",
-        source_set_index=instance.set_index,
-        selected_values=selected_values,
-        selected_devices_attribute_uri=selected_devices_attribute_uri,
-        device_collection_attribute_uri=device_collection_attribute_uri,
-        configuration_search_attribute_uri=configuration_search_attribute_uri,
-        auth_token=auth_token,
-    )
-
-
-def sync_device_detail_blocks_from_configuration_values(
+def reconcile_device_details_from_selected_values(
     project,
     catalog,
     scope_prefix: str,
@@ -150,7 +129,7 @@ def sync_device_detail_blocks_from_configuration_values(
         for value in selected_values
         if value.external_id
     ]
-    return sync_device_detail_blocks(
+    return reconcile_device_details(
         project=project,
         catalog=catalog,
         scope_prefix=scope_prefix,
@@ -170,7 +149,7 @@ def sync_device_detail_blocks_from_configuration_values(
     )
 
 
-def sync_device_detail_blocks_from_payload(
+def reconcile_device_details_from_selected_devices(
     project,
     catalog,
     scope_prefix: str,
@@ -184,7 +163,7 @@ def sync_device_detail_blocks_from_payload(
     force_refresh: bool = False,
 ) -> RefreshResult:
     scope_prefix = scope_prefix or ""
-    return sync_device_detail_blocks(
+    return reconcile_device_details(
         project=project,
         catalog=catalog,
         scope_prefix=scope_prefix,
@@ -199,7 +178,7 @@ def sync_device_detail_blocks_from_payload(
     )
 
 
-def sync_device_detail_blocks(
+def reconcile_device_details(
     project,
     catalog,
     scope_prefix: str,
@@ -215,14 +194,14 @@ def sync_device_detail_blocks(
     scope_prefix = scope_prefix or ""
     source_set_index = source_set_index or 0
     selected_devices = _unique_selected_devices(selected_devices)
-    config_context = _resolve_configuration_context(
+    configuration_identity = _resolve_configuration_identity(
         project=project,
         scope_prefix=scope_prefix,
         source_set_index=source_set_index,
         configuration_search_attribute_uri=configuration_search_attribute_uri,
         configuration_external_id=configuration_external_id,
     )
-    if config_context is None:
+    if configuration_identity is None:
         logger.warning(
             "Could not resolve configuration context for selected devices attribute %s",
             selected_devices_attribute_uri,
@@ -233,14 +212,14 @@ def sync_device_detail_blocks(
             requested_count=len(selected_devices),
         )
 
-    config_key = config_context.key
-    config_label = config_context.label
-    desired_block_keys = {_compose_device_block_key(config_key, device.external_id) for device in selected_devices}
+    configuration_key = configuration_identity.configuration_key
+    configuration_label = configuration_identity.label
+    desired_block_keys = {_compose_device_block_key(configuration_key, device.external_id) for device in selected_devices}
     device_detail_attribute_ids = _device_detail_attribute_ids(catalog)
     if not device_detail_attribute_ids:
         logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
         return _failed_device_sync(
-            config_key,
+            configuration_key,
             f"Could not resolve device detail attributes for {DEVICE_DETAILS_PAGE_URI}.",
             requested_count=len(selected_devices),
         )
@@ -250,12 +229,12 @@ def sync_device_detail_blocks(
     if root_attribute is None:
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
         return _failed_device_sync(
-            config_key,
+            configuration_key,
             f"Device collection root attribute not found: {device_collection_attribute_uri}.",
             requested_count=len(selected_devices),
         )
 
-    existing_blocks = _existing_device_blocks(project, root_attribute, scope_prefix, config_key)
+    existing_blocks = _existing_device_blocks(project, root_attribute, scope_prefix, configuration_key)
     next_index = _next_device_set_index(project, root_attribute, scope_prefix)
 
     stale_blocks = [block for block_key, block in existing_blocks.items() if block_key not in desired_block_keys]
@@ -264,15 +243,15 @@ def sync_device_detail_blocks(
     plans: list[DeviceBlockPlan] = []
     planning_errors: list[RefreshError] = []
     for device in selected_devices:
-        block_key = _compose_device_block_key(config_key, device.external_id)
+        block_key = _compose_device_block_key(configuration_key, device.external_id)
         block = existing_blocks.get(block_key)
-        sensor_candidate = _resolve_sensor_candidate(project.catalog.uri, device.external_id)
-        if sensor_candidate is None:
-            logger.warning("No sensor handler found for selected device %s", device.external_id)
+        handler_binding = _resolve_device_handler_binding(project.catalog.uri, device.external_id)
+        if handler_binding is None:
+            logger.warning("No device handler found for selected device %s", device.external_id)
             planning_errors.append(
                 RefreshError(
                     external_id=device.external_id,
-                    message="No matching sensor handler is configured.",
+                    message="No matching device handler is configured.",
                 )
             )
             continue
@@ -282,7 +261,7 @@ def sync_device_detail_blocks(
         else:
             set_index = next_index
             next_index += 1
-        search_attribute_uri = sensor_candidate.auto_complete_field_uri
+        search_attribute_uri = handler_binding.auto_complete_field_uri
         needs_metadata_write = block is None or not _device_block_metadata_is_current(
             project=project,
             root_attribute=root_attribute,
@@ -291,7 +270,7 @@ def sync_device_detail_blocks(
             set_index=set_index,
             block_key=block_key,
             device=device,
-            config_label=config_label,
+            configuration_label=configuration_label,
         )
 
         plans.append(
@@ -299,7 +278,7 @@ def sync_device_detail_blocks(
                 device=device,
                 block_key=block_key,
                 set_index=set_index,
-                sensor_candidate=sensor_candidate,
+                handler_binding=handler_binding,
                 needs_metadata_write=needs_metadata_write,
                 needs_refresh=force_refresh
                 or block is None
@@ -309,14 +288,14 @@ def sync_device_detail_blocks(
                     set_index=set_index,
                 ),
                 set_prefix=scope_prefix,
-                configuration_external_id=config_context.external_id,
+                configuration_external_id=configuration_identity.external_id,
             )
         )
 
     fetch_batch = _fetch_device_detail_payloads(
         plans,
         root_attribute.id,
-        config_context.external_id,
+        configuration_identity.external_id,
         auth_token=auth_token,
     )
     fetched_payloads = fetch_batch.payloads
@@ -335,11 +314,11 @@ def sync_device_detail_blocks(
                     scope_prefix=scope_prefix,
                     set_index=plan.set_index,
                     device=plan.device,
-                    config_label=config_label,
+                    configuration_label=configuration_label,
                     block_key=plan.block_key,
                 )
 
-                search_attribute_uri = plan.sensor_candidate.auto_complete_field_uri
+                search_attribute_uri = plan.handler_binding.auto_complete_field_uri
                 _upsert_search_value(
                     project=project,
                     attribute_uri=search_attribute_uri,
@@ -354,7 +333,7 @@ def sync_device_detail_blocks(
 
             _write_device_fetch_payload(
                 block_instance,
-                plan.sensor_candidate.handler,
+                plan.handler_binding.handler,
                 fetched_payload,
                 scope_prefix,
                 plan.set_index,
@@ -412,13 +391,13 @@ def remove_device_detail_block_for_selected_device(
     if not device_external_id:
         return False
 
-    config_context = _resolve_configuration_context(
+    configuration_identity = _resolve_configuration_identity(
         project=project,
         scope_prefix=scope_prefix,
         source_set_index=source_set_index,
         configuration_search_attribute_uri=configuration_search_attribute_uri,
     )
-    if config_context is None:
+    if configuration_identity is None:
         logger.warning(
             "Could not resolve configuration context while removing selected device %s",
             device_external_id,
@@ -430,7 +409,7 @@ def remove_device_detail_block_for_selected_device(
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
         return False
 
-    block_key = _compose_device_block_key(config_context.key, device_external_id)
+    block_key = _compose_device_block_key(configuration_identity.configuration_key, device_external_id)
     block = _find_device_block(project, root_attribute, scope_prefix, block_key)
     if block is None:
         logger.debug("No device detail block exists for removed selected device %s", block_key)
@@ -534,7 +513,7 @@ def _write_device_fetch_payload(
     reconcile_mapped_values(
         block_instance,
         handler,
-        fetched_payload.mapped_data,
+        fetched_payload.mapped_values,
         excluded_attribute_uris={
             INSTRUMENT_START_ATTRIBUTE_URI,
             INSTRUMENT_END_ATTRIBUTE_URI,
@@ -607,14 +586,14 @@ def _fetch_device_detail_payload(
         return DeviceFetchFailure(message="Could not parse external device ID.")
 
     fetch_instance = _device_block_instance(None, root_attribute_id, "", plan.set_index)
-    if getattr(plan.sensor_candidate.handler, "uses_auth_token", False):
-        handler_result = plan.sensor_candidate.handler.handle(
-            id_=device_id,
+    if getattr(plan.handler_binding.handler, "uses_auth_token", False):
+        handler_result = plan.handler_binding.handler.handle(
+            backend_id=device_id,
             instance=fetch_instance,
             auth_token=auth_token,
         )
     else:
-        handler_result = plan.sensor_candidate.handler.handle(id_=device_id, instance=fetch_instance)
+        handler_result = plan.handler_binding.handler.handle(backend_id=device_id, instance=fetch_instance)
     if isinstance(handler_result, dict) and "errors" in handler_result:
         logger.error("Sensor handler returned errors for %s: %s", plan.device.external_id, handler_result["errors"])
         return DeviceFetchFailure(message=_format_handler_errors(handler_result["errors"]))
@@ -629,27 +608,27 @@ def _fetch_device_detail_payload(
     if handler_result.collections or handler_result.post_actions:
         return DeviceFetchFailure(message="Sensor handlers cannot return collections or post-actions during block sync.")
 
-    mapped_data = dict(handler_result.mapped_values)
+    mapped_values = dict(handler_result.mapped_values)
     _merge_mounting_period_values(
-        mapped_data,
+        mapped_values,
         plan.device,
-        plan.sensor_candidate,
+        plan.handler_binding,
         plan.configuration_external_id or configuration_external_id,
         auth_token=auth_token,
     )
     _merge_mount_location_values(
-        mapped_data,
+        mapped_values,
         plan.device,
-        plan.sensor_candidate,
+        plan.handler_binding,
         plan.configuration_external_id or configuration_external_id,
         auth_token=auth_token,
     )
     scoped_scalar_values = {
-        INSTRUMENT_START_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
-        INSTRUMENT_END_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_END_ATTRIBUTE_URI, ""),
+        INSTRUMENT_START_ATTRIBUTE_URI: mapped_values.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
+        INSTRUMENT_END_ATTRIBUTE_URI: mapped_values.pop(INSTRUMENT_END_ATTRIBUTE_URI, ""),
     }
     return DeviceFetchResult(
-        mapped_data=mapped_data,
+        mapped_values=mapped_values,
         scoped_scalar_values=scoped_scalar_values,
     )
 
@@ -660,26 +639,26 @@ def _format_handler_errors(errors: Any) -> str:
     return str(errors)
 
 
-def _resolve_sensor_candidate(catalog_uri: str, external_id: str) -> Any | None:
+def _resolve_device_handler_binding(catalog_uri: str, external_id: str) -> Any | None:
     id_prefix, _ = _parse_external_id(external_id)
     if id_prefix is None:
         return None
 
-    from rdmo_sensorsearch.signals.handler_post_save import _get_handler_candidates
+    from rdmo_sensorsearch.signals.backend_value_sync import get_handler_bindings_for_catalog
 
-    for candidate in _get_handler_candidates(catalog_uri):
-        if candidate.id_prefix == id_prefix and getattr(candidate.handler, "sync_device_detail_blocks", False):
-            return candidate
+    for binding in get_handler_bindings_for_catalog(catalog_uri):
+        if binding.id_prefix == id_prefix and getattr(binding.handler, "sync_device_detail_blocks", False):
+            return binding
     return None
 
 
-def _resolve_configuration_context(
+def _resolve_configuration_identity(
     project,
     scope_prefix: str,
     source_set_index: int,
     configuration_search_attribute_uri: str,
     configuration_external_id: str | None = None,
-) -> ConfigurationContext | None:
+) -> ConfigurationIdentity | None:
     if not configuration_search_attribute_uri:
         return None
 
@@ -713,17 +692,19 @@ def _resolve_configuration_context(
     if config_search_value is None and configuration_set_value is None:
         return None
 
-    config_key = _configuration_key(config_search_value, configuration_set_value, scope_prefix, source_set_index)
-    return ConfigurationContext(
-        key=config_key,
+    configuration_key = _configuration_key(config_search_value, configuration_set_value, scope_prefix, source_set_index)
+    return ConfigurationIdentity(
+        configuration_key=configuration_key,
         label=_configuration_label(config_search_value, configuration_set_value, source_set_index),
         external_id=configuration_external_id or _configuration_external_id(config_search_value),
     )
 
 
-def _existing_device_blocks(project, root_attribute, scope_prefix: str, config_key: str) -> dict[str, dict]:
+def _existing_device_blocks(project, root_attribute, scope_prefix: str, configuration_key: str) -> dict[str, dict]:
     all_blocks = _all_existing_device_blocks(project, root_attribute, scope_prefix)
-    return {block_key: block for block_key, block in all_blocks.items() if _parse_block_external_id(block_key)[0] == config_key}
+    return {
+        block_key: block for block_key, block in all_blocks.items() if _parse_block_external_id(block_key)[0] == configuration_key
+    }
 
 
 def _find_device_block(project, root_attribute, scope_prefix: str, block_key: str) -> dict | None:
@@ -764,8 +745,8 @@ def _all_existing_device_blocks(project, root_attribute, scope_prefix: str) -> d
 
     for value in queryset:
         block_key = value.external_id or ""
-        parsed_config_key, device_external_id = _parse_block_external_id(block_key)
-        if not parsed_config_key or not device_external_id:
+        parsed_configuration_key, device_external_id = _parse_block_external_id(block_key)
+        if not parsed_configuration_key or not device_external_id:
             continue
         blocks[block_key] = {
             "set_index": value.set_index,
@@ -827,7 +808,7 @@ def _upsert_root_device_value(
     scope_prefix: str,
     set_index: int,
     device: SelectedDevice,
-    config_label: str,
+    configuration_label: str,
     block_key: str,
 ) -> None:
     _, created, changed = upsert_value_if_changed(
@@ -840,13 +821,13 @@ def _upsert_root_device_value(
             "set_index": set_index,
         },
         {
-            "text": _device_root_text(config_label, device),
+            "text": _device_root_text(configuration_label, device),
             "external_id": block_key,
         },
     )
     logger.info(
         "%s device block root for %s at set_prefix=%s set_index=%s",
-        _change_label(created, changed),
+        format_change_label(created, changed),
         block_key,
         scope_prefix,
         set_index,
@@ -875,7 +856,7 @@ def _upsert_search_value(project, attribute_uri: str, scope_prefix: str, set_ind
     )
     logger.info(
         "%s device search value for %s at set_prefix=%s set_index=%s",
-        _change_label(created, changed),
+        format_change_label(created, changed),
         device.external_id,
         scope_prefix,
         set_index,
@@ -991,7 +972,7 @@ def _device_block_metadata_is_current(
     set_index: int,
     block_key: str,
     device: SelectedDevice,
-    config_label: str,
+    configuration_label: str,
 ) -> bool:
     return _has_matching_value(
         project=project,
@@ -999,7 +980,7 @@ def _device_block_metadata_is_current(
         scope_prefix=scope_prefix,
         set_index=set_index,
         set_collection=True,
-        text=_device_root_text(config_label, device),
+        text=_device_root_text(configuration_label, device),
         external_id=block_key,
     ) and _has_matching_value(
         project=project,
@@ -1089,8 +1070,8 @@ def _parse_external_id(external_id: str) -> tuple[str | None, str | None]:
 def _parse_block_external_id(external_id: str) -> tuple[str | None, str | None]:
     if "||" not in external_id:
         return None, None
-    config_key, device_external_id = external_id.split("||", 1)
-    return config_key or None, device_external_id or None
+    configuration_key, device_external_id = external_id.split("||", 1)
+    return configuration_key or None, device_external_id or None
 
 
 def _device_block_configuration_key(external_id: str) -> str | None:
@@ -1100,13 +1081,13 @@ def _device_block_configuration_key(external_id: str) -> str | None:
     return configuration_key
 
 
-def _compose_device_block_key(config_key: str, device_external_id: str) -> str:
-    return f"{config_key}||{device_external_id}"
+def _compose_device_block_key(configuration_key: str, device_external_id: str) -> str:
+    return f"{configuration_key}||{device_external_id}"
 
 
-def _device_root_text(config_label: str, device: SelectedDevice) -> str:
+def _device_root_text(configuration_label: str, device: SelectedDevice) -> str:
     return device_detail_tab_label(
-        config_label,
+        configuration_label,
         device.text or device.external_id,
         device.external_id,
     )
@@ -1186,64 +1167,64 @@ def _configuration_label(
 
 
 def _merge_mounting_period_values(
-    mapped_data: dict[str, Any],
+    mapped_values: dict[str, Any],
     device: SelectedDevice,
-    sensor_candidate: Any,
+    handler_binding: Any,
     configuration_external_id: str | None,
     auth_token: str | None = None,
 ) -> None:
-    if INSTRUMENT_START_ATTRIBUTE_URI in mapped_data:
-        mapped_data.setdefault(INSTRUMENT_END_ATTRIBUTE_URI, "")
+    if INSTRUMENT_START_ATTRIBUTE_URI in mapped_values:
+        mapped_values.setdefault(INSTRUMENT_END_ATTRIBUTE_URI, "")
         return
     if device.instrument_start:
-        mapped_data[INSTRUMENT_START_ATTRIBUTE_URI] = device.instrument_start
-        mapped_data[INSTRUMENT_END_ATTRIBUTE_URI] = device.instrument_end or ""
+        mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = device.instrument_start
+        mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = device.instrument_end or ""
         return
 
     start_value, end_value = _resolve_mounting_period_values(
-        mapped_data,
+        mapped_values,
         device,
-        sensor_candidate,
+        handler_binding,
         configuration_external_id,
         auth_token=auth_token,
     )
-    mapped_data[INSTRUMENT_START_ATTRIBUTE_URI] = start_value or ""
-    mapped_data[INSTRUMENT_END_ATTRIBUTE_URI] = end_value or ""
+    mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = start_value or ""
+    mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = end_value or ""
 
 
 def _merge_mount_location_values(
-    mapped_data: dict[str, Any],
+    mapped_values: dict[str, Any],
     device: SelectedDevice,
-    sensor_candidate: Any,
+    handler_binding: Any,
     configuration_external_id: str | None,
     auth_token: str | None = None,
 ) -> None:
-    if device.mount_metadata_resolved:
-        absolute_height = device.instrument_location_amsl
-        surface_offset = device.surface_offset_z
+    if device.mount_location_resolved:
+        height_amsl = device.height_amsl
+        vertical_surface_offset = device.vertical_surface_offset
         site_name = device.site_name
     else:
-        absolute_height, surface_offset, site_name = _resolve_mount_location_values(
+        height_amsl, vertical_surface_offset, site_name = _resolve_mount_location_values(
             device,
-            sensor_candidate,
+            handler_binding,
             configuration_external_id,
             auth_token=auth_token,
         )
 
-    mapped_data[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = absolute_height if absolute_height is not None else ""
-    mapped_data[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = surface_offset if surface_offset is not None else ""
-    mapped_data[SITE_NAME_ATTRIBUTE_URI] = site_name if site_name is not None else ""
+    mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = height_amsl if height_amsl is not None else ""
+    mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = vertical_surface_offset if vertical_surface_offset is not None else ""
+    mapped_values[SITE_NAME_ATTRIBUTE_URI] = site_name if site_name is not None else ""
 
 
 def _resolve_mount_location_values(
     device: SelectedDevice,
-    sensor_candidate: Any,
+    handler_binding: Any,
     configuration_external_id: str | None,
     auth_token: str | None = None,
 ) -> tuple[float | None, float | None, str | None]:
     if not configuration_external_id:
         return None, None, None
-    if not getattr(sensor_candidate.handler, "supports_mount_location_lookup", False):
+    if not getattr(handler_binding.handler, "supports_mount_location_lookup", False):
         return None, None, None
 
     _, configuration_id = _parse_external_id(configuration_external_id)
@@ -1251,7 +1232,7 @@ def _resolve_mount_location_values(
     if configuration_id is None or device_id is None:
         return None, None, None
 
-    handler = sensor_candidate.handler
+    handler = handler_binding.handler
     device_actions = _fetch_configuration_mount_actions(
         handler,
         "configuration_device_mount_actions_url",
@@ -1284,13 +1265,13 @@ def _resolve_mount_location_values(
         configuration_id,
         auth_token=auth_token,
     )
-    position = resolve_vertical_position(
+    mount_location = resolve_mount_location(
         device_action,
         device_actions,
         platform_actions,
         static_location_actions,
     )
-    return position.absolute_height, position.surface_offset, position.site_name
+    return mount_location.height_amsl, mount_location.vertical_surface_offset, mount_location.site_name
 
 
 def _fetch_configuration_mount_actions(
@@ -1317,9 +1298,9 @@ def _fetch_configuration_mount_actions(
 
 
 def _resolve_mounting_period_values(
-    mapped_data: dict[str, Any],
+    mapped_values: dict[str, Any],
     device: SelectedDevice,
-    sensor_candidate: Any,
+    handler_binding: Any,
     configuration_external_id: str | None,
     auth_token: str | None = None,
 ) -> tuple[str | None, str | None]:
@@ -1331,14 +1312,14 @@ def _resolve_mounting_period_values(
     if configuration_id is None or device_id is None:
         return None, None
 
-    if not getattr(sensor_candidate.handler, "supports_mount_action_period_lookup", False):
+    if not getattr(handler_binding.handler, "supports_mount_action_period_lookup", False):
         return None, None
 
-    mount_actions = _fetch_device_mount_actions(sensor_candidate, device_id, auth_token=auth_token)
+    mount_actions = _fetch_device_mount_actions(handler_binding, device_id, auth_token=auth_token)
     if not mount_actions:
         return None, None
 
-    serial_number = mapped_data.get(SERIAL_NUMBER_ATTRIBUTE_URI)
+    serial_number = mapped_values.get(SERIAL_NUMBER_ATTRIBUTE_URI)
     if not isinstance(serial_number, str) or not serial_number.strip():
         serial_number = _serial_number_from_text(device.text)
 
@@ -1346,8 +1327,8 @@ def _resolve_mounting_period_values(
     normalized_serial = serial_number.strip().casefold() if isinstance(serial_number, str) and serial_number.strip() else None
     for item in mount_actions:
         relationships = item.get("relationships", {})
-        config_ref = relationships.get("configuration", {}).get("data", {})
-        if config_ref.get("id") != configuration_id:
+        configuration_ref = relationships.get("configuration", {}).get("data", {})
+        if configuration_ref.get("id") != configuration_id:
             continue
 
         action_device_ref = relationships.get("device", {}).get("data", {})
@@ -1373,9 +1354,9 @@ def _resolve_mounting_period_values(
     return _format_timepoint(latest_start), _format_timepoint(latest_end)
 
 
-def _fetch_device_mount_actions(sensor_candidate: Any, device_id: str, auth_token: str | None = None) -> list[dict]:
+def _fetch_device_mount_actions(handler_binding: Any, device_id: str, auth_token: str | None = None) -> list[dict]:
     url = (
-        f"{sensor_candidate.handler.base_url}/devices/{device_id}/device-mount-actions"
+        f"{handler_binding.handler.base_url}/devices/{device_id}/device-mount-actions"
         "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration"
     )
     action_data = fetch_json(url, auth_token=auth_token)

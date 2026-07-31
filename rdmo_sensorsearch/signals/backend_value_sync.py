@@ -13,40 +13,38 @@ from rdmo_sensorsearch.handlers.handler_sms import (
 )
 from rdmo_sensorsearch.naming import canonical_device_label
 from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionBindingError, CollectionScope
-from rdmo_sensorsearch.signals.device_set_sync import (
+from rdmo_sensorsearch.signals.device_detail_sync import (
     get_selected_device_values_for_configuration_scope,
-    sync_device_detail_blocks_from_configuration_values,
+    reconcile_device_details_from_selected_values,
 )
 from rdmo_sensorsearch.signals.refresh_types import (
     RefreshError,
     RefreshResult,
     combine_refresh_results,
 )
-from rdmo_sensorsearch.signals.value_updater import (
+from rdmo_sensorsearch.signals.value_reconciliation import (
     reconcile_handler_result,
     replace_scalar_value_in_scopes,
 )
 
 logger = logging.getLogger(__name__)
 
-ALL_HANDLER_MAP = build_handlers_by_catalog()
+HANDLERS_BY_CATALOG = build_handlers_by_catalog()
 
 
-def _get_handler_candidates(catalog_uri: str) -> list:
-    specific_candidates = ALL_HANDLER_MAP.get(catalog_uri, [])
-    wildcard_candidates = ALL_HANDLER_MAP.get(WILDCARD_CATALOG_URI, [])
+def get_handler_bindings_for_catalog(catalog_uri: str) -> list:
+    catalog_bindings = HANDLERS_BY_CATALOG.get(catalog_uri, [])
+    wildcard_bindings = HANDLERS_BY_CATALOG.get(WILDCARD_CATALOG_URI, [])
 
-    seen = {
-        (candidate.id_prefix, candidate.auto_complete_field_uri, type(candidate.handler)) for candidate in specific_candidates
-    }
+    seen = {(binding.id_prefix, binding.auto_complete_field_uri, type(binding.handler)) for binding in catalog_bindings}
 
-    merged_candidates = list(specific_candidates)
-    for candidate in wildcard_candidates:
-        key = (candidate.id_prefix, candidate.auto_complete_field_uri, type(candidate.handler))
+    merged_bindings = list(catalog_bindings)
+    for binding in wildcard_bindings:
+        key = (binding.id_prefix, binding.auto_complete_field_uri, type(binding.handler))
         if key not in seen:
-            merged_candidates.append(candidate)
+            merged_bindings.append(binding)
 
-    return merged_candidates
+    return merged_bindings
 
 
 def _empty_handler_result(handler) -> HandlerResult:
@@ -109,8 +107,8 @@ def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
     return post_actions
 
 
-def handle_post_save(instance, auth_token: str | None = None) -> None:
-    if not ALL_HANDLER_MAP:
+def sync_backend_value_after_save(instance, auth_token: str | None = None) -> None:
+    if not HANDLERS_BY_CATALOG:
         logger.warning("No handlers found for %s", __name__)
         return
     if getattr(instance, "snapshot_id", None) is not None:
@@ -131,12 +129,10 @@ def handle_post_save(instance, auth_token: str | None = None) -> None:
         logger.warning("Missing catalog or attribute URI")
         return
 
-    handler_candidates = _get_handler_candidates(catalog_uri)
-    attribute_handler_candidates = [
-        candidate for candidate in handler_candidates if candidate.auto_complete_field_uri == attribute_uri
-    ]
+    handler_bindings = get_handler_bindings_for_catalog(catalog_uri)
+    matching_bindings = [binding for binding in handler_bindings if binding.auto_complete_field_uri == attribute_uri]
 
-    if not attribute_handler_candidates:
+    if not matching_bindings:
         logger.debug(
             "Skipping post_save handling for attribute_uri=%s in catalog=%s because no handler is configured for it",
             attribute_uri,
@@ -146,13 +142,13 @@ def handle_post_save(instance, auth_token: str | None = None) -> None:
 
     if not instance.external_id and getattr(instance, "is_empty", False):
         reconciled_signatures = set()
-        for candidate in attribute_handler_candidates:
-            signature = _handler_ownership_signature(candidate.handler)
+        for binding in matching_bindings:
+            signature = _handler_ownership_signature(binding.handler)
             if signature in reconciled_signatures:
                 continue
             reconciled_signatures.add(signature)
             with transaction.atomic():
-                _reconcile_result(instance, candidate.handler, _empty_handler_result(candidate.handler))
+                _reconcile_result(instance, binding.handler, _empty_handler_result(binding.handler))
         return
 
     result = refresh_value_from_backend(instance, auth_token=auth_token)
@@ -181,53 +177,53 @@ def refresh_value_from_backend(
     except ValueError:
         return _failed_refresh(external_id, "External ID must contain a backend prefix.")
 
-    candidates = [
-        candidate
-        for candidate in _get_handler_candidates(catalog.uri)
-        if candidate.id_prefix == id_prefix and candidate.auto_complete_field_uri == attribute.uri
+    bindings = [
+        binding
+        for binding in get_handler_bindings_for_catalog(catalog.uri)
+        if binding.id_prefix == id_prefix and binding.auto_complete_field_uri == attribute.uri
     ]
-    if not candidates:
+    if not bindings:
         return _failed_refresh(external_id, "No matching backend handler is configured.")
-    if len(candidates) > 1:
+    if len(bindings) > 1:
         return _failed_refresh(external_id, "Multiple matching backend handlers are configured.")
 
-    candidate = candidates[0]
+    binding = bindings[0]
     context = HandlerExecutionContext(
         preserve_collections=preserve_collections,
         require_configuration_period=require_configuration_period,
     )
     try:
-        if getattr(candidate.handler, "uses_auth_token", False):
-            mapped_data = candidate.handler.handle(
-                id_=backend_id,
+        if getattr(binding.handler, "uses_auth_token", False):
+            handler_output = binding.handler.handle(
+                backend_id=backend_id,
                 instance=instance,
                 auth_token=auth_token,
                 context=context,
             )
         else:
-            mapped_data = candidate.handler.handle(id_=backend_id, instance=instance, context=context)
+            handler_output = binding.handler.handle(backend_id=backend_id, instance=instance, context=context)
     except Exception as error:
         logger.exception(
             "Handler %s failed while processing external_id=%s for catalog=%s",
-            candidate.id_prefix,
+            binding.id_prefix,
             backend_id,
             catalog.uri,
         )
         return _failed_refresh(external_id, str(error) or type(error).__name__)
 
-    if isinstance(mapped_data, dict) and "errors" in mapped_data:
-        return _failed_refresh(external_id, _format_handler_errors(mapped_data["errors"]))
-    if not isinstance(mapped_data, HandlerResult):
-        return _failed_refresh(external_id, f"Handler returned {type(mapped_data).__name__}, expected HandlerResult.")
+    if isinstance(handler_output, dict) and "errors" in handler_output:
+        return _failed_refresh(external_id, _format_handler_errors(handler_output["errors"]))
+    if not isinstance(handler_output, HandlerResult):
+        return _failed_refresh(external_id, f"Handler returned {type(handler_output).__name__}, expected HandlerResult.")
 
     try:
         if preserve_collections:
-            mapped_data = replace(
-                mapped_data,
-                collections=_preserved_collection_assignments(instance, candidate.handler),
+            handler_output = replace(
+                handler_output,
+                collections=_preserved_collection_assignments(instance, binding.handler),
             )
         with transaction.atomic():
-            post_actions = _reconcile_result(instance, candidate.handler, mapped_data)
+            post_actions = _reconcile_result(instance, binding.handler, handler_output)
     except Exception as error:
         logger.exception("Failed to apply backend data for external_id=%s", external_id)
         return _failed_refresh(external_id, f"Could not store backend data: {error}")
@@ -238,8 +234,8 @@ def refresh_value_from_backend(
             post_action_results.append(
                 _refresh_selected_configuration_devices(
                     instance,
-                    candidate.handler,
-                    mapped_data.mapped_values,
+                    binding.handler,
+                    handler_output.mapped_values,
                     auth_token=auth_token,
                 )
             )
@@ -297,7 +293,7 @@ def _refresh_selected_configuration_devices(
     instrument_start, instrument_end = (
         period_resolver(instance, configuration_values) if callable(period_resolver) else (None, None)
     )
-    return sync_device_detail_blocks_from_configuration_values(
+    return reconcile_device_details_from_selected_values(
         project=instance.project,
         catalog=instance.project.catalog,
         scope_prefix=scope.set_prefix,

@@ -29,7 +29,7 @@ def _install_host_application_stubs():
     rdmo_projects.models = rdmo_project_models
     rdmo.projects = rdmo_projects
 
-    device_set_sync = ModuleType("rdmo_sensorsearch.signals.device_set_sync")
+    device_detail_sync = ModuleType("rdmo_sensorsearch.signals.device_detail_sync")
 
     @dataclass(frozen=True)
     class SelectedDevice:
@@ -37,19 +37,18 @@ def _install_host_application_stubs():
         external_id: str
         instrument_start: str | None = None
         instrument_end: str | None = None
-        instrument_location_amsl: float | None = None
-        surface_offset_z: float | None = None
+        height_amsl: float | None = None
+        vertical_surface_offset: float | None = None
         site_name: str | None = None
-        mount_metadata_resolved: bool = False
+        mount_location_resolved: bool = False
 
-    device_set_sync.SelectedDevice = SelectedDevice
-    device_set_sync.sync_device_detail_blocks_from_payload = lambda **kwargs: None
-    sys.modules.setdefault("rdmo_sensorsearch.signals.device_set_sync", device_set_sync)
+    device_detail_sync.SelectedDevice = SelectedDevice
+    device_detail_sync.reconcile_device_details_from_selected_devices = lambda **kwargs: None
+    sys.modules.setdefault("rdmo_sensorsearch.signals.device_detail_sync", device_detail_sync)
 
-    sensorsearch_utils = ModuleType("rdmo_sensorsearch.utils")
-    sensorsearch_utils.get_project_value = lambda instance, attribute_uri: None
-    sensorsearch_utils.get_scoped_project_value = lambda instance, attribute_uri: None
-    sys.modules.setdefault("rdmo_sensorsearch.utils", sensorsearch_utils)
+    project_values = ModuleType("rdmo_sensorsearch.project_values")
+    project_values.get_scoped_project_value = lambda instance, attribute_uri: None
+    sys.modules.setdefault("rdmo_sensorsearch.project_values", project_values)
 
     handlers = sys.modules.setdefault("rdmo_sensorsearch.handlers", ModuleType("rdmo_sensorsearch.handlers"))
     handlers.__path__ = [str(Path(__file__).parents[1] / "rdmo_sensorsearch" / "handlers")]
@@ -276,16 +275,16 @@ def test_sms_device_refresh_maps_mount_height_depth_and_site(monkeypatch):
         "_resolve_configuration_external_id",
         lambda instance: "kitcfg:27",
     )
-    mapped_data = {}
+    mapped_values = {}
 
-    errors = handler._set_mount_period(mapped_data, "607", instance=object())
+    errors = handler._set_mount_period(mapped_values, "607", instance=object())
 
     assert errors == []
-    assert mapped_data[handler_sms.INSTRUMENT_START_ATTRIBUTE_URI] == "2020-08-25 12:00"
-    assert mapped_data[handler_sms.INSTRUMENT_END_ATTRIBUTE_URI] == ""
-    assert mapped_data[handler_sms.INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] == 160
-    assert mapped_data[handler_sms.SURFACE_OFFSET_Z_ATTRIBUTE_URI] == 50
-    assert mapped_data[handler_sms.SITE_NAME_ATTRIBUTE_URI] == "Wettermast_CN"
+    assert mapped_values[handler_sms.INSTRUMENT_START_ATTRIBUTE_URI] == "2020-08-25 12:00"
+    assert mapped_values[handler_sms.INSTRUMENT_END_ATTRIBUTE_URI] == ""
+    assert mapped_values[handler_sms.INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] == 160
+    assert mapped_values[handler_sms.SURFACE_OFFSET_Z_ATTRIBUTE_URI] == 50
+    assert mapped_values[handler_sms.SITE_NAME_ATTRIBUTE_URI] == "Wettermast_CN"
 
 
 def test_sms_configuration_collection_fetches_every_page(monkeypatch):
@@ -328,9 +327,9 @@ def test_sms_configuration_member_uses_compact_configuration_label():
     )
 
     assert (
-        handler._format_sensor_text(
+        handler._format_device_text(
             configuration_id="49",
-            sensor_id="327",
+            device_id="327",
             attrs={
                 "long_name": "SMT100",
                 "serial_number": "SMTEB23",
@@ -376,7 +375,7 @@ def test_sms_configuration_member_includes_derived_vertical_location():
         },
     }
 
-    values, errors = handler._build_member_sensor_values(
+    values, errors = handler._build_selected_device_values(
         configuration_data={"data": {"id": "49"}},
         mount_action_data={
             "data": [device_action],
@@ -406,8 +405,8 @@ def test_sms_configuration_member_includes_derived_vertical_location():
     )
 
     assert errors == []
-    assert values[0]["instrument_location_amsl"] == 108
-    assert values[0]["surface_offset_z"] == 8
+    assert values[0]["height_amsl"] == 108
+    assert values[0]["vertical_surface_offset"] == 8
     assert values[0]["site_name"] == "Test site"
 
 
@@ -477,10 +476,10 @@ def test_configuration_period_workflow_depends_on_the_catalog_trigger():
     )
     instance = SimpleNamespace(project=SimpleNamespace(catalog=catalog))
 
-    assert configuration_period.catalog_uses_explicit_configuration_period(instance) is True
+    assert configuration_period.catalog_has_date_range_trigger(instance) is True
 
     catalog.pages = [SimpleNamespace(attribute=None, elements=[])]
-    assert configuration_period.catalog_uses_explicit_configuration_period(instance) is False
+    assert configuration_period.catalog_has_date_range_trigger(instance) is False
 
 
 def test_sms_configuration_range_selects_latest_mount_and_location_within_range():
@@ -534,7 +533,7 @@ def test_sms_configuration_range_selects_latest_mount_and_location_within_range(
     )
     assert error is None
 
-    values, errors = handler._build_member_sensor_values(
+    values, errors = handler._build_selected_device_values(
         configuration_data={"data": {"id": "49"}},
         mount_action_data={
             "data": [older_mount, latest_mount, future_mount],
@@ -574,14 +573,14 @@ def test_sms_configuration_range_selects_latest_mount_and_location_within_range(
                 },
             ]
         },
-        cfg_period=period,
+        configuration_period=period,
     )
 
     assert errors == []
     assert [value["external_id"] for value in values] == ["kitsms:327"]
     assert values[0]["instrument_start"] == "2025-03-01 00:00"
-    assert values[0]["instrument_location_amsl"] == 202
-    assert values[0]["surface_offset_z"] == 2
+    assert values[0]["height_amsl"] == 202
+    assert values[0]["vertical_surface_offset"] == 2
     assert values[0]["site_name"] == "Range site"
 
 
@@ -673,7 +672,7 @@ def test_sms_configuration_defers_device_assignments_until_the_period_is_applied
     monkeypatch.setattr(handler_sms_configurations, "fetch_json", fetch_json)
     monkeypatch.setattr(
         handler_sms_configurations,
-        "catalog_uses_explicit_configuration_period",
+        "catalog_has_date_range_trigger",
         lambda instance: True,
     )
     monkeypatch.setattr(
@@ -894,7 +893,7 @@ def test_o2a_mission_defers_device_assignments_until_the_period_is_applied(monke
     monkeypatch.setattr(handler_o2a_missions, "fetch_json", fetch_json)
     monkeypatch.setattr(
         handler_o2a_missions,
-        "catalog_uses_explicit_configuration_period",
+        "catalog_has_date_range_trigger",
         lambda instance: True,
     )
     monkeypatch.setattr(
@@ -1022,7 +1021,7 @@ def test_o2a_mission_exposes_the_user_period_for_preserved_devices(monkeypatch):
     )
     monkeypatch.setattr(
         handler_o2a_missions,
-        "catalog_uses_explicit_configuration_period",
+        "catalog_has_date_range_trigger",
         lambda instance: True,
     )
     handler = handler_o2a_missions.O2ARegistryMissionsHandler(

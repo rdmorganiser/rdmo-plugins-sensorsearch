@@ -3,7 +3,7 @@ from datetime import datetime
 from datetime import timezone as dt_timezone
 
 from rdmo_sensorsearch.handlers.parser import parse_datetime
-from rdmo_sensorsearch.utils import get_scoped_project_value
+from rdmo_sensorsearch.project_values import get_scoped_project_value
 
 APPLY_DATE_RANGE_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range"
 
@@ -18,7 +18,7 @@ class ConfigurationPeriod:
         return _format_timepoint(self.start), _format_timepoint(self.end)
 
 
-def catalog_uses_explicit_configuration_period(instance) -> bool:
+def catalog_has_date_range_trigger(instance) -> bool:
     """Return whether the active catalog actually contains the apply trigger."""
     project = getattr(instance, "project", None)
     catalog = getattr(project, "catalog", None)

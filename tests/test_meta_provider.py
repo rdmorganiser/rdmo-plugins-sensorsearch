@@ -95,11 +95,11 @@ class FakeBackendProvider:
         return self.results
 
 
-def _configure_provider(monkeypatch, config_key, providers, rows, min_search_len=3):
+def _configure_provider(monkeypatch, config_section_name, providers, rows, min_search_len=3):
     monkeypatch.setattr(
         meta_provider,
         "load_config",
-        lambda: {config_key: {"min_search_len": min_search_len}},
+        lambda: {config_section_name: {"min_search_len": min_search_len}},
     )
     monkeypatch.setattr(meta_provider, "get_config_file_path", lambda: "test-config.toml")
     monkeypatch.setattr(meta_provider, "build_provider_instances", lambda key: providers)
@@ -107,17 +107,17 @@ def _configure_provider(monkeypatch, config_key, providers, rows, min_search_len
 
 
 @pytest.mark.parametrize(
-    ("provider_class", "config_key", "external_id", "expected_text"),
+    ("provider_class", "config_section_name", "external_id", "expected_text"),
     (
         (
             meta_provider.SensorsProvider,
-            meta_provider.SENSORSPROVIDER_CONFIG_KEY,
+            meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
             "kitsms:327",
             "KIT Sensor(327): Existing project option",
         ),
         (
             meta_provider.ConfigurationsProvider,
-            meta_provider.CONFIGURATIONSPROVIDER_CONFIG_KEY,
+            meta_provider.CONFIGURATIONS_PROVIDER_CONFIG_SECTION,
             "kitcfg:49",
             "KIT Cfg(49): Existing project option",
         ),
@@ -126,7 +126,7 @@ def _configure_provider(monkeypatch, config_key, providers, rows, min_search_len
 def test_exact_project_value_skips_backend_and_auth(
     monkeypatch,
     provider_class,
-    config_key,
+    config_section_name,
     external_id,
     expected_text,
 ):
@@ -135,7 +135,7 @@ def test_exact_project_value_skips_backend_and_auth(
     backend = FakeBackendProvider(external_id.split(":", 1)[0])
     _configure_provider(
         monkeypatch,
-        config_key,
+        config_section_name,
         [backend],
         [{"id": 1, "project": project, "snapshot": None, "text": text, "external_id": external_id}],
     )
@@ -157,7 +157,7 @@ def test_project_options_are_deduplicated_and_keep_distinct_external_ids(monkeyp
     backend = FakeBackendProvider("kitsms")
     _configure_provider(
         monkeypatch,
-        meta_provider.SENSORSPROVIDER_CONFIG_KEY,
+        meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
         [backend],
         [
             {"id": 1, "project": project, "snapshot": None, "text": text, "external_id": "kitsms:1"},
@@ -191,7 +191,7 @@ def test_invalid_project_match_falls_through_to_backend(monkeypatch, external_id
     backend = FakeBackendProvider("kitsms", [remote_option])
     _configure_provider(
         monkeypatch,
-        meta_provider.SENSORSPROVIDER_CONFIG_KEY,
+        meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
         [backend],
         [{"id": 1, "project": project, "snapshot": None, "text": text, "external_id": external_id}],
     )
@@ -210,7 +210,7 @@ def test_nonexact_and_snapshot_values_fall_through_to_backend(monkeypatch):
     backend = FakeBackendProvider("kitsms", [remote_option])
     _configure_provider(
         monkeypatch,
-        meta_provider.SENSORSPROVIDER_CONFIG_KEY,
+        meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
         [backend],
         [
             {
@@ -242,7 +242,7 @@ def test_search_shorter_than_minimum_skips_project_and_backend_queries(monkeypat
     backend = FakeBackendProvider("kitsms")
     _configure_provider(
         monkeypatch,
-        meta_provider.SENSORSPROVIDER_CONFIG_KEY,
+        meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
         [backend],
         [{"id": 1, "project": project, "snapshot": None, "text": "ab", "external_id": "kitsms:1"}],
     )

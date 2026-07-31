@@ -5,8 +5,8 @@ from django.db import transaction
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.naming import configuration_tab_label
-from rdmo_sensorsearch.signals.utils import mute_value_post_save
-from rdmo_sensorsearch.signals.value_updater import update_value_if_changed
+from rdmo_sensorsearch.signals.muting import mute_value_post_save
+from rdmo_sensorsearch.signals.value_reconciliation import update_value_if_changed
 
 logger = logging.getLogger(__name__)
 

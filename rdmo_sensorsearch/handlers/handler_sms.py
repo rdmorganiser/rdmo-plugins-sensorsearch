@@ -6,9 +6,9 @@ from urllib.parse import urljoin, urlsplit
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import GenericSearchHandler, HandlerExecutionContext, HandlerResult
-from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
-from rdmo_sensorsearch.handlers.sms_mounting import resolve_vertical_position
+from rdmo_sensorsearch.handlers.base import BackendRecordHandler, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
+from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +21,9 @@ SURFACE_OFFSET_Z_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usag
 SITE_NAME_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
 
 
-class SensorManagementSystemHandler(GenericSearchHandler):
+class SensorManagementSystemHandler(BackendRecordHandler):
     """
-    Handles the Sensor Management System (SMS) to gather sensor information.
+    Synchronizes device information from a Sensor Management System (SMS).
 
     This handler fetches device information, including properties, from the
     SMS API.
@@ -51,53 +51,53 @@ class SensorManagementSystemHandler(GenericSearchHandler):
 
     def handle(
         self,
-        id_: str,
+        backend_id: str,
         instance=None,
         auth_token: str | None = None,
         context: HandlerExecutionContext | None = None,
     ) -> dict | HandlerResult:
         """
-        Handles post_save for a specific device ID in the SMS.
+        Synchronizes one SMS device with its RDMO value.
 
         Args:
-            id_ (str): The ID of the device to get information for.
+            backend_id (str): The ID of the device to get information for.
 
         Returns:
             dict: A dictionary containing the mapped values from the SMS API
                   response.
         """
 
-        data = fetch_json(self.device_url.format(base_url=self.base_url, id=id_), auth_token=auth_token)
+        data = fetch_json(self.device_url.format(base_url=self.base_url, id=backend_id), auth_token=auth_token)
 
         if isinstance(data, dict) and "errors" in data:
-            logger.debug("Errors in data returned for ID %s, %s", id_, ", ".join(data["errors"]))
+            logger.debug("Errors in data returned for ID %s, %s", backend_id, ", ".join(data["errors"]))
             return data
         if not isinstance(data, dict):
-            return {"errors": [f"Unexpected SMS device payload for device {id_}: {type(data).__name__}"]}
+            return {"errors": [f"Unexpected SMS device payload for device {backend_id}: {type(data).__name__}"]}
         if not isinstance(data.get("data"), dict):
-            return {"errors": [f"SMS device request for device {id_} returned no device data."]}
+            return {"errors": [f"SMS device request for device {backend_id} returned no device data."]}
 
         # contacts can not be included in the first request with the include parameter
-        contact_data = fetch_json(self.contact_url.format(base_url=self.base_url, id=id_), auth_token=auth_token)
+        contact_data = fetch_json(self.contact_url.format(base_url=self.base_url, id=backend_id), auth_token=auth_token)
         if isinstance(contact_data, dict) and "errors" in contact_data:
             return contact_data
         if not isinstance(contact_data, dict):
-            return {"errors": [f"Unexpected SMS contact payload for device {id_}: {type(contact_data).__name__}"]}
+            return {"errors": [f"Unexpected SMS contact payload for device {backend_id}: {type(contact_data).__name__}"]}
 
         # add the included contact data to the data
         data["included"] = [*data.get("included", []), *contact_data.get("included", [])]
 
         if not data:
-            logger.debug("Empty data returned for ID %s", id_)
+            logger.debug("Empty data returned for ID %s", backend_id)
 
-        mapped_data = map_jamespath_to_attribute_uri(self.attribute_mapping, data)
-        self._set_frontend_device_link(mapped_data, data)
-        mount_period_errors = self._set_mount_period(mapped_data, id_, instance, auth_token=auth_token)
+        mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, data)
+        self._set_frontend_device_link(mapped_values, data)
+        mount_period_errors = self._set_mount_period(mapped_values, backend_id, instance, auth_token=auth_token)
         if mount_period_errors:
             return {"errors": mount_period_errors}
-        return HandlerResult(mapped_values=mapped_data)
+        return HandlerResult(mapped_values=mapped_values)
 
-    def _set_frontend_device_link(self, mapped_data: dict, device_data: dict) -> None:
+    def _set_frontend_device_link(self, mapped_values: dict, device_data: dict) -> None:
         raw_self_link = device_data.get("data", {}).get("links", {}).get("self")
         if not isinstance(raw_self_link, str) or not raw_self_link:
             return
@@ -105,7 +105,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         api_link = urljoin(self._base_origin(), raw_self_link)
         device_link_attribute_uri = getattr(self, "device_link_attribute_uri", DEVICE_LINK_ATTRIBUTE_URI)
         if device_link_attribute_uri:
-            mapped_data[device_link_attribute_uri] = self._to_frontend_link(api_link)
+            mapped_values[device_link_attribute_uri] = self._to_frontend_link(api_link)
 
     def _to_frontend_link(self, api_link: str) -> str:
         backend_link_marker = getattr(self, "backend_link_marker", "/backend/api/v1/")
@@ -119,7 +119,7 @@ class SensorManagementSystemHandler(GenericSearchHandler):
 
     def _set_mount_period(
         self,
-        mapped_data: dict,
+        mapped_values: dict,
         device_id: str,
         instance=None,
         auth_token: str | None = None,
@@ -141,8 +141,8 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         matching_actions = []
         for item in mount_actions:
             relationships = item.get("relationships", {})
-            config_ref = relationships.get("configuration", {}).get("data", {})
-            if config_ref.get("id") != configuration_id:
+            configuration_ref = relationships.get("configuration", {}).get("data", {})
+            if configuration_ref.get("id") != configuration_id:
                 continue
 
             action_device_ref = relationships.get("device", {}).get("data", {})
@@ -160,8 +160,8 @@ class SensorManagementSystemHandler(GenericSearchHandler):
             return []
 
         latest_start, latest_end, latest_action = max(matching_actions, key=lambda item: item[0])
-        mapped_data[INSTRUMENT_START_ATTRIBUTE_URI] = self._format_timepoint(latest_start)
-        mapped_data[INSTRUMENT_END_ATTRIBUTE_URI] = self._format_timepoint(latest_end) or ""
+        mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = self._format_timepoint(latest_start)
+        mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = self._format_timepoint(latest_end) or ""
 
         configuration_device_actions, errors = self._fetch_configuration_actions(
             self.configuration_device_mount_actions_url,
@@ -188,17 +188,17 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         if errors:
             return errors
 
-        position = resolve_vertical_position(
+        location = resolve_mount_location(
             latest_action,
             configuration_device_actions or mount_actions,
             platform_actions,
             static_location_actions,
         )
-        mapped_data[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = (
-            position.absolute_height if position.absolute_height is not None else ""
+        mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = location.height_amsl if location.height_amsl is not None else ""
+        mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = (
+            location.vertical_surface_offset if location.vertical_surface_offset is not None else ""
         )
-        mapped_data[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = position.surface_offset if position.surface_offset is not None else ""
-        mapped_data[SITE_NAME_ATTRIBUTE_URI] = position.site_name if position.site_name is not None else ""
+        mapped_values[SITE_NAME_ATTRIBUTE_URI] = location.site_name if location.site_name is not None else ""
         return []
 
     def _resolve_configuration_external_id(self, instance) -> str | None:

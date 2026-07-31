@@ -11,26 +11,26 @@ from rdmo_sensorsearch.providers.factory import build_provider_instances
 
 logger = logging.getLogger(__name__)
 
-SENSORSPROVIDER_CONFIG_KEY = "SensorsProvider"
-CONFIGURATIONSPROVIDER_CONFIG_KEY = "ConfigurationsProvider"
+SENSORS_PROVIDER_CONFIG_SECTION = "SensorsProvider"
+CONFIGURATIONS_PROVIDER_CONFIG_SECTION = "ConfigurationsProvider"
 CONFIGURATION_SEARCH_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
 
 
-class BaseMetaProvider(Provider):
+class AggregatingSearchProvider(Provider):
     search = True
 
     refresh = True
 
-    config_key: str | None = None
+    config_section_name: str | None = None
 
     def get_options(self, project, search=None, user=None, site=None):
-        if self.config_key is None:
-            raise NotImplementedError(f"{type(self).__name__} must define `config_key`")
+        if self.config_section_name is None:
+            raise NotImplementedError(f"{type(self).__name__} must define `config_section_name`")
 
-        configuration = load_config()
-        section_config = configuration.get(self.config_key, {})
+        plugin_config = load_config()
+        section_config = plugin_config.get(self.config_section_name, {})
         min_search_len = section_config.get("min_search_len", 3)
-        providers = build_provider_instances(self.config_key)
+        providers = build_provider_instances(self.config_section_name)
         if section_config.get("filter_sms_by_selected_configuration", False):
             providers = self._filter_providers_for_project(project, providers)
 
@@ -65,7 +65,7 @@ class BaseMetaProvider(Provider):
                 "%s has no configured backend providers. Check %s [%s].providers",
                 type(self).__name__,
                 get_config_file_path(),
-                self.config_key,
+                self.config_section_name,
             )
             return []
 
@@ -74,7 +74,7 @@ class BaseMetaProvider(Provider):
             if getattr(provider, "uses_auth_token", False):
                 provider.auth_token = auth_token
 
-        logger.debug("Configuration top-level keys: %s", sorted(configuration.keys()))
+        logger.debug("Configuration top-level keys: %s", sorted(plugin_config.keys()))
         logger.debug("Search term: %s", search)
 
         if len(providers) == 1:
@@ -137,9 +137,9 @@ class BaseMetaProvider(Provider):
         return options
 
     def _canonical_option_text(self, text: str, external_id: str) -> str:
-        if self.config_key == SENSORSPROVIDER_CONFIG_KEY:
+        if self.config_section_name == SENSORS_PROVIDER_CONFIG_SECTION:
             return canonical_device_label(text, external_id)
-        if self.config_key == CONFIGURATIONSPROVIDER_CONFIG_KEY:
+        if self.config_section_name == CONFIGURATIONS_PROVIDER_CONFIG_SECTION:
             return canonical_configuration_label(text, external_id)
         return text
 
@@ -182,7 +182,7 @@ class BaseMetaProvider(Provider):
             return []
 
     def _filter_providers_for_project(self, project, providers: list[Provider]) -> list[Provider]:
-        if self.config_key != SENSORSPROVIDER_CONFIG_KEY or project is None:
+        if self.config_section_name != SENSORS_PROVIDER_CONFIG_SECTION or project is None:
             return providers
 
         allowed_sms_prefixes = self._allowed_sms_prefixes(project)
@@ -219,23 +219,23 @@ class BaseMetaProvider(Provider):
         for external_id in values:
             if not isinstance(external_id, str) or ":" not in external_id:
                 continue
-            cfg_prefix = external_id.split(":", 1)[0]
-            if cfg_prefix.endswith("cfg"):
-                prefixes.add(f"{cfg_prefix[:-3]}sms")
+            configuration_prefix = external_id.split(":", 1)[0]
+            if configuration_prefix.endswith("cfg"):
+                prefixes.add(f"{configuration_prefix[:-3]}sms")
         return prefixes
 
 
-class SensorsProvider(BaseMetaProvider):
+class SensorsProvider(AggregatingSearchProvider):
     """
     A meta-provider for searching sensor data across multiple sources.
     """
 
-    config_key = SENSORSPROVIDER_CONFIG_KEY
+    config_section_name = SENSORS_PROVIDER_CONFIG_SECTION
 
 
-class ConfigurationsProvider(BaseMetaProvider):
+class ConfigurationsProvider(AggregatingSearchProvider):
     """
     A meta-provider for searching configuration data across multiple sources.
     """
 
-    config_key = CONFIGURATIONSPROVIDER_CONFIG_KEY
+    config_section_name = CONFIGURATIONS_PROVIDER_CONFIG_SECTION

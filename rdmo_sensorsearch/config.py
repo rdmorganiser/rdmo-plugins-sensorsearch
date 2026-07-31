@@ -109,13 +109,13 @@ def load_config():
 
     try:
         with open(config_file_path, "rb") as config_file:
-            configuration = tomllib.load(config_file)
+            plugin_config = tomllib.load(config_file)
             logger.debug(
                 "Loaded sensor search configuration from %s with top-level keys: %s",
                 config_file_path,
-                sorted(configuration.keys()),
+                sorted(plugin_config.keys()),
             )
-            return configuration
+            return plugin_config
     except (FileNotFoundError, PermissionError) as e:
         logger.error("Cannot open configuration file: %s", config_file_path)
         raise e from e
