@@ -33,6 +33,7 @@ from rdmo_sensorsearch.signals.handler_post_save import _get_handler_candidates,
 from rdmo_sensorsearch.signals.metadata_refresh import (
     clear_refresh_state_for_source,
     get_refresh_action,
+    get_refresh_actions_for_input,
     get_refresh_actions_for_source,
     handle_metadata_refresh_value,
 )
@@ -297,6 +298,19 @@ def clear_metadata_refresh_state_from_deleted_source(sender, instance, **kwargs)
         return
 
     actions = get_refresh_actions_for_source(instance.project.catalog.uri, instance.attribute.uri)
+    if actions:
+        transaction.on_commit(lambda: clear_refresh_state_for_source(instance, actions))
+
+
+@receiver(post_save, sender=Value)
+@receiver(post_delete, sender=Value)
+def clear_metadata_refresh_state_from_changed_input(sender, instance, **kwargs):
+    if _is_muted() or _is_snapshot_value(instance):
+        return
+    if instance is None or instance.project is None or instance.attribute is None or instance.project.catalog is None:
+        return
+
+    actions = get_refresh_actions_for_input(instance.project.catalog.uri, instance.attribute.uri)
     if actions:
         transaction.on_commit(lambda: clear_refresh_state_for_source(instance, actions))
 

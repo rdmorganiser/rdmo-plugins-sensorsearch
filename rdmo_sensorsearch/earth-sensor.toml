@@ -13,6 +13,19 @@ message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-s
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
 
 [[MetadataRefresh.actions]]
+kind = "configuration"
+trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range"
+status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
+message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"
+timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
+replace_collections = true
+require_configuration_period = true
+input_attribute_uris = [
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime",
+]
+
+[[MetadataRefresh.actions]]
 kind = "device"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"
 status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"

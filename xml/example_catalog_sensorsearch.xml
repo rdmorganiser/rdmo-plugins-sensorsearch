@@ -38,12 +38,12 @@ SPDX-License-Identifier: Apache-2.0
 	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>questions/instruments/configuration-set</uri_path>
-		<dc:comment>Selecting a configuration fills its metadata, selected devices, and device detail tabs.</dc:comment>
+		<dc:comment>Selecting a configuration fills backend metadata; applying the user-entered period materializes its devices and detail tabs.</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 		<is_collection>True</is_collection>
 		<title lang="en">1. Configurations and missions</title>
 		<short_title lang="en">Configurations</short_title>
-		<help lang="en">Search an SMS configuration or O2A mission. The plugin stores its devices and creates the corresponding Device Details tabs.</help>
+		<help lang="en">Search an SMS configuration or O2A mission, enter its period, and explicitly apply that range to create the corresponding Device Details tabs.</help>
 		<verbose_name lang="en">Configuration</verbose_name>
 		<questionsets/>
 		<questions>
@@ -52,9 +52,10 @@ SPDX-License-Identifier: Apache-2.0
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/link" order="2"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/start" order="3"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/end" order="4"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/latitude" order="5"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/longitude" order="6"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/devices" order="7"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/apply-date-range" order="5"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/latitude" order="6"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/longitude" order="7"/>
+			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/devices" order="8"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh" order="10"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh-status" order="11"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/refresh-timestamp" order="12"/>
@@ -111,10 +112,11 @@ SPDX-License-Identifier: Apache-2.0
 	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/start">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>sensorsearch/configurations/start</uri_path>
-		<dc:comment>Filled by the configuration handler.</dc:comment>
+		<dc:comment>User-entered input for resolving configuration or mission devices.</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"/>
 		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
+		<is_optional>False</is_optional>
+		<help lang="en">Enter YYYY-MM-DD hh:mm. The backend synchronization does not overwrite this value.</help>
 		<text lang="en">Start date and time</text>
 		<widget_type>text</widget_type>
 		<value_type>text</value_type>
@@ -126,16 +128,37 @@ SPDX-License-Identifier: Apache-2.0
 	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/end">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>sensorsearch/configurations/end</uri_path>
-		<dc:comment>Filled by the configuration handler.</dc:comment>
+		<dc:comment>Optional user-entered input for resolving configuration or mission devices.</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
+		<help lang="en">Enter YYYY-MM-DD hh:mm, or leave empty for an open-ended period.</help>
 		<text lang="en">End date and time</text>
 		<widget_type>text</widget_type>
 		<value_type>text</value_type>
 		<width>6</width>
 		<optionsets/>
 		<conditions/>
+	</question>
+
+	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/apply-date-range">
+		<uri_prefix>http://example.com/terms</uri_prefix>
+		<uri_path>sensorsearch/configurations/apply-date-range</uri_path>
+		<dc:comment>Explicitly rebuilds assignments after the user edits the date inputs.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Yes validates the dates and replaces the assigned devices for this SMS configuration or O2A mission. The plugin resets the value to No.</help>
+		<text lang="en">Apply date range to device assignments</text>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<width>4</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions>
+			<condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-configuration"/>
+		</conditions>
 	</question>
 
 	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/latitude">
@@ -193,7 +216,7 @@ SPDX-License-Identifier: Apache-2.0
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Yes reloads this configuration and its assigned devices. The plugin resets the value to No.</help>
+		<help lang="en">Yes reloads configuration metadata and existing device details without changing the assignment list. The plugin resets the value to No.</help>
 		<text lang="en">Refresh this configuration</text>
 		<widget_type>yesno</widget_type>
 		<value_type>boolean</value_type>
@@ -839,6 +862,9 @@ SPDX-License-Identifier: Apache-2.0
 	</attribute>
 	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>configurations-end-datetime</key><path>configuration-set/configurations-end-datetime</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>apply-date-range</key><path>configuration-set/apply-date-range</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
 	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lat">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>static-location-lat</key><path>configuration-set/static-location-lat</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>

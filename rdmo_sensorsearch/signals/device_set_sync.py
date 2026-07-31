@@ -14,6 +14,10 @@ from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import HandlerResult
+from rdmo_sensorsearch.handlers.sms_mounting import (
+    resolve_vertical_position,
+    select_latest_device_mount_action,
+)
 from rdmo_sensorsearch.naming import configuration_short_label, device_detail_tab_label
 from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionScope
 from rdmo_sensorsearch.signals.refresh_types import RefreshError, RefreshResult
@@ -38,6 +42,9 @@ DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usa
 USAGE_TECHNOLOGY_ATTRIBUTE_URI = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
 INSTRUMENT_START_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
 INSTRUMENT_END_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
+INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height"
+SURFACE_OFFSET_Z_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth"
+SITE_NAME_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
 SERIAL_NUMBER_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 DEVICE_DETAIL_FETCH_WORKERS = 4
 
@@ -48,6 +55,10 @@ class SelectedDevice:
     external_id: str
     instrument_start: str | None = None
     instrument_end: str | None = None
+    instrument_location_amsl: float | None = None
+    surface_offset_z: float | None = None
+    site_name: str | None = None
+    mount_metadata_resolved: bool = False
 
 
 @dataclass(frozen=True)
@@ -626,6 +637,13 @@ def _fetch_device_detail_payload(
         plan.configuration_external_id or configuration_external_id,
         auth_token=auth_token,
     )
+    _merge_mount_location_values(
+        mapped_data,
+        plan.device,
+        plan.sensor_candidate,
+        plan.configuration_external_id or configuration_external_id,
+        auth_token=auth_token,
+    )
     scoped_scalar_values = {
         INSTRUMENT_START_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_START_ATTRIBUTE_URI, ""),
         INSTRUMENT_END_ATTRIBUTE_URI: mapped_data.pop(INSTRUMENT_END_ATTRIBUTE_URI, ""),
@@ -1191,6 +1209,111 @@ def _merge_mounting_period_values(
     )
     mapped_data[INSTRUMENT_START_ATTRIBUTE_URI] = start_value or ""
     mapped_data[INSTRUMENT_END_ATTRIBUTE_URI] = end_value or ""
+
+
+def _merge_mount_location_values(
+    mapped_data: dict[str, Any],
+    device: SelectedDevice,
+    sensor_candidate: Any,
+    configuration_external_id: str | None,
+    auth_token: str | None = None,
+) -> None:
+    if device.mount_metadata_resolved:
+        absolute_height = device.instrument_location_amsl
+        surface_offset = device.surface_offset_z
+        site_name = device.site_name
+    else:
+        absolute_height, surface_offset, site_name = _resolve_mount_location_values(
+            device,
+            sensor_candidate,
+            configuration_external_id,
+            auth_token=auth_token,
+        )
+
+    mapped_data[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = absolute_height if absolute_height is not None else ""
+    mapped_data[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = surface_offset if surface_offset is not None else ""
+    mapped_data[SITE_NAME_ATTRIBUTE_URI] = site_name if site_name is not None else ""
+
+
+def _resolve_mount_location_values(
+    device: SelectedDevice,
+    sensor_candidate: Any,
+    configuration_external_id: str | None,
+    auth_token: str | None = None,
+) -> tuple[float | None, float | None, str | None]:
+    if not configuration_external_id:
+        return None, None, None
+    if not getattr(sensor_candidate.handler, "supports_mount_location_lookup", False):
+        return None, None, None
+
+    _, configuration_id = _parse_external_id(configuration_external_id)
+    device_id = _parse_external_id(device.external_id)[1]
+    if configuration_id is None or device_id is None:
+        return None, None, None
+
+    handler = sensor_candidate.handler
+    device_actions = _fetch_configuration_mount_actions(
+        handler,
+        "configuration_device_mount_actions_url",
+        (
+            "{base_url}/device-mount-actions?filter[configuration_id]={id}"
+            "&page[size]=10000&include=parent_platform,parent_device,configuration"
+        ),
+        configuration_id,
+        auth_token=auth_token,
+    )
+    device_action = select_latest_device_mount_action(
+        device_actions,
+        configuration_id,
+        device_id,
+    )
+    if device_action is None:
+        return None, None, None
+
+    platform_actions = _fetch_configuration_mount_actions(
+        handler,
+        "configuration_platform_mount_actions_url",
+        "{base_url}/platform-mount-actions?filter[configuration_id]={id}&page[size]=10000",
+        configuration_id,
+        auth_token=auth_token,
+    )
+    static_location_actions = _fetch_configuration_mount_actions(
+        handler,
+        "configuration_static_location_actions_url",
+        "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]=10000",
+        configuration_id,
+        auth_token=auth_token,
+    )
+    position = resolve_vertical_position(
+        device_action,
+        device_actions,
+        platform_actions,
+        static_location_actions,
+    )
+    return position.absolute_height, position.surface_offset, position.site_name
+
+
+def _fetch_configuration_mount_actions(
+    handler: Any,
+    template_attribute: str,
+    default_template: str,
+    configuration_id: str,
+    auth_token: str | None = None,
+) -> list[dict]:
+    template = getattr(handler, template_attribute, default_template)
+    url = template.format(base_url=handler.base_url, id=configuration_id)
+    payload = fetch_json(url, auth_token=auth_token)
+    if isinstance(payload, dict) and "errors" in payload:
+        logger.warning(
+            "Could not fetch SMS configuration mount metadata from %s: %s",
+            url,
+            payload["errors"],
+        )
+        return []
+    if not isinstance(payload, dict):
+        return []
+    data = payload.get("data", [])
+    return data if isinstance(data, list) else []
 
 
 def _resolve_mounting_period_values(

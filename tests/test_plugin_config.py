@@ -108,3 +108,46 @@ def test_configuration_handlers_define_the_shared_tab_collection_attribute():
             == expected_uri
         )
         assert handlers["O2ARegistryMissionsHandler"]["defaults"]["configuration_collection_attribute_uri"] == expected_uri
+
+
+def test_configuration_date_range_inputs_are_enabled_for_sms_and_o2a():
+    expected_start_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
+    expected_end_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
+
+    for path in CONFIG_PATHS:
+        config = _load_config(path)
+        handlers = config["handlers"]
+
+        for handler_name in (
+            "SensorManagementSystemConfigurationsHandler",
+            "O2ARegistryMissionsHandler",
+        ):
+            catalog_config = handlers[handler_name]["catalogs"][0]
+            defaults = handlers[handler_name]["defaults"]
+
+            assert catalog_config["cfg_start_uri"] == expected_start_uri
+            assert catalog_config["cfg_end_uri"] == expected_end_uri
+            assert expected_start_uri not in defaults["managed_attribute_uris"]
+            assert expected_end_uri not in defaults["managed_attribute_uris"]
+            assert expected_start_uri not in defaults["attribute_mapping"].values()
+            assert expected_end_uri not in defaults["attribute_mapping"].values()
+
+
+def test_apply_date_range_action_is_explicit_and_replaces_collections():
+    expected_inputs = {
+        "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
+        "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime",
+    }
+
+    for path in CONFIG_PATHS:
+        config = _load_config(path)
+        action = next(
+            action
+            for action in config["MetadataRefresh"]["actions"]
+            if action["trigger_attribute_uri"].endswith("/apply-date-range")
+        )
+
+        assert action["kind"] == "configuration"
+        assert action["replace_collections"] is True
+        assert action["require_configuration_period"] is True
+        assert set(action["input_attribute_uris"]) == expected_inputs

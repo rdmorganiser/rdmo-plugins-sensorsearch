@@ -13,6 +13,10 @@ from rdmo_sensorsearch.handlers.base import (
     HandlerExecutionContext,
     HandlerResult,
 )
+from rdmo_sensorsearch.handlers.configuration_period import (
+    catalog_uses_explicit_configuration_period,
+    read_configuration_period,
+)
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri, parse_datetime
 from rdmo_sensorsearch.naming import configuration_short_label
 from rdmo_sensorsearch.signals.device_set_sync import (
@@ -65,7 +69,13 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
         if not mission_data:
             return {"errors": [f"O2A mission request for ID {id_} returned no mission data."]}
 
+        cfg_start_uri = getattr(self, "cfg_start_uri", None)
+        cfg_end_uri = getattr(self, "cfg_end_uri", None)
         mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, mission_data)
+        if cfg_start_uri:
+            mapped_values.pop(cfg_start_uri, None)
+        if cfg_end_uri:
+            mapped_values.pop(cfg_end_uri, None)
         self._set_mission_links(mapped_values, id_)
         self._normalize_datetimes(mapped_values)
 
@@ -73,8 +83,39 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
         post_actions = []
         member_sensors_attribute_uri = getattr(self, "member_sensors_attribute_uri", None)
         preserve_collections = bool(context and context.preserve_collections)
+        require_configuration_period = bool(context and context.require_configuration_period)
         if not member_sensors_attribute_uri or preserve_collections:
             return HandlerResult(mapped_values=mapped_values)
+
+        use_configuration_period = require_configuration_period or (
+            instance is not None and catalog_uses_explicit_configuration_period(instance)
+        )
+        period_inputs_are_configured = instance is not None and bool(cfg_start_uri and cfg_end_uri)
+
+        configuration_period = None
+        period_error = None
+        if use_configuration_period and not period_inputs_are_configured:
+            period_error = "The configuration or mission date-range inputs are not configured for this catalog."
+        elif use_configuration_period:
+            configuration_period, period_error = read_configuration_period(instance, cfg_start_uri, cfg_end_uri)
+        if require_configuration_period and period_error:
+            return {"errors": [period_error]}
+        if use_configuration_period and period_error:
+            logger.info(
+                "Deferring O2A mission device assignments for mission %s until its date range is applied: %s",
+                id_,
+                period_error,
+            )
+            return HandlerResult(
+                mapped_values=mapped_values,
+                collections=(
+                    CollectionAssignment(
+                        attribute_uri=member_sensors_attribute_uri,
+                        page_uri=self.selected_devices_page_uri,
+                        values=(),
+                    ),
+                ),
+            )
 
         mission_items_data = self._fetch_mission_items(id_)
         if isinstance(mission_items_data, dict) and "errors" in mission_items_data:
@@ -85,10 +126,7 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
             )
             return mission_items_data
 
-        mission_period = (
-            self._format_timepoint(mission_data.get(self.mission_start_date_path)),
-            self._format_timepoint(mission_data.get(self.mission_end_date_path)),
-        )
+        mission_period = configuration_period.formatted if configuration_period is not None else (None, None)
         member_sensor_values, member_errors = self._build_member_sensor_values(
             mission_id=id_,
             mission_data=mission_data,
@@ -170,13 +208,13 @@ class O2ARegistryMissionsHandler(GenericSearchHandler):
             if formatted is not None:
                 mapped_values[attribute_uri] = formatted
 
-    def get_member_device_period(self, mapped_values) -> tuple[str | None, str | None]:
-        start_attribute_uri = self.attribute_mapping.get(self.mission_start_date_path)
-        end_attribute_uri = self.attribute_mapping.get(self.mission_end_date_path)
-        return (
-            mapped_values.get(start_attribute_uri) if start_attribute_uri else None,
-            mapped_values.get(end_attribute_uri) if end_attribute_uri else None,
-        )
+    def get_member_device_period(self, instance, _mapped_values=None) -> tuple[str | None, str | None]:
+        cfg_start_uri = getattr(self, "cfg_start_uri", None)
+        cfg_end_uri = getattr(self, "cfg_end_uri", None)
+        if instance is None or not cfg_start_uri or not cfg_end_uri or not catalog_uses_explicit_configuration_period(instance):
+            return None, None
+        configuration_period, error = read_configuration_period(instance, cfg_start_uri, cfg_end_uri)
+        return configuration_period.formatted if configuration_period is not None and error is None else (None, None)
 
     def _build_member_sensor_values(
         self,

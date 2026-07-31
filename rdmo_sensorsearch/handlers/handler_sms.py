@@ -8,6 +8,7 @@ from rdmo.projects.models import Value
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import GenericSearchHandler, HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri
+from rdmo_sensorsearch.handlers.sms_mounting import resolve_vertical_position
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,9 @@ DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/dom
 DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
 INSTRUMENT_START_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
 INSTRUMENT_END_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
+INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height"
+SURFACE_OFFSET_Z_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth"
+SITE_NAME_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
 
 
 class SensorManagementSystemHandler(GenericSearchHandler):
@@ -28,10 +32,19 @@ class SensorManagementSystemHandler(GenericSearchHandler):
     # id_prefix = "sms"
     sync_device_detail_blocks = True
     supports_mount_action_period_lookup = True
+    supports_mount_location_lookup = True
 
     # URL templates with placeholders
     device_url = "{base_url}/devices/{id}?include=device_properties"
     contact_url = "{base_url}/devices/{id}/device-contact-roles?include=contact"
+    configuration_device_mount_actions_url = (
+        "{base_url}/device-mount-actions?filter[configuration_id]={id}"
+        "&page[size]=10000&include=parent_platform,parent_device,configuration"
+    )
+    configuration_platform_mount_actions_url = "{base_url}/platform-mount-actions?filter[configuration_id]={id}&page[size]=10000"
+    configuration_static_location_actions_url = (
+        "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]=10000"
+    )
     backend_link_marker = "/backend/api/v1/"
     device_link_attribute_uri = DEVICE_LINK_ATTRIBUTE_URI
     uses_auth_token = True
@@ -141,14 +154,51 @@ class SensorManagementSystemHandler(GenericSearchHandler):
             if begin_date is None:
                 continue
             end_date = self._parse_timepoint(attrs.get("end_date"))
-            matching_actions.append((begin_date, end_date))
+            matching_actions.append((begin_date, end_date, item))
 
         if not matching_actions:
             return []
 
-        latest_start, latest_end = max(matching_actions, key=lambda item: item[0])
+        latest_start, latest_end, latest_action = max(matching_actions, key=lambda item: item[0])
         mapped_data[INSTRUMENT_START_ATTRIBUTE_URI] = self._format_timepoint(latest_start)
         mapped_data[INSTRUMENT_END_ATTRIBUTE_URI] = self._format_timepoint(latest_end) or ""
+
+        configuration_device_actions, errors = self._fetch_configuration_actions(
+            self.configuration_device_mount_actions_url,
+            configuration_id,
+            "device mount",
+            auth_token=auth_token,
+        )
+        if errors:
+            return errors
+        platform_actions, errors = self._fetch_configuration_actions(
+            self.configuration_platform_mount_actions_url,
+            configuration_id,
+            "platform mount",
+            auth_token=auth_token,
+        )
+        if errors:
+            return errors
+        static_location_actions, errors = self._fetch_configuration_actions(
+            self.configuration_static_location_actions_url,
+            configuration_id,
+            "static location",
+            auth_token=auth_token,
+        )
+        if errors:
+            return errors
+
+        position = resolve_vertical_position(
+            latest_action,
+            configuration_device_actions or mount_actions,
+            platform_actions,
+            static_location_actions,
+        )
+        mapped_data[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = (
+            position.absolute_height if position.absolute_height is not None else ""
+        )
+        mapped_data[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = position.surface_offset if position.surface_offset is not None else ""
+        mapped_data[SITE_NAME_ATTRIBUTE_URI] = position.site_name if position.site_name is not None else ""
         return []
 
     def _resolve_configuration_external_id(self, instance) -> str | None:
@@ -195,6 +245,26 @@ class SensorManagementSystemHandler(GenericSearchHandler):
         data = action_data.get("data", [])
         if not isinstance(data, list):
             return [], [f"Unexpected SMS mount action data for device {device_id}: {type(data).__name__}"]
+        return data, []
+
+    def _fetch_configuration_actions(
+        self,
+        url_template: str,
+        configuration_id: str,
+        action_label: str,
+        auth_token: str | None = None,
+    ) -> tuple[list[dict], list[str]]:
+        url = url_template.format(base_url=self.base_url, id=configuration_id)
+        payload = fetch_json(url, auth_token=auth_token)
+        if isinstance(payload, dict) and "errors" in payload:
+            return [], [
+                f"SMS {action_label} request for configuration {configuration_id} failed: {error}" for error in payload["errors"]
+            ]
+        if not isinstance(payload, dict):
+            return [], [f"Unexpected SMS {action_label} payload for configuration {configuration_id}: {type(payload).__name__}"]
+        data = payload.get("data", [])
+        if not isinstance(data, list):
+            return [], [f"Unexpected SMS {action_label} data for configuration {configuration_id}: {type(data).__name__}"]
         return data, []
 
     def _parse_external_id(self, external_id: str) -> tuple[str | None, str | None]:

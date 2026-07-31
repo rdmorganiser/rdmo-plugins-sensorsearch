@@ -13,13 +13,18 @@ from rdmo_sensorsearch.handlers.base import (
     HandlerExecutionContext,
     HandlerResult,
 )
+from rdmo_sensorsearch.handlers.configuration_period import (
+    ConfigurationPeriod,
+    catalog_uses_explicit_configuration_period,
+    read_configuration_period,
+)
 from rdmo_sensorsearch.handlers.parser import map_jamespath_to_attribute_uri, parse_datetime
+from rdmo_sensorsearch.handlers.sms_mounting import resolve_vertical_position
 from rdmo_sensorsearch.naming import configuration_short_label
 from rdmo_sensorsearch.signals.device_set_sync import (
     SelectedDevice,
     sync_device_detail_blocks_from_payload,
 )
-from rdmo_sensorsearch.utils import get_project_value
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +41,15 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         "{base_url}/device-mount-actions?filter[configuration_id]={id}&include=device"
         "&page[size]={page_size}&page[number]={page_number}"
     )
+    platform_mount_actions_url = (
+        "{base_url}/platform-mount-actions?filter[configuration_id]={id}&page[size]={page_size}&page[number]={page_number}"
+    )
     mounting_action_timepoints_url = "{base_url}/configurations/{id}/mounting-action-timepoints"
     static_location_actions_url = (
         "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]={page_size}&page[number]={page_number}"
     )
     mounted_sensor_max_hits = 100
+    mounted_platform_max_hits = 100
     static_location_max_hits = 100
     max_collection_pages = 1000
     configuration_self_link_path = "data.links.self"
@@ -76,8 +85,36 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
 
         member_sensors_attribute_uri = getattr(self, "member_sensors_attribute_uri", None)
         preserve_collections = bool(context and context.preserve_collections)
+        require_configuration_period = bool(context and context.require_configuration_period)
+        cfg_start_uri = getattr(self, "cfg_start_uri", None)
+        cfg_end_uri = getattr(self, "cfg_end_uri", None)
+        use_configuration_period = require_configuration_period or (
+            instance is not None and catalog_uses_explicit_configuration_period(instance)
+        )
+        period_inputs_are_configured = instance is not None and bool(cfg_start_uri and cfg_end_uri)
+
+        cfg_period = None
+        period_error = None
+        if use_configuration_period and not period_inputs_are_configured:
+            period_error = "The configuration or mission date-range inputs are not configured for this catalog."
+        elif use_configuration_period:
+            cfg_period, period_error = read_configuration_period(instance, cfg_start_uri, cfg_end_uri)
+        if require_configuration_period and period_error:
+            return {"errors": [period_error]}
+
+        defer_member_collection = bool(
+            member_sensors_attribute_uri and not preserve_collections and use_configuration_period and period_error
+        )
+        if defer_member_collection:
+            logger.info(
+                "Deferring SMS device assignments for configuration %s until its date range is applied: %s",
+                id_,
+                period_error,
+            )
+
         mount_action_data = None
-        if member_sensors_attribute_uri and not preserve_collections:
+        platform_mount_action_data = None
+        if member_sensors_attribute_uri and not preserve_collections and not defer_member_collection:
             mount_action_data = self._fetch_jsonapi_collection(
                 self.device_mount_actions_url,
                 id_,
@@ -92,21 +129,78 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                 )
                 return mount_action_data
 
+            platform_mount_action_data = self._fetch_jsonapi_collection(
+                self.platform_mount_actions_url,
+                id_,
+                self.mounted_platform_max_hits,
+                auth_token=auth_token,
+            )
+            if "errors" in platform_mount_action_data:
+                logger.debug(
+                    "Errors in platform mount action data returned for ID %s: %s",
+                    id_,
+                    platform_mount_action_data["errors"],
+                )
+                return platform_mount_action_data
+
+        needs_configuration_location = any(
+            getattr(self, attribute_name, None)
+            for attribute_name in (
+                "location_attribute_uri",
+                "latitude_attribute_uri",
+                "longitude_attribute_uri",
+            )
+        )
+        location_actions_data = None
+        if needs_configuration_location or mount_action_data is not None:
+            location_actions_data = self._fetch_jsonapi_collection(
+                self.static_location_actions_url,
+                id_,
+                self.static_location_max_hits,
+                auth_token=auth_token,
+            )
+            if "errors" in location_actions_data:
+                return {
+                    "errors": [
+                        f"SMS static location request for configuration {id_} failed: {error}"
+                        for error in location_actions_data["errors"]
+                    ]
+                }
+
         mapped_values = map_jamespath_to_attribute_uri(self.attribute_mapping, configuration_data)
+        if cfg_start_uri:
+            mapped_values.pop(cfg_start_uri, None)
+        if cfg_end_uri:
+            mapped_values.pop(cfg_end_uri, None)
         self._set_configuration_links(mapped_values, configuration_data)
         self._normalize_configuration_datetimes(mapped_values)
-        location_errors = self._set_configuration_location(mapped_values, id_, auth_token=auth_token)
+        location_errors = self._set_configuration_location(
+            mapped_values,
+            id_,
+            auth_token=auth_token,
+            location_actions_data=location_actions_data,
+        )
         if location_errors:
             return {"errors": location_errors}
 
         collections = []
         post_actions = []
 
+        if defer_member_collection:
+            collections.append(
+                CollectionAssignment(
+                    attribute_uri=member_sensors_attribute_uri,
+                    page_uri=self.selected_devices_page_uri,
+                    values=(),
+                )
+            )
+
         if member_sensors_attribute_uri and mount_action_data is not None:
-            cfg_period = self._get_cfg_period(instance)
             member_sensor_values, member_errors = self._build_member_sensor_values(
                 configuration_data=configuration_data,
                 mount_action_data=mount_action_data,
+                platform_mount_action_data=platform_mount_action_data,
+                static_location_action_data=location_actions_data,
                 cfg_period=cfg_period,
                 auth_token=auth_token,
             )
@@ -128,6 +222,10 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                         external_id=value["external_id"],
                         instrument_start=value.get("instrument_start"),
                         instrument_end=value.get("instrument_end"),
+                        instrument_location_amsl=value.get("instrument_location_amsl"),
+                        surface_offset_z=value.get("surface_offset_z"),
+                        site_name=value.get("site_name"),
+                        mount_metadata_resolved=True,
                     )
                     for value in member_sensor_values
                     if value.get("external_id")
@@ -226,6 +324,7 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         mapped_values: dict[str, str | None],
         configuration_id: str,
         auth_token: str | None = None,
+        location_actions_data: dict | None = None,
     ) -> list[str]:
         location_attribute_uri = getattr(self, "location_attribute_uri", None)
         latitude_attribute_uri = getattr(self, "latitude_attribute_uri", None)
@@ -233,12 +332,13 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if not any((location_attribute_uri, latitude_attribute_uri, longitude_attribute_uri)):
             return []
 
-        location_actions_data = self._fetch_jsonapi_collection(
-            self.static_location_actions_url,
-            configuration_id,
-            self.static_location_max_hits,
-            auth_token=auth_token,
-        )
+        if location_actions_data is None:
+            location_actions_data = self._fetch_jsonapi_collection(
+                self.static_location_actions_url,
+                configuration_id,
+                self.static_location_max_hits,
+                auth_token=auth_token,
+            )
         if "errors" in location_actions_data:
             return [
                 f"SMS static location request for configuration {configuration_id} failed: {error}"
@@ -351,9 +451,11 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         self,
         configuration_data: dict,
         mount_action_data: dict,
-        cfg_period: tuple[datetime, datetime] | None = None,
+        platform_mount_action_data: dict | None = None,
+        static_location_action_data: dict | None = None,
+        cfg_period: ConfigurationPeriod | None = None,
         auth_token: str | None = None,
-    ) -> tuple[list[dict[str, str]], list[str]]:
+    ) -> tuple[list[dict[str, object]], list[str]]:
         included_devices = {item["id"]: item for item in mount_action_data.get("included", []) if item.get("type") == "device"}
 
         sensor_id_prefix = getattr(self, "sensor_id_prefix", self.id_prefix)
@@ -367,10 +469,16 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
         if errors:
             return [], errors
 
-        for mount_action in mount_actions:
-            if cfg_period is not None and not self._is_mount_action_in_period(mount_action, cfg_period):
-                continue
+        platform_mount_actions = (
+            platform_mount_action_data.get("data", []) if isinstance(platform_mount_action_data, dict) else []
+        )
+        static_location_actions = (
+            static_location_action_data.get("data", []) if isinstance(static_location_action_data, dict) else []
+        )
 
+        selected_mount_actions = self._select_member_mount_actions(mount_actions, cfg_period)
+        reference_time = cfg_period.end if cfg_period is not None else None
+        for mount_action in selected_mount_actions:
             device_ref = mount_action.get("relationships", {}).get("device", {}).get("data")
             if not device_ref:
                 continue
@@ -383,6 +491,13 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                     continue
 
             attrs = mount_action.get("attributes", {})
+            vertical_position = resolve_vertical_position(
+                mount_action,
+                mount_actions,
+                platform_mount_actions,
+                static_location_actions,
+                reference_time=reference_time,
+            )
             member_sensor_values.append(
                 {
                     "text": self._format_sensor_text(
@@ -393,6 +508,9 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
                     "external_id": f"{sensor_id_prefix}:{device['id']}",
                     "instrument_start": self._format_mount_timepoint(attrs.get("begin_date")),
                     "instrument_end": self._format_mount_timepoint(attrs.get("end_date")),
+                    "instrument_location_amsl": vertical_position.absolute_height,
+                    "surface_offset_z": vertical_position.surface_offset,
+                    "site_name": vertical_position.site_name,
                 }
             )
 
@@ -474,53 +592,61 @@ class SensorManagementSystemConfigurationsHandler(GenericSearchHandler):
             return None, [f"Unexpected SMS device data for mounted device {device_id}: {type(device).__name__}"]
         return device, []
 
-    def _get_cfg_period(self, instance) -> tuple[datetime, datetime] | None:
-        if instance is None:
+    def _parse_cfg_timepoint(self, value: str | None) -> datetime | None:
+        if value is None:
             return None
-
-        cfg_start_uri = getattr(self, "cfg_start_uri", None)
-        cfg_end_uri = getattr(self, "cfg_end_uri", None)
-        if not cfg_start_uri or not cfg_end_uri:
+        parsed = parse_datetime(value)
+        if parsed is None:
             return None
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=dt_timezone.utc)
+        return parsed.astimezone(dt_timezone.utc)
 
-        cfg_start = get_project_value(instance, cfg_start_uri)
-        cfg_end = get_project_value(instance, cfg_end_uri)
-        if cfg_start is None or cfg_end is None:
-            return None
+    def _select_member_mount_actions(
+        self,
+        mount_actions: list[dict],
+        cfg_period: ConfigurationPeriod | None,
+    ) -> list[dict]:
+        selected_by_device: dict[str, dict] = {}
+        for mount_action in mount_actions:
+            if cfg_period is not None and not self._is_mount_action_in_period(mount_action, cfg_period):
+                continue
 
-        start_dt = parse_datetime(cfg_start)
-        end_dt = parse_datetime(cfg_end)
-        if start_dt is None or end_dt is None:
-            logger.warning(
-                "Skipping configuration period filter because start or end date could not be parsed: %s, %s",
-                cfg_start,
-                cfg_end,
-            )
-            return None
+            device_ref = mount_action.get("relationships", {}).get("device", {}).get("data")
+            if not isinstance(device_ref, dict) or not isinstance(device_ref.get("id"), str):
+                continue
+            device_id = device_ref["id"]
+            selected = selected_by_device.get(device_id)
+            if selected is None or self._mount_action_begin_sort_key(mount_action) > self._mount_action_begin_sort_key(selected):
+                selected_by_device[device_id] = mount_action
+        return list(selected_by_device.values())
 
-        return start_dt, end_dt
+    def _mount_action_begin_sort_key(self, mount_action: dict) -> float:
+        parsed = self._parse_cfg_timepoint(mount_action.get("attributes", {}).get("begin_date"))
+        return parsed.timestamp() if parsed is not None else float("-inf")
 
     def _is_mount_action_in_period(
         self,
         mount_action: dict,
-        cfg_period: tuple[datetime, datetime],
+        cfg_period: ConfigurationPeriod,
     ) -> bool:
         attrs = mount_action.get("attributes", {})
         begin_date = attrs.get("begin_date")
         if not begin_date:
             return False
 
-        mount_start = parse_datetime(begin_date)
+        mount_start = self._parse_cfg_timepoint(begin_date)
         if mount_start is None:
             return False
 
         end_date = attrs.get("end_date")
         if end_date:
-            mount_end = parse_datetime(end_date)
+            mount_end = self._parse_cfg_timepoint(end_date)
             if mount_end is None:
                 return False
         else:
-            mount_end = datetime.max.replace(tzinfo=mount_start.tzinfo)
+            mount_end = None
 
-        cfg_start, cfg_end = cfg_period
-        return mount_start <= cfg_end and mount_end >= cfg_start
+        if cfg_period.end is not None and mount_start > cfg_period.end:
+            return False
+        return mount_end is None or mount_end > cfg_period.start

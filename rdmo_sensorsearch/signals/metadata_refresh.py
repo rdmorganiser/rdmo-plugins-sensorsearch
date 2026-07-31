@@ -36,6 +36,10 @@ def get_refresh_actions_for_source(catalog_uri: str, attribute_uri: str) -> tupl
     return tuple(action for action in _get_refresh_actions(catalog_uri) if action.source_attribute_uri == attribute_uri)
 
 
+def get_refresh_actions_for_input(catalog_uri: str, attribute_uri: str) -> tuple[RefreshAction, ...]:
+    return tuple(action for action in _get_refresh_actions(catalog_uri) if attribute_uri in action.input_attribute_uris)
+
+
 def _get_refresh_actions(catalog_uri: str) -> tuple[RefreshAction, ...]:
     configuration = load_config().get("MetadataRefresh", {})
     configuration_search_attribute_uri = configuration.get("configuration_search_attribute_uri", "")
@@ -72,6 +76,13 @@ def _get_refresh_actions(catalog_uri: str) -> tuple[RefreshAction, ...]:
                 status_attribute_uri=action_config.get("status_attribute_uri"),
                 message_attribute_uri=action_config.get("message_attribute_uri"),
                 timestamp_attribute_uri=action_config.get("timestamp_attribute_uri"),
+                replace_collections=bool(action_config.get("replace_collections", False)),
+                require_configuration_period=bool(action_config.get("require_configuration_period", False)),
+                input_attribute_uris=tuple(
+                    attribute_uri
+                    for attribute_uri in action_config.get("input_attribute_uris", [])
+                    if isinstance(attribute_uri, str) and attribute_uri
+                ),
             )
         )
 
@@ -150,7 +161,8 @@ def _refresh_current_configuration(
         "No backend configuration exists in this configuration scope.",
         canonical_configuration_label,
         auth_token=auth_token,
-        preserve_collections=True,
+        preserve_collections=not action.replace_collections,
+        require_configuration_period=action.require_configuration_period,
     )
 
 
@@ -175,6 +187,7 @@ def _refresh_current_value(
     label_formatter: Callable[[str, str | None], str],
     auth_token: str | None = None,
     preserve_collections: bool = False,
+    require_configuration_period: bool = False,
 ) -> tuple[RefreshResult, str]:
     source_value = (
         Value.objects.filter(
@@ -197,6 +210,7 @@ def _refresh_current_value(
             source_value,
             auth_token=auth_token,
             preserve_collections=preserve_collections,
+            require_configuration_period=require_configuration_period,
         ),
         label_formatter(source_value.text or source_value.external_id, source_value.external_id),
     )

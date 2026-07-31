@@ -25,6 +25,7 @@ class HandlerResult:
 @dataclass(frozen=True)
 class HandlerExecutionContext:
     preserve_collections: bool = False
+    require_configuration_period: bool = False
 
 
 def deduplicate_collection_values(values: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...]:

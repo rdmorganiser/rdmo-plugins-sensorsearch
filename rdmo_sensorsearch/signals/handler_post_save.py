@@ -82,11 +82,19 @@ def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
         for attribute_uri in (INSTRUMENT_START_ATTRIBUTE_URI, INSTRUMENT_END_ATTRIBUTE_URI)
         if attribute_uri in handler.managed_attribute_uris or attribute_uri in result.mapped_values
     }
+    input_attribute_uris = {
+        attribute_uri
+        for attribute_uri in (
+            getattr(handler, "cfg_start_uri", None),
+            getattr(handler, "cfg_end_uri", None),
+        )
+        if attribute_uri
+    }
     post_actions = reconcile_handler_result(
         instance,
         handler,
         result,
-        excluded_attribute_uris=scoped_attribute_uris,
+        excluded_attribute_uris=scoped_attribute_uris | input_attribute_uris,
     )
 
     scoped_scalar_values = {attribute_uri: result.mapped_values.get(attribute_uri, "") for attribute_uri in scoped_attribute_uris}
@@ -156,6 +164,7 @@ def refresh_value_from_backend(
     instance,
     auth_token: str | None = None,
     preserve_collections: bool = False,
+    require_configuration_period: bool = False,
 ) -> RefreshResult:
     external_id = getattr(instance, "external_id", None) or ""
     if not external_id:
@@ -183,7 +192,10 @@ def refresh_value_from_backend(
         return _failed_refresh(external_id, "Multiple matching backend handlers are configured.")
 
     candidate = candidates[0]
-    context = HandlerExecutionContext(preserve_collections=preserve_collections)
+    context = HandlerExecutionContext(
+        preserve_collections=preserve_collections,
+        require_configuration_period=require_configuration_period,
+    )
     try:
         if getattr(candidate.handler, "uses_auth_token", False):
             mapped_data = candidate.handler.handle(
@@ -282,7 +294,9 @@ def _refresh_selected_configuration_devices(
         scope.set_index,
     )
     period_resolver = getattr(handler, "get_member_device_period", None)
-    instrument_start, instrument_end = period_resolver(configuration_values) if callable(period_resolver) else (None, None)
+    instrument_start, instrument_end = (
+        period_resolver(instance, configuration_values) if callable(period_resolver) else (None, None)
+    )
     return sync_device_detail_blocks_from_configuration_values(
         project=instance.project,
         catalog=instance.project.catalog,

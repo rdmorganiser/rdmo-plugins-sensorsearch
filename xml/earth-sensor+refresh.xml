@@ -1303,7 +1303,7 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<title lang="en">2.01) Configurations/Missions</title>
 		<short_title lang="en">2.01) Configurations/Missions</short_title>
 		<help lang="en">This section allows you to provide metadata on all the devices that form the basis of your research data for your project. If you use  &lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt; or &lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;, you can load complete device configurations from these sensor management systems. Information about your configurations or missions will be filled automatically in case they are listed in a sensor management system (&lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt; or &lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;). Please enter a name in the first field and select your configuration / mission from the list. The form will be automatically filled and you just need to check.
-In case you did not use campaigns or missions in your sensor management system just proceed to the next page and enter or harvest your devices from there.</help>
+The configuration or mission time period is always entered by you. After editing it, use the Apply date range action to rebuild the selected device assignments. In case you did not use campaigns or missions in your sensor management system just proceed to the next page and enter or harvest your devices from there.</help>
 		<verbose_name lang="en">Configuration/Mission</verbose_name>
 		<title lang="de">2.01) Configurations/Missions</title>
 		<short_title lang="de">2.01) Configurations/Missions</short_title>
@@ -1435,6 +1435,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<questions>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/start" order="1"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/end" order="2"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply" order="3"/>
 		</questions>
 		<conditions/>
 	</questionset>
@@ -1452,7 +1453,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en"/>
+		<help lang="en">Enter this value yourself. It is used when you apply the date range to the selected configuration or mission.</help>
 		<text lang="en">Start date and time of configuration or mission:</text>
 		<default_text lang="en">YYYY-MM-DD hh:mm</default_text>
 		<verbose_name lang="en"/>
@@ -1486,7 +1487,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en"/>
+		<help lang="en">Enter this value yourself, or leave it empty for an open-ended configuration or mission.</help>
 		<text lang="en">End date and time of configuration or mission:</text>
 		<default_text lang="en">YYYY-MM-DD hh:mm</default_text>
 		<verbose_name lang="en"/>
@@ -1513,6 +1514,44 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>configurations/time-period/apply</uri_path>
+		<dc:comment>Validates the user-entered period and rebuilds the backend device assignments for this configuration or mission.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Select Yes after editing the dates. The start is required; the end can remain empty. Applying replaces the selected device assignments with those resolved for this period.</help>
+		<text lang="en">Apply this date range to the device assignments:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de">Wählen Sie nach dem Bearbeiten der Datumsangaben Ja. Der Beginn ist erforderlich; das Ende kann leer bleiben. Beim Anwenden werden die ausgewählten Gerätezuordnungen für diesen Zeitraum neu aufgebaut.</help>
+		<text lang="de">Diesen Zeitraum auf die Gerätezuordnungen anwenden:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>4</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>apply-date-range</key>
+		<path>configuration-set/apply-date-range</path>
+		<dc:comment>Boolean action trigger for applying the user-entered configuration period.</dc:comment>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configuration_ident_api">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>configuration_ident_api</uri_path>
@@ -1520,7 +1559,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">If your configuration / mission is listed in any of the above listed databases, please enter here the name or any identifier for the search. Then you should be able to select your configuration from the list and the following fields will be filled automatically.
+		<help lang="en">If your configuration / mission is listed in any of the above listed databases, please enter here the name or any identifier for the search. Then you should be able to select your configuration from the list and its backend metadata will be filled automatically. The time period remains user-entered.
 
 &lt;b&gt; Nevertheless, please check the entries below for correctness in case of automatic entries.&lt;/b&gt;</help>
 		<text lang="en">2.011) Configuration / Mission identification for API search</text>
@@ -1634,11 +1673,11 @@ Question: which parent attribute would we need here?</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Select Yes to reload this configuration and its device assignments from the original backend.</help>
+		<help lang="en">Select Yes to reload configuration metadata and refresh details for the existing device assignments without changing the assignment list.</help>
 		<text lang="en">Refresh this configuration from backend:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie Ja, um diese Konfiguration und ihre Gerätezuordnungen erneut aus dem ursprünglichen Backend zu laden.</help>
+		<help lang="de">Wählen Sie Ja, um die Konfigurationsmetadaten und Details der vorhandenen Gerätezuordnungen zu aktualisieren, ohne die Zuordnungsliste zu ändern.</help>
 		<text lang="de">Diese Konfiguration aus dem Backend aktualisieren:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
