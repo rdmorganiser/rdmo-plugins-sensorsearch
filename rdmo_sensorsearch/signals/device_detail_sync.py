@@ -5,7 +5,6 @@ from datetime import timezone as dt_timezone
 from typing import Any
 
 from django.db import transaction
-from django.db.models import Q
 
 from rdmo.projects.models import Value
 
@@ -14,34 +13,25 @@ from rdmo_sensorsearch.handlers.sms_mounting import (
     resolve_mount_location,
     select_latest_device_mount_action,
 )
-from rdmo_sensorsearch.naming import configuration_short_label, device_detail_tab_label
+from rdmo_sensorsearch.naming import configuration_short_label
+from rdmo_sensorsearch.persistence.device_details import (
+    RDMODeviceDetailStore,
+    catalog_attribute_ids,
+    get_attribute_by_uri,
+)
 from rdmo_sensorsearch.services.device_details import (
     ConfigurationIdentity,
     DeviceBlockPlan,
-    DeviceBlockReference,
     SelectedDevice,
-    base_device_text,
     compose_device_block_key,
-    configuration_key_from_device_block,
-    parse_device_block_key,
     parse_external_id,
     plan_device_detail_reconciliation,
     unique_selected_devices,
 )
-from rdmo_sensorsearch.services.device_metadata import (
-    DeviceBlockInstance,
-    DeviceFetchResult,
-    fetch_device_metadata_batch,
-)
+from rdmo_sensorsearch.services.device_metadata import fetch_device_metadata_batch
 from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionScope
 from rdmo_sensorsearch.signals.muting import mute_value_post_save
 from rdmo_sensorsearch.signals.refresh_types import RefreshError, RefreshResult
-from rdmo_sensorsearch.signals.value_reconciliation import (
-    format_change_label,
-    reconcile_mapped_values,
-    replace_scalar_value_in_scopes,
-    upsert_value_if_changed,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +161,7 @@ def reconcile_device_details(
 
     configuration_key = configuration_identity.configuration_key
     configuration_label = configuration_identity.label
-    device_detail_attribute_ids = _device_detail_attribute_ids(catalog)
+    device_detail_attribute_ids = catalog_attribute_ids(catalog, {DEVICE_DETAILS_PAGE_URI})
     if not device_detail_attribute_ids:
         logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
         return _failed_device_sync(
@@ -179,9 +169,15 @@ def reconcile_device_details(
             f"Could not resolve device detail attributes for {DEVICE_DETAILS_PAGE_URI}.",
             requested_count=len(selected_devices),
         )
-    related_attribute_ids = _device_detail_related_attribute_ids(catalog) or device_detail_attribute_ids
+    related_attribute_ids = (
+        catalog_attribute_ids(
+            catalog,
+            {DEVICE_DETAILS_PAGE_URI, DEVICE_OPTIONAL_INFO_PAGE_URI},
+        )
+        or device_detail_attribute_ids
+    )
 
-    root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
+    root_attribute = get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
         return _failed_device_sync(
@@ -190,8 +186,9 @@ def reconcile_device_details(
             requested_count=len(selected_devices),
         )
 
-    existing_blocks = _existing_device_blocks(project, root_attribute, scope_prefix, configuration_key)
-    next_index = _next_device_set_index(project, root_attribute, scope_prefix)
+    store = RDMODeviceDetailStore(project, root_attribute, scope_prefix)
+    existing_blocks = store.existing_blocks(configuration_key)
+    next_index = store.next_set_index()
 
     reconciliation_plan = plan_device_detail_reconciliation(
         selected_devices=selected_devices,
@@ -201,20 +198,18 @@ def reconcile_device_details(
         existing_blocks=existing_blocks,
         next_set_index=next_index,
         resolve_handler=lambda external_id: _resolve_device_handler_binding(project.catalog.uri, external_id),
-        metadata_is_current=lambda device, block_key, set_index, handler_binding: _device_block_metadata_is_current(
-            project=project,
-            root_attribute=root_attribute,
-            search_attribute_uri=handler_binding.search_attribute_uri,
-            scope_prefix=scope_prefix,
-            set_index=set_index,
-            block_key=block_key,
-            device=device,
-            configuration_label=configuration_label,
+        metadata_is_current=lambda device, block_key, set_index, handler_binding: store.block_metadata_is_current(
+            device,
+            block_key,
+            set_index,
+            handler_binding,
+            configuration_label,
         ),
-        refresh_is_required=lambda set_index: _device_block_needs_refresh(
-            project=project,
-            scope_prefix=scope_prefix,
-            set_index=set_index,
+        refresh_is_required=lambda set_index: store.block_needs_refresh(
+            set_index,
+            device_link_attribute_uri=DEVICE_LINK_ATTRIBUTE_URI,
+            usage_technology_attribute_uri=USAGE_TECHNOLOGY_ATTRIBUTE_URI,
+            instrument_start_attribute_uri=INSTRUMENT_START_ATTRIBUTE_URI,
         ),
         force_refresh=force_refresh,
     )
@@ -246,45 +241,27 @@ def reconcile_device_details(
 
     with transaction.atomic(), mute_value_post_save():
         for block in stale_blocks:
-            _delete_device_block(project, scope_prefix, block.set_index, related_attribute_ids)
+            store.delete_block(block.set_index, related_attribute_ids)
 
         for plan in plans:
-            block_instance = _device_block_instance(project, root_attribute.id, scope_prefix, plan.set_index)
-
             if plan.needs_metadata_write:
-                _upsert_root_device_value(
-                    project=project,
-                    attribute=root_attribute,
-                    scope_prefix=scope_prefix,
-                    set_index=plan.set_index,
-                    device=plan.device,
-                    configuration_label=configuration_label,
-                    block_key=plan.block_key,
-                )
-
-                search_attribute_uri = plan.handler_binding.search_attribute_uri
-                _upsert_search_value(
-                    project=project,
-                    attribute_uri=search_attribute_uri,
-                    scope_prefix=scope_prefix,
-                    set_index=plan.set_index,
-                    device=plan.device,
-                )
+                store.upsert_block_identity(plan, configuration_label)
 
             fetched_payload = fetched_payloads.get(plan.block_key)
             if fetched_payload is None:
                 continue
 
-            _write_device_fetch_payload(
-                block_instance,
-                plan.handler_binding.handler,
+            store.write_fetch_payload(
+                plan,
                 fetched_payload,
-                scope_prefix,
-                plan.set_index,
+                excluded_attribute_uris={
+                    INSTRUMENT_START_ATTRIBUTE_URI,
+                    INSTRUMENT_END_ATTRIBUTE_URI,
+                },
             )
 
         if stale_blocks:
-            _compact_device_detail_blocks(project, catalog, scope_prefix, device_collection_attribute_uri)
+            store.compact(related_attribute_ids)
 
     return RefreshResult(
         requested_count=sum(plan.needs_refresh for plan in plans) + len(planning_errors),
@@ -348,29 +325,28 @@ def remove_device_detail_block_for_selected_device(
         )
         return False
 
-    root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
+    root_attribute = get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
         return False
 
     block_key = compose_device_block_key(configuration_identity.configuration_key, device_external_id)
-    block = _find_device_block(project, root_attribute, scope_prefix, block_key)
+    store = RDMODeviceDetailStore(project, root_attribute, scope_prefix)
+    block = store.find_block(block_key)
     if block is None:
         logger.debug("No device detail block exists for removed selected device %s", block_key)
         return False
 
-    related_attribute_ids = _device_detail_related_attribute_ids(catalog)
+    related_attribute_ids = catalog_attribute_ids(
+        catalog,
+        {DEVICE_DETAILS_PAGE_URI, DEVICE_OPTIONAL_INFO_PAGE_URI},
+    )
     if not related_attribute_ids:
         logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
         return False
 
     with transaction.atomic(), mute_value_post_save():
-        deleted = _delete_device_block(
-            project,
-            scope_prefix,
-            block.set_index,
-            related_attribute_ids,
-        )
+        deleted = store.delete_block(block.set_index, related_attribute_ids)
 
     if deleted:
         logger.info("Removed device detail block for deselected device %s", block_key)
@@ -383,94 +359,35 @@ def remove_orphaned_device_detail_blocks(
     configuration_search_attribute_uris: Iterable[str],
     device_collection_attribute_uri: str,
 ) -> int:
-    root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
+    root_attribute = get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
         return 0
 
-    related_attribute_ids = _device_detail_related_attribute_ids(catalog)
+    related_attribute_ids = catalog_attribute_ids(
+        catalog,
+        {DEVICE_DETAILS_PAGE_URI, DEVICE_OPTIONAL_INFO_PAGE_URI},
+    )
     if not related_attribute_ids:
         logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
         return 0
 
-    active_configuration_keys = {
-        value.external_id or value.text
-        for value in Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute__uri__in=configuration_search_attribute_uris,
-        )
-        if value.external_id or value.text
-    }
-    root_values = (
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute=root_attribute,
-            set_collection=True,
-        )
-        .exclude(external_id__isnull=True)
-        .exclude(external_id__exact="")
-    )
-    orphaned_scopes = set()
-    for value in root_values:
-        configuration_key = configuration_key_from_device_block(value.external_id)
-        if configuration_key and configuration_key not in active_configuration_keys:
-            orphaned_scopes.add((value.set_prefix or "", value.set_index))
+    store = RDMODeviceDetailStore(project, root_attribute)
+    orphaned_scopes = store.orphaned_scopes(configuration_search_attribute_uris)
     if not orphaned_scopes:
         return 0
 
     with transaction.atomic(), mute_value_post_save():
         for scope_prefix, set_index in orphaned_scopes:
-            _delete_device_block(project, scope_prefix, set_index, related_attribute_ids)
+            store.for_scope(scope_prefix).delete_block(set_index, related_attribute_ids)
         for scope_prefix in {scope_prefix for scope_prefix, _ in orphaned_scopes}:
-            _compact_device_detail_blocks(
-                project,
-                catalog,
-                scope_prefix,
-                device_collection_attribute_uri,
-            )
+            store.for_scope(scope_prefix).compact(related_attribute_ids)
 
     logger.info(
         "Removed %s orphaned device detail block(s) after configuration cleanup",
         len(orphaned_scopes),
     )
     return len(orphaned_scopes)
-
-
-def _device_block_instance(project, root_attribute_id: int, set_prefix: str, set_index: int) -> DeviceBlockInstance:
-    return DeviceBlockInstance(
-        project=project,
-        set_prefix=set_prefix,
-        set_index=set_index,
-        attribute_id=root_attribute_id,
-    )
-
-
-def _write_device_fetch_payload(
-    block_instance,
-    handler,
-    fetched_payload: DeviceFetchResult,
-    scope_prefix: str,
-    set_index: int,
-) -> None:
-    reconcile_mapped_values(
-        block_instance,
-        handler,
-        fetched_payload.mapped_values,
-        excluded_attribute_uris={
-            INSTRUMENT_START_ATTRIBUTE_URI,
-            INSTRUMENT_END_ATTRIBUTE_URI,
-        },
-    )
-    for attribute_uri, value in fetched_payload.scoped_scalar_values.items():
-        replace_scalar_value_in_scopes(
-            block_instance,
-            attribute_uri,
-            value,
-            scopes_to_set=[_device_nested_questionset_scope(set_index)],
-            scopes_to_clear=[(scope_prefix, set_index)],
-        )
 
 
 def _enrich_device_metadata_payload(
@@ -553,382 +470,6 @@ def _resolve_configuration_identity(
         configuration_key=configuration_key,
         label=_configuration_label(config_search_value, configuration_set_value, source_set_index),
         external_id=configuration_external_id or _configuration_external_id(config_search_value),
-    )
-
-
-def _existing_device_blocks(
-    project,
-    root_attribute,
-    scope_prefix: str,
-    configuration_key: str,
-) -> dict[str, DeviceBlockReference]:
-    all_blocks = _all_existing_device_blocks(project, root_attribute, scope_prefix)
-    return {
-        block_key: block for block_key, block in all_blocks.items() if parse_device_block_key(block_key)[0] == configuration_key
-    }
-
-
-def _find_device_block(
-    project,
-    root_attribute,
-    scope_prefix: str,
-    block_key: str,
-) -> DeviceBlockReference | None:
-    value = (
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute=root_attribute,
-            set_collection=True,
-            set_prefix=scope_prefix,
-            external_id=block_key,
-        )
-        .order_by("id")
-        .first()
-    )
-    if value is None:
-        return None
-    return DeviceBlockReference(set_index=value.set_index)
-
-
-def _all_existing_device_blocks(
-    project,
-    root_attribute,
-    scope_prefix: str,
-) -> dict[str, DeviceBlockReference]:
-    blocks: dict[str, DeviceBlockReference] = {}
-    queryset = (
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute=root_attribute,
-            set_collection=True,
-            set_prefix=scope_prefix,
-        )
-        .exclude(external_id__isnull=True)
-        .exclude(external_id__exact="")
-        .order_by("set_index", "id")
-    )
-
-    for value in queryset:
-        block_key = value.external_id or ""
-        parsed_configuration_key, device_external_id = parse_device_block_key(block_key)
-        if not parsed_configuration_key or not device_external_id:
-            continue
-        blocks[block_key] = DeviceBlockReference(set_index=value.set_index)
-
-    return blocks
-
-
-def _next_device_set_index(project, root_attribute, scope_prefix: str) -> int:
-    existing_indexes = list(
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute=root_attribute,
-            set_collection=True,
-            set_prefix=scope_prefix,
-        ).values_list("set_index", flat=True)
-    )
-    if not existing_indexes:
-        return 0
-    return max(existing_indexes) + 1
-
-
-def _delete_device_block(project, scope_prefix: str, set_index: int, attribute_ids: set[int]) -> int:
-    value_ids = list(
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute_id__in=attribute_ids,
-        )
-        .filter(Q(set_prefix=scope_prefix, set_index=set_index) | Q(set_prefix=str(set_index)))
-        .order_by("id")
-        .values_list("id", flat=True)
-        .distinct()
-    )
-    if not value_ids:
-        return 0
-
-    deleted, _ = Value.objects.filter(
-        project=project,
-        snapshot=None,
-        id__in=value_ids,
-    ).delete()
-    if deleted:
-        logger.info(
-            "Deleted device detail block at set_prefix=%s set_index=%s (%s rows, ids=%s)",
-            scope_prefix,
-            set_index,
-            deleted,
-            value_ids,
-        )
-    return deleted
-
-
-def _upsert_root_device_value(
-    project,
-    attribute,
-    scope_prefix: str,
-    set_index: int,
-    device: SelectedDevice,
-    configuration_label: str,
-    block_key: str,
-) -> None:
-    _, created, changed = upsert_value_if_changed(
-        {
-            "project": project,
-            "attribute": attribute,
-            "snapshot": None,
-            "set_collection": True,
-            "set_prefix": scope_prefix,
-            "set_index": set_index,
-        },
-        {
-            "text": _device_root_text(configuration_label, device),
-            "external_id": block_key,
-        },
-    )
-    logger.info(
-        "%s device block root for %s at set_prefix=%s set_index=%s",
-        format_change_label(created, changed),
-        block_key,
-        scope_prefix,
-        set_index,
-    )
-
-
-def _upsert_search_value(project, attribute_uri: str, scope_prefix: str, set_index: int, device: SelectedDevice) -> None:
-    attribute = _get_attribute_by_uri(attribute_uri)
-    if attribute is None:
-        logger.warning("Search attribute not found: %s", attribute_uri)
-        return
-
-    _, created, changed = upsert_value_if_changed(
-        {
-            "project": project,
-            "attribute": attribute,
-            "snapshot": None,
-            "set_collection": False,
-            "set_prefix": scope_prefix,
-            "set_index": set_index,
-        },
-        {
-            "text": base_device_text(device.text),
-            "external_id": device.external_id,
-        },
-    )
-    logger.info(
-        "%s device search value for %s at set_prefix=%s set_index=%s",
-        format_change_label(created, changed),
-        device.external_id,
-        scope_prefix,
-        set_index,
-    )
-
-
-def _device_detail_attribute_ids(catalog) -> set[int]:
-    catalog.prefetch_elements()
-    for page in catalog.pages:
-        if page.uri == DEVICE_DETAILS_PAGE_URI:
-            return _collect_attribute_ids(page)
-    return set()
-
-
-def _device_detail_related_attribute_ids(catalog) -> set[int]:
-    catalog.prefetch_elements()
-    attribute_ids: set[int] = set()
-    for page in catalog.pages:
-        if page.uri in {DEVICE_DETAILS_PAGE_URI, DEVICE_OPTIONAL_INFO_PAGE_URI}:
-            attribute_ids.update(_collect_attribute_ids(page))
-    return attribute_ids
-
-
-def _compact_device_detail_blocks(
-    project,
-    catalog,
-    scope_prefix: str,
-    device_collection_attribute_uri: str = DEVICE_COLLECTION_ATTRIBUTE_URI,
-) -> None:
-    root_attribute = _get_attribute_by_uri(device_collection_attribute_uri)
-    if root_attribute is None:
-        return
-
-    root_values = list(
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute=root_attribute,
-            set_collection=True,
-            set_prefix=scope_prefix,
-        ).order_by("set_index", "id")
-    )
-    current_indices = [value.set_index for value in root_values]
-    target_indices = list(range(len(root_values)))
-    if current_indices == target_indices:
-        return
-
-    remap = {old: new for new, old in enumerate(current_indices)}
-    temp_offset = max(current_indices, default=-1) + 1000
-    attribute_ids = _device_detail_related_attribute_ids(catalog)
-    if not attribute_ids:
-        return
-
-    for old_index in current_indices:
-        temp_index = old_index + temp_offset
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute_id__in=attribute_ids,
-            set_prefix=scope_prefix,
-            set_index=old_index,
-        ).update(set_index=temp_index)
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute_id__in=attribute_ids,
-            set_prefix=str(old_index),
-        ).update(set_prefix=str(temp_index))
-
-    for old_index, new_index in remap.items():
-        temp_index = old_index + temp_offset
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute_id__in=attribute_ids,
-            set_prefix=scope_prefix,
-            set_index=temp_index,
-        ).update(set_index=new_index)
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute_id__in=attribute_ids,
-            set_prefix=str(temp_index),
-        ).update(set_prefix=str(new_index))
-
-
-def _collect_attribute_ids(element) -> set[int]:
-    attribute_ids: set[int] = set()
-    attribute_id = getattr(element, "attribute_id", None)
-    if attribute_id:
-        attribute_ids.add(attribute_id)
-
-    for child in getattr(element, "elements", []):
-        attribute_ids.update(_collect_attribute_ids(child))
-
-    return attribute_ids
-
-
-def _get_attribute_by_uri(attribute_uri: str):
-    from rdmo.domain.models import Attribute
-
-    try:
-        return Attribute.objects.get(uri=attribute_uri)
-    except Attribute.DoesNotExist:
-        return None
-
-
-def _device_block_metadata_is_current(
-    project,
-    root_attribute,
-    search_attribute_uri: str,
-    scope_prefix: str,
-    set_index: int,
-    block_key: str,
-    device: SelectedDevice,
-    configuration_label: str,
-) -> bool:
-    return _has_matching_value(
-        project=project,
-        attribute=root_attribute,
-        scope_prefix=scope_prefix,
-        set_index=set_index,
-        set_collection=True,
-        text=_device_root_text(configuration_label, device),
-        external_id=block_key,
-    ) and _has_matching_value(
-        project=project,
-        attribute_uri=search_attribute_uri,
-        scope_prefix=scope_prefix,
-        set_index=set_index,
-        set_collection=False,
-        text=base_device_text(device.text),
-        external_id=device.external_id,
-    )
-
-
-def _device_block_needs_refresh(
-    project,
-    scope_prefix: str,
-    set_index: int,
-) -> bool:
-    return not (
-        _has_nonempty_scalar_value(project, DEVICE_LINK_ATTRIBUTE_URI, scope_prefix, set_index)
-        and _has_nonempty_scalar_value(project, USAGE_TECHNOLOGY_ATTRIBUTE_URI, scope_prefix, set_index)
-        and _has_nonempty_scalar_value(
-            project,
-            INSTRUMENT_START_ATTRIBUTE_URI,
-            *_device_nested_questionset_scope(set_index),
-        )
-    )
-
-
-def _has_matching_value(
-    project,
-    scope_prefix: str,
-    set_index: int,
-    set_collection: bool,
-    attribute=None,
-    attribute_uri: str | None = None,
-    text: str | None = None,
-    external_id: str | None = None,
-) -> bool:
-    queryset = Value.objects.filter(
-        project=project,
-        snapshot=None,
-        set_prefix=scope_prefix,
-        set_index=set_index,
-        set_collection=set_collection,
-    )
-    if attribute is not None:
-        queryset = queryset.filter(attribute=attribute)
-    elif attribute_uri:
-        queryset = queryset.filter(attribute__uri=attribute_uri)
-    else:
-        return False
-
-    if text is not None:
-        queryset = queryset.filter(text=text)
-    if external_id is not None:
-        queryset = queryset.filter(external_id=external_id)
-    return queryset.exists()
-
-
-def _has_nonempty_scalar_value(project, attribute_uri: str, scope_prefix: str, set_index: int) -> bool:
-    return (
-        Value.objects.filter(
-            project=project,
-            snapshot=None,
-            attribute__uri=attribute_uri,
-            set_prefix=scope_prefix,
-            set_index=set_index,
-            set_collection=False,
-        )
-        .exclude(text__isnull=True)
-        .exclude(text__exact="")
-        .exists()
-    )
-
-
-def _device_nested_questionset_scope(parent_set_index: int) -> tuple[str, int]:
-    return str(parent_set_index), 0
-
-
-def _device_root_text(configuration_label: str, device: SelectedDevice) -> str:
-    return device_detail_tab_label(
-        configuration_label,
-        device.text or device.external_id,
-        device.external_id,
     )
 
 

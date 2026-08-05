@@ -19,7 +19,8 @@ must not rename them.
 | `providers/` | Turn user search text into backend options. | Only aggregate/project-aware adapters |
 | `handlers/` | Fetch one selected backend record and return `HandlerResult`. | Only where interview context is required |
 | `services/` | Hold backend-neutral domain data and deterministic synchronization decisions. | No |
-| `signals/` | Adapt RDMO save/delete events, query values, call services and handlers, and write reconciliation results. | Yes |
+| `persistence/` | Query and mutate RDMO values through workflow-specific storage adapters. | Yes |
+| `signals/` | Adapt RDMO save/delete events, control transactions, and orchestrate services, handlers, and persistence. | Yes |
 
 New decision logic should normally enter `services/`. Signal receivers should
 remain transaction and framework adapters; they should not become the only
@@ -37,8 +38,9 @@ Device-detail materialization now has an explicit planning boundary:
 3. `services/device_metadata.py` invokes only the handlers marked for refresh,
    using a bounded worker pool, and converts handler responses into structured
    payloads or per-device errors.
-4. The signal adapter applies the plan inside a database transaction and mutes
-   recursive post-save processing while it writes generated values.
+4. `persistence/device_details.py` applies the plan through an
+   `RDMODeviceDetailStore` inside the transaction controlled by the signal,
+   while recursive post-save processing is muted.
 
 The planner deliberately receives small callbacks for handler resolution and
 current-state checks. This keeps registry and database access outside the
@@ -69,7 +71,8 @@ When adding a synchronization feature:
 1. model backend-neutral inputs and outputs with frozen dataclasses;
 2. put deterministic selection, filtering, and planning in a service;
 3. inject framework or network lookups through narrow callbacks or adapters;
-4. keep Django transactions and RDMO `Value` mutations in `signals/`;
+4. keep Django transaction control in `signals/` and RDMO `Value` mutations in
+   `persistence/`;
 5. keep API fetching and record-specific interpretation in `handlers/`;
 6. add pure service tests and at least one adapter/handler regression test.
 
@@ -79,10 +82,11 @@ them without depending on signal registration or Django save hooks.
 
 ## Current refactoring boundary
 
-Device planning and bounded metadata fetching have been extracted from the
-larger `device_detail_sync.py` workflow. RDMO persistence remains in that signal
-adapter. Future extractions should keep the same behavior and proceed in small
-tested slices; the next likely candidate is device collection persistence.
+Device planning, bounded metadata fetching, and device-block persistence have
+been extracted from the larger `device_detail_sync.py` workflow. The signal
+retains transaction control, configuration-context lookup, handler resolution,
+and SMS-specific mount enrichment. Future extractions should keep the same
+behavior and proceed in small tested slices.
 
 This is an internal module boundary, not a catalog migration. The Earth Sensor
 question, attribute, page, option-set, and condition URIs stay unchanged.
