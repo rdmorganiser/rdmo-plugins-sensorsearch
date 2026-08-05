@@ -35,6 +35,8 @@ and consult the [Earth Sensor URI map](docs/earth-sensor-catalog.md) to find the
 exact pages, questions, attributes, optionsets, and conditions in
 `xml/earth-sensor+refresh.xml`. Runtime costs and backend constraints are
 covered in [operations and limitations](docs/operations-and-limitations.md).
+The [developer architecture](docs/developer-architecture.md) explains the
+internal service, handler, and RDMO signal boundaries.
 
 ## Setup
 

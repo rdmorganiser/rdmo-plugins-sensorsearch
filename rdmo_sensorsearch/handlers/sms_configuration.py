@@ -21,10 +21,8 @@ from rdmo_sensorsearch.handlers.configuration_period import (
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping, parse_datetime
 from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location
 from rdmo_sensorsearch.naming import configuration_short_label
-from rdmo_sensorsearch.signals.device_detail_sync import (
-    SelectedDevice,
-    reconcile_device_details_from_selected_devices,
-)
+from rdmo_sensorsearch.services.device_details import SelectedDevice
+from rdmo_sensorsearch.signals.device_detail_sync import reconcile_device_details_from_selected_devices
 
 logger = logging.getLogger(__name__)
 

@@ -28,6 +28,8 @@ The plugin supports four connected workflows:
   `xml/earth-sensor+refresh.xml`.
 - [Operations and limitations](operations-and-limitations.md) describes runtime
   behavior, authentication, performance, and current backend limitations.
+- [Developer architecture](developer-architecture.md) describes module
+  responsibilities and the service boundary used for synchronization logic.
 
 The repository-level [`sensorsearch.toml`](../sensorsearch.toml) is the
 authoritative deployment configuration and is packaged into the plugin wheel.

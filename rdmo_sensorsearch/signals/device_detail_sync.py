@@ -19,6 +19,19 @@ from rdmo_sensorsearch.handlers.sms_mounting import (
     select_latest_device_mount_action,
 )
 from rdmo_sensorsearch.naming import configuration_short_label, device_detail_tab_label
+from rdmo_sensorsearch.services.device_details import (
+    ConfigurationIdentity,
+    DeviceBlockPlan,
+    DeviceBlockReference,
+    SelectedDevice,
+    base_device_text,
+    compose_device_block_key,
+    configuration_key_from_device_block,
+    parse_device_block_key,
+    parse_external_id,
+    plan_device_detail_reconciliation,
+    unique_selected_devices,
+)
 from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionScope
 from rdmo_sensorsearch.signals.muting import mute_value_post_save
 from rdmo_sensorsearch.signals.refresh_types import RefreshError, RefreshResult
@@ -47,37 +60,6 @@ SURFACE_OFFSET_Z_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usag
 SITE_NAME_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
 SERIAL_NUMBER_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 DEVICE_DETAIL_FETCH_WORKERS = 4
-
-
-@dataclass(frozen=True)
-class SelectedDevice:
-    text: str
-    external_id: str
-    instrument_start: str | None = None
-    instrument_end: str | None = None
-    height_amsl: float | None = None
-    vertical_surface_offset: float | None = None
-    site_name: str | None = None
-    mount_location_resolved: bool = False
-
-
-@dataclass(frozen=True)
-class ConfigurationIdentity:
-    configuration_key: str
-    label: str
-    external_id: str | None
-
-
-@dataclass(frozen=True)
-class DeviceBlockPlan:
-    device: SelectedDevice
-    block_key: str
-    set_index: int
-    handler_binding: Any
-    needs_metadata_write: bool
-    needs_refresh: bool
-    set_prefix: str = ""
-    configuration_external_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -193,7 +175,7 @@ def reconcile_device_details(
 ) -> RefreshResult:
     scope_prefix = scope_prefix or ""
     source_set_index = source_set_index or 0
-    selected_devices = _unique_selected_devices(selected_devices)
+    selected_devices = unique_selected_devices(selected_devices)
     configuration_identity = _resolve_configuration_identity(
         project=project,
         scope_prefix=scope_prefix,
@@ -214,7 +196,6 @@ def reconcile_device_details(
 
     configuration_key = configuration_identity.configuration_key
     configuration_label = configuration_identity.label
-    desired_block_keys = {_compose_device_block_key(configuration_key, device.external_id) for device in selected_devices}
     device_detail_attribute_ids = _device_detail_attribute_ids(catalog)
     if not device_detail_attribute_ids:
         logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
@@ -237,60 +218,38 @@ def reconcile_device_details(
     existing_blocks = _existing_device_blocks(project, root_attribute, scope_prefix, configuration_key)
     next_index = _next_device_set_index(project, root_attribute, scope_prefix)
 
-    stale_blocks = [block for block_key, block in existing_blocks.items() if block_key not in desired_block_keys]
-    existing_blocks = {block_key: block for block_key, block in existing_blocks.items() if block_key in desired_block_keys}
-
-    plans: list[DeviceBlockPlan] = []
-    planning_errors: list[RefreshError] = []
-    for device in selected_devices:
-        block_key = _compose_device_block_key(configuration_key, device.external_id)
-        block = existing_blocks.get(block_key)
-        handler_binding = _resolve_device_handler_binding(project.catalog.uri, device.external_id)
-        if handler_binding is None:
-            logger.warning("No device handler found for selected device %s", device.external_id)
-            planning_errors.append(
-                RefreshError(
-                    external_id=device.external_id,
-                    message="No matching device handler is configured.",
-                )
-            )
-            continue
-
-        if block is not None:
-            set_index = block["set_index"]
-        else:
-            set_index = next_index
-            next_index += 1
-        search_attribute_uri = handler_binding.search_attribute_uri
-        needs_metadata_write = block is None or not _device_block_metadata_is_current(
+    reconciliation_plan = plan_device_detail_reconciliation(
+        selected_devices=selected_devices,
+        configuration_key=configuration_key,
+        configuration_external_id=configuration_identity.external_id,
+        set_prefix=scope_prefix,
+        existing_blocks=existing_blocks,
+        next_set_index=next_index,
+        resolve_handler=lambda external_id: _resolve_device_handler_binding(project.catalog.uri, external_id),
+        metadata_is_current=lambda device, block_key, set_index, handler_binding: _device_block_metadata_is_current(
             project=project,
             root_attribute=root_attribute,
-            search_attribute_uri=search_attribute_uri,
+            search_attribute_uri=handler_binding.search_attribute_uri,
             scope_prefix=scope_prefix,
             set_index=set_index,
             block_key=block_key,
             device=device,
             configuration_label=configuration_label,
-        )
-
-        plans.append(
-            DeviceBlockPlan(
-                device=device,
-                block_key=block_key,
-                set_index=set_index,
-                handler_binding=handler_binding,
-                needs_metadata_write=needs_metadata_write,
-                needs_refresh=force_refresh
-                or block is None
-                or _device_block_needs_refresh(
-                    project=project,
-                    scope_prefix=scope_prefix,
-                    set_index=set_index,
-                ),
-                set_prefix=scope_prefix,
-                configuration_external_id=configuration_identity.external_id,
-            )
-        )
+        ),
+        refresh_is_required=lambda set_index: _device_block_needs_refresh(
+            project=project,
+            scope_prefix=scope_prefix,
+            set_index=set_index,
+        ),
+        force_refresh=force_refresh,
+    )
+    plans = list(reconciliation_plan.blocks)
+    stale_blocks = reconciliation_plan.stale_blocks
+    planning_errors = [
+        RefreshError(external_id=failure.external_id, message=failure.message) for failure in reconciliation_plan.failures
+    ]
+    for failure in reconciliation_plan.failures:
+        logger.warning("No device handler found for selected device %s", failure.external_id)
 
     fetch_batch = _fetch_device_detail_payloads(
         plans,
@@ -302,7 +261,7 @@ def reconcile_device_details(
 
     with transaction.atomic(), mute_value_post_save():
         for block in stale_blocks:
-            _delete_device_block(project, scope_prefix, block["set_index"], related_attribute_ids)
+            _delete_device_block(project, scope_prefix, block.set_index, related_attribute_ids)
 
         for plan in plans:
             block_instance = _device_block_instance(project, root_attribute.id, scope_prefix, plan.set_index)
@@ -409,7 +368,7 @@ def remove_device_detail_block_for_selected_device(
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
         return False
 
-    block_key = _compose_device_block_key(configuration_identity.configuration_key, device_external_id)
+    block_key = compose_device_block_key(configuration_identity.configuration_key, device_external_id)
     block = _find_device_block(project, root_attribute, scope_prefix, block_key)
     if block is None:
         logger.debug("No device detail block exists for removed selected device %s", block_key)
@@ -424,7 +383,7 @@ def remove_device_detail_block_for_selected_device(
         deleted = _delete_device_block(
             project,
             scope_prefix,
-            block["set_index"],
+            block.set_index,
             related_attribute_ids,
         )
 
@@ -470,7 +429,7 @@ def remove_orphaned_device_detail_blocks(
     )
     orphaned_scopes = set()
     for value in root_values:
-        configuration_key = _device_block_configuration_key(value.external_id)
+        configuration_key = configuration_key_from_device_block(value.external_id)
         if configuration_key and configuration_key not in active_configuration_keys:
             orphaned_scopes.add((value.set_prefix or "", value.set_index))
     if not orphaned_scopes:
@@ -580,7 +539,7 @@ def _fetch_device_detail_payload(
     configuration_external_id: str | None,
     auth_token: str | None = None,
 ) -> DeviceFetchResult | DeviceFetchFailure | None:
-    device_id = _parse_external_id(plan.device.external_id)[1]
+    device_id = parse_external_id(plan.device.external_id)[1]
     if device_id is None:
         logger.warning("Could not parse external ID %s", plan.device.external_id)
         return DeviceFetchFailure(message="Could not parse external device ID.")
@@ -640,7 +599,7 @@ def _format_handler_errors(errors: Any) -> str:
 
 
 def _resolve_device_handler_binding(catalog_uri: str, external_id: str) -> Any | None:
-    id_prefix, _ = _parse_external_id(external_id)
+    id_prefix, _ = parse_external_id(external_id)
     if id_prefix is None:
         return None
 
@@ -700,14 +659,24 @@ def _resolve_configuration_identity(
     )
 
 
-def _existing_device_blocks(project, root_attribute, scope_prefix: str, configuration_key: str) -> dict[str, dict]:
+def _existing_device_blocks(
+    project,
+    root_attribute,
+    scope_prefix: str,
+    configuration_key: str,
+) -> dict[str, DeviceBlockReference]:
     all_blocks = _all_existing_device_blocks(project, root_attribute, scope_prefix)
     return {
-        block_key: block for block_key, block in all_blocks.items() if _parse_block_external_id(block_key)[0] == configuration_key
+        block_key: block for block_key, block in all_blocks.items() if parse_device_block_key(block_key)[0] == configuration_key
     }
 
 
-def _find_device_block(project, root_attribute, scope_prefix: str, block_key: str) -> dict | None:
+def _find_device_block(
+    project,
+    root_attribute,
+    scope_prefix: str,
+    block_key: str,
+) -> DeviceBlockReference | None:
     value = (
         Value.objects.filter(
             project=project,
@@ -722,14 +691,15 @@ def _find_device_block(project, root_attribute, scope_prefix: str, block_key: st
     )
     if value is None:
         return None
-    return {
-        "set_index": value.set_index,
-        "value_id": value.id,
-    }
+    return DeviceBlockReference(set_index=value.set_index)
 
 
-def _all_existing_device_blocks(project, root_attribute, scope_prefix: str) -> dict[str, dict]:
-    blocks: dict[str, dict] = {}
+def _all_existing_device_blocks(
+    project,
+    root_attribute,
+    scope_prefix: str,
+) -> dict[str, DeviceBlockReference]:
+    blocks: dict[str, DeviceBlockReference] = {}
     queryset = (
         Value.objects.filter(
             project=project,
@@ -745,13 +715,10 @@ def _all_existing_device_blocks(project, root_attribute, scope_prefix: str) -> d
 
     for value in queryset:
         block_key = value.external_id or ""
-        parsed_configuration_key, device_external_id = _parse_block_external_id(block_key)
+        parsed_configuration_key, device_external_id = parse_device_block_key(block_key)
         if not parsed_configuration_key or not device_external_id:
             continue
-        blocks[block_key] = {
-            "set_index": value.set_index,
-            "value_id": value.id,
-        }
+        blocks[block_key] = DeviceBlockReference(set_index=value.set_index)
 
     return blocks
 
@@ -850,7 +817,7 @@ def _upsert_search_value(project, attribute_uri: str, scope_prefix: str, set_ind
             "set_index": set_index,
         },
         {
-            "text": _base_device_text(device.text),
+            "text": base_device_text(device.text),
             "external_id": device.external_id,
         },
     )
@@ -988,7 +955,7 @@ def _device_block_metadata_is_current(
         scope_prefix=scope_prefix,
         set_index=set_index,
         set_collection=False,
-        text=_base_device_text(device.text),
+        text=base_device_text(device.text),
         external_id=device.external_id,
     )
 
@@ -1060,43 +1027,12 @@ def _device_nested_questionset_scope(parent_set_index: int) -> tuple[str, int]:
     return str(parent_set_index), 0
 
 
-def _parse_external_id(external_id: str) -> tuple[str | None, str | None]:
-    if ":" not in external_id:
-        return None, external_id or None
-    prefix, value = external_id.split(":", 1)
-    return prefix or None, value or None
-
-
-def _parse_block_external_id(external_id: str) -> tuple[str | None, str | None]:
-    if "||" not in external_id:
-        return None, None
-    configuration_key, device_external_id = external_id.split("||", 1)
-    return configuration_key or None, device_external_id or None
-
-
-def _device_block_configuration_key(external_id: str) -> str | None:
-    configuration_key, device_external_id = _parse_block_external_id(external_id)
-    if not configuration_key or not device_external_id:
-        return None
-    return configuration_key
-
-
-def _compose_device_block_key(configuration_key: str, device_external_id: str) -> str:
-    return f"{configuration_key}||{device_external_id}"
-
-
 def _device_root_text(configuration_label: str, device: SelectedDevice) -> str:
     return device_detail_tab_label(
         configuration_label,
         device.text or device.external_id,
         device.external_id,
     )
-
-
-def _base_device_text(text: str) -> str:
-    if ": " in text:
-        return text.split(": ", 1)[1]
-    return text
 
 
 def _configuration_key(
@@ -1227,8 +1163,8 @@ def _resolve_mount_location_values(
     if not getattr(handler_binding.handler, "supports_mount_location_lookup", False):
         return None, None, None
 
-    _, configuration_id = _parse_external_id(configuration_external_id)
-    device_id = _parse_external_id(device.external_id)[1]
+    _, configuration_id = parse_external_id(configuration_external_id)
+    device_id = parse_external_id(device.external_id)[1]
     if configuration_id is None or device_id is None:
         return None, None, None
 
@@ -1307,8 +1243,8 @@ def _resolve_mounting_period_values(
     if not configuration_external_id:
         return None, None
 
-    _, configuration_id = _parse_external_id(configuration_external_id)
-    device_id = _parse_external_id(device.external_id)[1]
+    _, configuration_id = parse_external_id(configuration_external_id)
+    device_id = parse_external_id(device.external_id)[1]
     if configuration_id is None or device_id is None:
         return None, None
 
@@ -1396,14 +1332,3 @@ def _serial_number_from_text(text: str) -> str | None:
         return None
     serial_fragment = text.split(marker, 1)[1]
     return serial_fragment.split(")", 1)[0].strip() or None
-
-
-def _unique_selected_devices(selected_devices: Iterable[SelectedDevice]) -> list[SelectedDevice]:
-    unique: list[SelectedDevice] = []
-    seen: set[str] = set()
-    for device in selected_devices:
-        if not device.external_id or device.external_id in seen:
-            continue
-        seen.add(device.external_id)
-        unique.append(device)
-    return unique

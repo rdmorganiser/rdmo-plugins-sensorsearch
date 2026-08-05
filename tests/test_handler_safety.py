@@ -1,7 +1,6 @@
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
-from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from threading import Lock
@@ -31,18 +30,6 @@ def _install_host_application_stubs():
 
     device_detail_sync = ModuleType("rdmo_sensorsearch.signals.device_detail_sync")
 
-    @dataclass(frozen=True)
-    class SelectedDevice:
-        text: str
-        external_id: str
-        instrument_start: str | None = None
-        instrument_end: str | None = None
-        height_amsl: float | None = None
-        vertical_surface_offset: float | None = None
-        site_name: str | None = None
-        mount_location_resolved: bool = False
-
-    device_detail_sync.SelectedDevice = SelectedDevice
     device_detail_sync.reconcile_device_details_from_selected_devices = lambda **kwargs: None
     sys.modules.setdefault("rdmo_sensorsearch.signals.device_detail_sync", device_detail_sync)
 
