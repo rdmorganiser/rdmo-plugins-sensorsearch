@@ -9,9 +9,9 @@ from rdmo.domain.models import Attribute
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.config import catalog_matches, load_config
+from rdmo_sensorsearch.persistence.value_reconciliation import format_change_label, upsert_value_if_changed
+from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
 from rdmo_sensorsearch.signals.device_detail_sync import DEVICE_COLLECTION_ATTRIBUTE_URI
-from rdmo_sensorsearch.signals.muting import mute_value_post_save
-from rdmo_sensorsearch.signals.value_reconciliation import format_change_label, upsert_value_if_changed
 
 logger = logging.getLogger(__name__)
 

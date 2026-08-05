@@ -18,7 +18,7 @@ must not rename them.
 | `config_models.py` | Parse and validate the complete TOML schema and its cross-references. | No |
 | `providers/` | Turn user search text into backend options. | Only aggregate/project-aware adapters |
 | `handlers/` | Fetch one selected backend record and return `HandlerResult`. | Only where interview context is required |
-| `services/` | Hold backend-neutral domain data and deterministic synchronization decisions. | No |
+| `services/` | Hold backend-neutral domain data, deterministic decisions, and synchronization context state. | No |
 | `persistence/` | Query and mutate RDMO values through workflow-specific storage adapters. | Yes |
 | `signals/` | Adapt RDMO save/delete events, control transactions, and orchestrate services, handlers, and persistence. | Yes |
 
@@ -54,6 +54,23 @@ Backend-specific enrichment remains an injected callback; the SMS adapter uses
 it to add mount periods and resolved location values without making the generic
 fetch service depend on SMS endpoints or Earth Sensor attribute URIs.
 
+## Shared reconciliation and signal context
+
+`persistence/value_reconciliation.py` is the shared write engine for scalar,
+list, and handler collection results. It uses
+`persistence/collection_binding.py` to distinguish collection Questions from
+collection QuestionSets and to calculate their RDMO value scopes.
+
+`services/synchronization_context.py` owns the `ContextVar` that temporarily
+mutes recursive value post-save handling. It is safe to nest the context
+manager, and the previous state is restored even when a persistence operation
+raises an exception. Persistence modules and signal orchestrators may use this
+context; they must not implement separate process-global mute flags.
+
+Modules under `signals/` should now represent event receivers or workflow
+orchestration. Reusable collection layout, value mutation, and context-state
+helpers do not belong there.
+
 Device block external IDs use this internal identity format:
 
 ```text
@@ -85,8 +102,10 @@ them without depending on signal registration or Django save hooks.
 Device planning, bounded metadata fetching, and device-block persistence have
 been extracted from the larger `device_detail_sync.py` workflow. The signal
 retains transaction control, configuration-context lookup, handler resolution,
-and SMS-specific mount enrichment. Future extractions should keep the same
-behavior and proceed in small tested slices.
+and SMS-specific mount enrichment. Shared collection binding, value
+reconciliation, and recursive-signal context have also been moved out of the
+signal package. Future extractions should keep the same behavior and proceed in
+small tested slices.
 
 This is an internal module boundary, not a catalog migration. The Earth Sensor
 question, attribute, page, option-set, and condition URIs stay unchanged.

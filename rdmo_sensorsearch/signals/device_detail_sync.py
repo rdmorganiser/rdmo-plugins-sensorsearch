@@ -14,6 +14,7 @@ from rdmo_sensorsearch.handlers.sms_mounting import (
     select_latest_device_mount_action,
 )
 from rdmo_sensorsearch.naming import configuration_short_label
+from rdmo_sensorsearch.persistence.collection_binding import CollectionBinding, CollectionScope
 from rdmo_sensorsearch.persistence.device_details import (
     RDMODeviceDetailStore,
     catalog_attribute_ids,
@@ -29,8 +30,7 @@ from rdmo_sensorsearch.services.device_details import (
     unique_selected_devices,
 )
 from rdmo_sensorsearch.services.device_metadata import fetch_device_metadata_batch
-from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionScope
-from rdmo_sensorsearch.signals.muting import mute_value_post_save
+from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
 from rdmo_sensorsearch.signals.refresh_types import RefreshError, RefreshResult
 
 logger = logging.getLogger(__name__)

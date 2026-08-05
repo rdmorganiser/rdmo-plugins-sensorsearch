@@ -8,14 +8,15 @@ from django.dispatch import receiver
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
-from rdmo_sensorsearch.signals.backend_value_sync import (
-    get_handler_bindings_for_catalog,
-    sync_backend_value_after_save,
-)
-from rdmo_sensorsearch.signals.collection_binding import (
+from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBinding,
     CollectionBindingError,
     CollectionScope,
+)
+from rdmo_sensorsearch.services.synchronization_context import is_value_post_save_muted
+from rdmo_sensorsearch.signals.backend_value_sync import (
+    get_handler_bindings_for_catalog,
+    sync_backend_value_after_save,
 )
 from rdmo_sensorsearch.signals.configuration_tab_sync import (
     sync_configuration_tab_from_root,
@@ -40,7 +41,6 @@ from rdmo_sensorsearch.signals.metadata_refresh import (
     get_refresh_actions_for_source,
     run_metadata_refresh_action,
 )
-from rdmo_sensorsearch.signals.muting import is_value_post_save_muted
 
 logger = logging.getLogger(__name__)
 

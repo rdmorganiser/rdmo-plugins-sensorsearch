@@ -4,7 +4,7 @@ from types import ModuleType
 
 import pytest
 
-from rdmo_sensorsearch.signals.collection_binding import (
+from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBinding,
     CollectionBindingError,
     CollectionLayout,

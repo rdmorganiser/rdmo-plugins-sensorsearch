@@ -12,7 +12,11 @@ from rdmo_sensorsearch.handlers.sms_device import (
     INSTRUMENT_START_ATTRIBUTE_URI,
 )
 from rdmo_sensorsearch.naming import canonical_device_label
-from rdmo_sensorsearch.signals.collection_binding import CollectionBinding, CollectionBindingError, CollectionScope
+from rdmo_sensorsearch.persistence.collection_binding import CollectionBinding, CollectionBindingError, CollectionScope
+from rdmo_sensorsearch.persistence.value_reconciliation import (
+    reconcile_handler_result,
+    replace_scalar_value_in_scopes,
+)
 from rdmo_sensorsearch.signals.device_detail_sync import (
     get_selected_device_values_for_configuration_scope,
     reconcile_device_details_from_selected_values,
@@ -21,10 +25,6 @@ from rdmo_sensorsearch.signals.refresh_types import (
     RefreshError,
     RefreshResult,
     combine_refresh_results,
-)
-from rdmo_sensorsearch.signals.value_reconciliation import (
-    reconcile_handler_result,
-    replace_scalar_value_in_scopes,
 )
 
 logger = logging.getLogger(__name__)

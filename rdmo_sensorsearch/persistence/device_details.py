@@ -192,7 +192,7 @@ class RDMODeviceDetailStore:
         )
 
     def upsert_block_identity(self, plan: DeviceBlockPlan, configuration_label: str) -> None:
-        from rdmo_sensorsearch.signals.value_reconciliation import format_change_label, upsert_value_if_changed
+        from rdmo_sensorsearch.persistence.value_reconciliation import format_change_label, upsert_value_if_changed
 
         _, created, changed = upsert_value_if_changed(
             {
@@ -249,7 +249,7 @@ class RDMODeviceDetailStore:
         *,
         excluded_attribute_uris: set[str],
     ) -> None:
-        from rdmo_sensorsearch.signals.value_reconciliation import (
+        from rdmo_sensorsearch.persistence.value_reconciliation import (
             reconcile_mapped_values,
             replace_scalar_value_in_scopes,
         )

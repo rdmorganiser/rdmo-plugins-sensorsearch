@@ -341,7 +341,7 @@ def test_store_delegates_identity_and_payload_writes_to_reconciliation_helpers(
     persistence_module,
     monkeypatch,
 ):
-    reconciliation = ModuleType("rdmo_sensorsearch.signals.value_reconciliation")
+    reconciliation = ModuleType("rdmo_sensorsearch.persistence.value_reconciliation")
     upserts = []
     reconciled = []
     scalar_replacements = []
@@ -349,7 +349,7 @@ def test_store_delegates_identity_and_payload_writes_to_reconciliation_helpers(
     reconciliation.upsert_value_if_changed = lambda lookup, defaults: upserts.append((lookup, defaults)) or (object(), True, True)
     reconciliation.reconcile_mapped_values = lambda *args, **kwargs: reconciled.append((args, kwargs))
     reconciliation.replace_scalar_value_in_scopes = lambda *args, **kwargs: scalar_replacements.append((args, kwargs))
-    monkeypatch.setitem(sys.modules, "rdmo_sensorsearch.signals.value_reconciliation", reconciliation)
+    monkeypatch.setitem(sys.modules, "rdmo_sensorsearch.persistence.value_reconciliation", reconciliation)
     monkeypatch.setattr(persistence_module, "get_attribute_by_uri", lambda _uri: SimpleNamespace(id=11))
 
     store = _store(persistence_module, [])

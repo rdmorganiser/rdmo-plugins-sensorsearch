@@ -1,3 +1,5 @@
+"""Context state used to prevent recursive synchronization signals."""
+
 from contextlib import contextmanager
 from contextvars import ContextVar
 

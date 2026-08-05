@@ -1,3 +1,5 @@
+"""Resolve RDMO collection layouts and their value scopes."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, replace

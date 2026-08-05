@@ -1,3 +1,5 @@
+"""Reconcile backend-derived values with persisted RDMO answers."""
+
 import logging
 from typing import Any
 
@@ -8,12 +10,12 @@ from rdmo.projects.answers import AnswerTree
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerResult, deduplicate_collection_values
-from rdmo_sensorsearch.signals.collection_binding import (
+from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBinding,
     CollectionBindingError,
     scope_from_value,
 )
-from rdmo_sensorsearch.signals.muting import mute_value_post_save
+from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
 
 logger = logging.getLogger(__name__)
 
