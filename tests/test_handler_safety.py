@@ -28,10 +28,12 @@ def _install_host_application_stubs():
     rdmo_projects.models = rdmo_project_models
     rdmo.projects = rdmo_projects
 
-    device_detail_sync = ModuleType("rdmo_sensorsearch.signals.device_detail_sync")
+    workflows = sys.modules.setdefault("rdmo_sensorsearch.workflows", ModuleType("rdmo_sensorsearch.workflows"))
+    workflows.__path__ = [str(Path(__file__).parents[1] / "rdmo_sensorsearch" / "workflows")]
+    device_details = ModuleType("rdmo_sensorsearch.workflows.device_details")
 
-    device_detail_sync.reconcile_device_details_from_selected_devices = lambda **kwargs: None
-    sys.modules.setdefault("rdmo_sensorsearch.signals.device_detail_sync", device_detail_sync)
+    device_details.reconcile_device_details_from_selected_devices = lambda **kwargs: None
+    sys.modules.setdefault("rdmo_sensorsearch.workflows.device_details", device_details)
 
     project_values = ModuleType("rdmo_sensorsearch.project_values")
     project_values.get_scoped_project_value = lambda instance, attribute_uri: None
@@ -45,6 +47,7 @@ _install_host_application_stubs()
 
 client = import_module("rdmo_sensorsearch.client")
 handler_base = import_module("rdmo_sensorsearch.handlers.base")
+catalog_registry_module = import_module("rdmo_sensorsearch.handlers.catalog_registry")
 configuration_period = import_module("rdmo_sensorsearch.handlers.configuration_period")
 o2a_item_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_item")
 o2a_mission_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_mission")
@@ -63,6 +66,15 @@ class FakeResponse:
 
     def json(self):
         return self.payload
+
+
+def test_catalog_handler_registry_builds_without_signal_import_cycle(monkeypatch):
+    monkeypatch.setattr(catalog_registry_module, "_HANDLER_BINDINGS_BY_CATALOG", None)
+
+    bindings_by_catalog = catalog_registry_module.handler_bindings_by_catalog()
+
+    assert bindings_by_catalog
+    assert "rdmo_sensorsearch.signals.device_detail_sync" not in sys.modules
 
 
 def test_handler_builds_authoritative_values_for_its_complete_ownership():

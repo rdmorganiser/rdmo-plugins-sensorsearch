@@ -3,11 +3,10 @@ from dataclasses import dataclass
 
 from rdmo_sensorsearch.config import catalog_uri_values, load_config, merge_config
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
+from rdmo_sensorsearch.handlers.catalog_registry import WILDCARD_CATALOG_URI
 from rdmo_sensorsearch.handlers.registry import HANDLER_REGISTRY
 
 logger = logging.getLogger(__name__)
-
-WILDCARD_CATALOG_URI = "*"
 
 
 @dataclass

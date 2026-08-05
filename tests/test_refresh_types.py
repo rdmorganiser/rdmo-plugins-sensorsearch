@@ -1,6 +1,6 @@
 import pytest
 
-from rdmo_sensorsearch.signals.refresh_types import (
+from rdmo_sensorsearch.services.refresh import (
     RefreshAction,
     RefreshError,
     RefreshKind,

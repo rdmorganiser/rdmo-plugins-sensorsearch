@@ -1,3 +1,5 @@
+"""Structured results shared by synchronization workflows and signal adapters."""
+
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum

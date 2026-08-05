@@ -6,7 +6,10 @@ from django.db import transaction
 from rdmo.domain.models import Attribute
 
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerExecutionContext, HandlerResult
-from rdmo_sensorsearch.handlers.factory import WILDCARD_CATALOG_URI, build_handlers_by_catalog
+from rdmo_sensorsearch.handlers.catalog_registry import (
+    get_handler_bindings_for_catalog,
+    handler_bindings_by_catalog,
+)
 from rdmo_sensorsearch.handlers.sms_device_enrichment import (
     INSTRUMENT_END_ATTRIBUTE_URI,
     INSTRUMENT_START_ATTRIBUTE_URI,
@@ -17,34 +20,17 @@ from rdmo_sensorsearch.persistence.value_reconciliation import (
     reconcile_handler_result,
     replace_scalar_value_in_scopes,
 )
-from rdmo_sensorsearch.signals.device_detail_sync import (
-    get_selected_device_values_for_configuration_scope,
-    reconcile_device_details_from_selected_values,
-)
-from rdmo_sensorsearch.signals.refresh_types import (
+from rdmo_sensorsearch.services.refresh import (
     RefreshError,
     RefreshResult,
     combine_refresh_results,
 )
+from rdmo_sensorsearch.workflows.device_details import (
+    get_selected_device_values_for_configuration_scope,
+    reconcile_device_details_from_selected_values,
+)
 
 logger = logging.getLogger(__name__)
-
-HANDLERS_BY_CATALOG = build_handlers_by_catalog()
-
-
-def get_handler_bindings_for_catalog(catalog_uri: str) -> list:
-    catalog_bindings = HANDLERS_BY_CATALOG.get(catalog_uri, [])
-    wildcard_bindings = HANDLERS_BY_CATALOG.get(WILDCARD_CATALOG_URI, [])
-
-    seen = {(binding.id_prefix, binding.search_attribute_uri, type(binding.handler)) for binding in catalog_bindings}
-
-    merged_bindings = list(catalog_bindings)
-    for binding in wildcard_bindings:
-        key = (binding.id_prefix, binding.search_attribute_uri, type(binding.handler))
-        if key not in seen:
-            merged_bindings.append(binding)
-
-    return merged_bindings
 
 
 def _empty_handler_result(handler) -> HandlerResult:
@@ -108,7 +94,7 @@ def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
 
 
 def sync_backend_value_after_save(instance, auth_token: str | None = None) -> None:
-    if not HANDLERS_BY_CATALOG:
+    if not handler_bindings_by_catalog():
         logger.warning("No handlers found for %s", __name__)
         return
     if getattr(instance, "snapshot_id", None) is not None:

@@ -11,9 +11,7 @@ from rdmo_sensorsearch.client import deduplicate_json_requests
 from rdmo_sensorsearch.config import catalog_matches, load_config
 from rdmo_sensorsearch.naming import canonical_configuration_label, canonical_device_label
 from rdmo_sensorsearch.persistence.value_reconciliation import replace_scalar_value_in_scopes, update_value_if_changed
-from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
-from rdmo_sensorsearch.signals.backend_value_sync import refresh_value_from_backend
-from rdmo_sensorsearch.signals.refresh_types import (
+from rdmo_sensorsearch.services.refresh import (
     RefreshAction,
     RefreshError,
     RefreshKind,
@@ -21,6 +19,8 @@ from rdmo_sensorsearch.signals.refresh_types import (
     combine_refresh_results,
     format_refresh_message,
 )
+from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
+from rdmo_sensorsearch.signals.backend_value_sync import refresh_value_from_backend
 
 logger = logging.getLogger(__name__)
 

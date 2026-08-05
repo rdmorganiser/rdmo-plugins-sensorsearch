@@ -8,16 +8,14 @@ from django.dispatch import receiver
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
+from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog
 from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBinding,
     CollectionBindingError,
     CollectionScope,
 )
 from rdmo_sensorsearch.services.synchronization_context import is_value_post_save_muted
-from rdmo_sensorsearch.signals.backend_value_sync import (
-    get_handler_bindings_for_catalog,
-    sync_backend_value_after_save,
-)
+from rdmo_sensorsearch.signals.backend_value_sync import sync_backend_value_after_save
 from rdmo_sensorsearch.signals.configuration_tab_sync import (
     sync_configuration_tab_from_root,
     sync_configuration_tab_from_source,
@@ -27,19 +25,19 @@ from rdmo_sensorsearch.signals.data_collection_variable_sync import (
     reconcile_data_collection_variables_for_selected_device,
     remove_stale_generated_data_collection_variables,
 )
-from rdmo_sensorsearch.signals.device_detail_sync import (
-    get_configuration_scope_for_value,
-    get_selected_device_values_for_configuration_scope,
-    reconcile_device_details_from_selected_values,
-    remove_device_detail_block_for_selected_device,
-    remove_orphaned_device_detail_blocks,
-)
 from rdmo_sensorsearch.signals.metadata_refresh import (
     clear_refresh_state_for_source,
     get_refresh_action,
     get_refresh_actions_for_input,
     get_refresh_actions_for_source,
     run_metadata_refresh_action,
+)
+from rdmo_sensorsearch.workflows.device_details import (
+    get_configuration_scope_for_value,
+    get_selected_device_values_for_configuration_scope,
+    reconcile_device_details_from_selected_values,
+    remove_device_detail_block_for_selected_device,
+    remove_orphaned_device_detail_blocks,
 )
 
 logger = logging.getLogger(__name__)

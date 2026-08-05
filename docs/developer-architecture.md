@@ -20,6 +20,7 @@ must not rename them.
 | `handlers/` | Fetch one selected backend record and return `HandlerResult`. | Only where interview context is required |
 | `services/` | Hold backend-neutral domain data, deterministic decisions, and synchronization context state. | No |
 | `persistence/` | Query and mutate RDMO values through workflow-specific storage adapters. | Yes |
+| `workflows/` | Coordinate complete synchronization use cases shared by handlers and signal adapters. | Yes |
 | `signals/` | Adapt RDMO save/delete events, control transactions, and orchestrate services, handlers, and persistence. | Yes |
 
 New decision logic should normally enter `services/`. Signal receivers should
@@ -30,17 +31,19 @@ place where a synchronization rule can be tested.
 
 Device-detail materialization now has an explicit planning boundary:
 
-1. `signals/device_detail_sync.py` reads the configuration context, existing
+1. `signals/receivers.py` adapts RDMO save/delete events and schedules the
+   device-detail workflow after the surrounding transaction commits.
+2. `workflows/device_details.py` reads the configuration context, existing
    RDMO device blocks, and registered handler bindings.
-2. `services/device_details.py` deduplicates selected devices and produces a
+3. `services/device_details.py` deduplicates selected devices and produces a
    `DeviceDetailReconciliationPlan` containing retained/new blocks, stale
    blocks, and routing failures.
-3. `services/device_metadata.py` invokes only the handlers marked for refresh,
+4. `services/device_metadata.py` invokes only the handlers marked for refresh,
    using a bounded worker pool, and converts handler responses into structured
    payloads or per-device errors.
-4. `handlers/sms_device_enrichment.py` is injected into that generic fetch
+5. `handlers/sms_device_enrichment.py` is injected into that generic fetch
    service and resolves SMS mount periods, height/depth, and site metadata.
-5. `persistence/device_details.py` applies the plan through an
+6. `persistence/device_details.py` applies the plan through an
    `RDMODeviceDetailStore` inside the transaction controlled by the signal,
    while recursive post-save processing is muted.
 
@@ -72,9 +75,15 @@ manager, and the previous state is restored even when a persistence operation
 raises an exception. Persistence modules and signal orchestrators may use this
 context; they must not implement separate process-global mute flags.
 
-Modules under `signals/` should now represent event receivers or workflow
-orchestration. Reusable collection layout, value mutation, and context-state
-helpers do not belong there.
+Modules under `signals/` should represent event receivers and transaction
+scheduling. Reusable workflows, collection layout, value mutation, and
+context-state helpers do not belong there.
+
+Configured handler bindings are owned by `handlers/catalog_registry.py`.
+Signals, handlers, and workflows use that registry directly; lower-level
+packages must not import signal adapters merely to resolve a handler. The
+registry is initialized lazily so handler class imports cannot create a cycle
+while configuration handlers import shared workflows.
 
 Device block external IDs use this internal identity format:
 
@@ -104,13 +113,13 @@ them without depending on signal registration or Django save hooks.
 
 ## Current refactoring boundary
 
-Device planning, bounded metadata fetching, SMS mount enrichment, and
-device-block persistence have been extracted from the larger
-`device_detail_sync.py` workflow. The signal retains transaction control,
-configuration-context lookup, handler resolution, and orchestration. Shared
-collection binding, value reconciliation, and recursive-signal context have
-also been moved out of the signal package. Future extractions should keep the
-same behavior and proceed in small tested slices.
+Device planning, bounded metadata fetching, SMS mount enrichment, device-block
+persistence, and device-detail workflow orchestration have been extracted from
+the signal package. Signal receivers retain event adaptation and transaction
+scheduling. Shared handler registration, refresh result types, collection
+binding, value reconciliation, and recursive-signal context also live outside
+the signal package. Architecture tests prevent handlers and workflows from
+acquiring reverse dependencies on signal adapters.
 
 This is an internal module boundary, not a catalog migration. The Earth Sensor
 question, attribute, page, option-set, and condition URIs stay unchanged.

@@ -6,6 +6,7 @@ from django.db import transaction
 
 from rdmo.projects.models import Value
 
+from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog
 from rdmo_sensorsearch.handlers.sms_device_enrichment import (
     INSTRUMENT_END_ATTRIBUTE_URI,
     INSTRUMENT_START_ATTRIBUTE_URI,
@@ -27,8 +28,8 @@ from rdmo_sensorsearch.services.device_details import (
     unique_selected_devices,
 )
 from rdmo_sensorsearch.services.device_metadata import fetch_device_metadata_batch
+from rdmo_sensorsearch.services.refresh import RefreshError, RefreshResult
 from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
-from rdmo_sensorsearch.signals.refresh_types import RefreshError, RefreshResult
 
 logger = logging.getLogger(__name__)
 
@@ -381,8 +382,6 @@ def _resolve_device_handler_binding(catalog_uri: str, external_id: str) -> Any |
     id_prefix, _ = parse_external_id(external_id)
     if id_prefix is None:
         return None
-
-    from rdmo_sensorsearch.signals.backend_value_sync import get_handler_bindings_for_catalog
 
     for binding in get_handler_bindings_for_catalog(catalog_uri):
         if binding.id_prefix == id_prefix and getattr(binding.handler, "materialize_device_details", False):
