@@ -7,7 +7,7 @@ from rdmo.domain.models import Attribute
 
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers.factory import WILDCARD_CATALOG_URI, build_handlers_by_catalog
-from rdmo_sensorsearch.handlers.sms_device import (
+from rdmo_sensorsearch.handlers.sms_device_enrichment import (
     INSTRUMENT_END_ATTRIBUTE_URI,
     INSTRUMENT_START_ATTRIBUTE_URI,
 )

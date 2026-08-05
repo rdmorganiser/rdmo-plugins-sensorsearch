@@ -11,6 +11,18 @@ class ResolvedMountLocation:
     site_name: str | None
 
 
+@dataclass(frozen=True)
+class ResolvedMountPeriod:
+    """The latest valid device mount action and its normalized time period."""
+
+    action: dict
+    start: datetime
+    end: datetime | None
+
+    def formatted(self) -> tuple[str, str | None]:
+        return format_sms_timepoint(self.start), format_sms_timepoint(self.end)
+
+
 def select_latest_device_mount_action(
     actions: list[dict],
     configuration_id: str,
@@ -24,6 +36,55 @@ def select_latest_device_mount_action(
     if not matching_actions:
         return None
     return max(matching_actions, key=_action_begin_sort_key)
+
+
+def select_latest_device_mount_period(
+    actions: list[dict],
+    configuration_id: str,
+    device_id: str,
+    *,
+    serial_number: str | None = None,
+) -> ResolvedMountPeriod | None:
+    """Select the latest valid mount period for one device in a configuration."""
+
+    normalized_serial = serial_number.strip().casefold() if isinstance(serial_number, str) and serial_number.strip() else None
+    periods = []
+    for action in actions:
+        if _relationship_id(action, "configuration") != configuration_id:
+            continue
+        if _relationship_id(action, "device") != device_id:
+            continue
+
+        attributes = action.get("attributes", {})
+        action_serial = attributes.get("serial_number")
+        if normalized_serial and isinstance(action_serial, str):
+            if action_serial.strip().casefold() != normalized_serial:
+                continue
+
+        start = _parse_timepoint(attributes.get("begin_date"))
+        if start is None:
+            continue
+        periods.append(
+            ResolvedMountPeriod(
+                action=action,
+                start=start,
+                end=_parse_timepoint(attributes.get("end_date")),
+            )
+        )
+
+    if not periods:
+        return None
+    return max(periods, key=lambda period: period.start)
+
+
+def format_sms_timepoint(value: datetime | None) -> str | None:
+    """Format an SMS timestamp for the RDMO datetime text fields."""
+
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=dt_timezone.utc)
+    return value.astimezone(dt_timezone.utc).strftime("%Y-%m-%d %H:%M")
 
 
 def resolve_mount_location(

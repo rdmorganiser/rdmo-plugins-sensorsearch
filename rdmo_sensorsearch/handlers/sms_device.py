@@ -1,6 +1,4 @@
 import logging
-from datetime import datetime
-from datetime import timezone as dt_timezone
 from urllib.parse import urljoin, urlsplit
 
 from rdmo.projects.models import Value
@@ -8,17 +6,20 @@ from rdmo.projects.models import Value
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler, HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
-from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location
+from rdmo_sensorsearch.handlers.sms_device_enrichment import (
+    INSTRUMENT_END_ATTRIBUTE_URI,
+    INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI,
+    INSTRUMENT_START_ATTRIBUTE_URI,
+    SITE_NAME_ATTRIBUTE_URI,
+    SURFACE_OFFSET_Z_ATTRIBUTE_URI,
+)
+from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location, select_latest_device_mount_period
+from rdmo_sensorsearch.services.device_details import parse_external_id
 
 logger = logging.getLogger(__name__)
 
 DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
-INSTRUMENT_START_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
-INSTRUMENT_END_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
-INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height"
-SURFACE_OFFSET_Z_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth"
-SITE_NAME_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
 
 
 class SensorManagementSystemDeviceHandler(BackendRecordHandler):
@@ -92,9 +93,9 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
 
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, data)
         self._set_frontend_device_link(mapped_values, data)
-        mount_period_errors = self._set_mount_period(mapped_values, backend_id, instance, auth_token=auth_token)
-        if mount_period_errors:
-            return {"errors": mount_period_errors}
+        mount_metadata_errors = self._set_mount_metadata(mapped_values, backend_id, instance, auth_token=auth_token)
+        if mount_metadata_errors:
+            return {"errors": mount_metadata_errors}
         return HandlerResult(mapped_values=mapped_values)
 
     def _set_frontend_device_link(self, mapped_values: dict, device_data: dict) -> None:
@@ -117,7 +118,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         parsed = urlsplit(self.base_url)
         return f"{parsed.scheme}://{parsed.netloc}"
 
-    def _set_mount_period(
+    def _set_mount_metadata(
         self,
         mapped_values: dict,
         device_id: str,
@@ -128,7 +129,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         if not configuration_external_id:
             return []
 
-        configuration_id = self._parse_external_id(configuration_external_id)[1]
+        configuration_id = parse_external_id(configuration_external_id)[1]
         if not configuration_id:
             return []
 
@@ -138,30 +139,17 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         if not mount_actions:
             return []
 
-        matching_actions = []
-        for item in mount_actions:
-            relationships = item.get("relationships", {})
-            configuration_ref = relationships.get("configuration", {}).get("data", {})
-            if configuration_ref.get("id") != configuration_id:
-                continue
-
-            action_device_ref = relationships.get("device", {}).get("data", {})
-            if action_device_ref.get("id") != device_id:
-                continue
-
-            attrs = item.get("attributes", {})
-            begin_date = self._parse_timepoint(attrs.get("begin_date"))
-            if begin_date is None:
-                continue
-            end_date = self._parse_timepoint(attrs.get("end_date"))
-            matching_actions.append((begin_date, end_date, item))
-
-        if not matching_actions:
+        mount_period = select_latest_device_mount_period(
+            mount_actions,
+            configuration_id,
+            device_id,
+        )
+        if mount_period is None:
             return []
 
-        latest_start, latest_end, latest_action = max(matching_actions, key=lambda item: item[0])
-        mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = self._format_timepoint(latest_start)
-        mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = self._format_timepoint(latest_end) or ""
+        start_value, end_value = mount_period.formatted()
+        mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = start_value
+        mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = end_value or ""
 
         configuration_device_actions, errors = self._fetch_configuration_actions(
             self.configuration_device_mount_actions_url,
@@ -189,7 +177,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             return errors
 
         location = resolve_mount_location(
-            latest_action,
+            mount_period.action,
             configuration_device_actions or mount_actions,
             platform_actions,
             static_location_actions,
@@ -266,24 +254,3 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         if not isinstance(data, list):
             return [], [f"Unexpected SMS {action_label} data for configuration {configuration_id}: {type(data).__name__}"]
         return data, []
-
-    def _parse_external_id(self, external_id: str) -> tuple[str | None, str | None]:
-        if ":" not in external_id:
-            return None, external_id or None
-        prefix, value = external_id.split(":", 1)
-        return prefix or None, value or None
-
-    def _parse_timepoint(self, value) -> datetime | None:
-        if not isinstance(value, str) or not value:
-            return None
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            return None
-
-    def _format_timepoint(self, value: datetime | None) -> str | None:
-        if value is None:
-            return None
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=dt_timezone.utc)
-        return value.astimezone(dt_timezone.utc).strftime("%Y-%m-%d %H:%M")

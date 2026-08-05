@@ -2,8 +2,10 @@ from datetime import datetime
 from datetime import timezone as dt_timezone
 
 from rdmo_sensorsearch.handlers.sms_mounting import (
+    format_sms_timepoint,
     resolve_mount_location,
     select_latest_device_mount_action,
+    select_latest_device_mount_period,
 )
 
 
@@ -20,6 +22,7 @@ def _action(
     end_date=None,
     offset_z=0,
     z=None,
+    serial_number=None,
 ):
     relationships = {
         "configuration": {"data": {"type": "configuration", "id": configuration_id}},
@@ -36,6 +39,7 @@ def _action(
             "end_date": end_date,
             "offset_z": offset_z,
             "z": z,
+            "serial_number": serial_number,
         },
         "relationships": relationships,
     }
@@ -263,3 +267,57 @@ def test_latest_device_mount_action_is_selected_for_configuration():
     )
 
     assert selected is newer
+
+
+def test_latest_device_mount_period_ignores_invalid_and_nonmatching_actions():
+    older = _action(
+        "old",
+        device_id="sensor",
+        begin_date="2024-01-01T00:00:00Z",
+        end_date="2024-06-01T00:00:00Z",
+        serial_number=" ABC-1 ",
+    )
+    newer = _action(
+        "new",
+        device_id="sensor",
+        begin_date="2025-01-01T02:30:00+02:00",
+        serial_number="abc-1",
+    )
+    invalid = _action(
+        "invalid",
+        device_id="sensor",
+        begin_date="not-a-date",
+        serial_number="abc-1",
+    )
+    other_serial = _action(
+        "other-serial",
+        device_id="sensor",
+        begin_date="2026-01-01T00:00:00Z",
+        serial_number="xyz-9",
+    )
+
+    period = select_latest_device_mount_period(
+        [older, invalid, other_serial, newer],
+        configuration_id="27",
+        device_id="sensor",
+        serial_number="  AbC-1 ",
+    )
+
+    assert period is not None
+    assert period.action is newer
+    assert period.formatted() == ("2025-01-01 00:30", None)
+
+
+def test_latest_device_mount_period_requires_matching_device_and_configuration():
+    period = select_latest_device_mount_period(
+        [_action("other", device_id="other-device", configuration_id="99")],
+        configuration_id="27",
+        device_id="sensor",
+    )
+
+    assert period is None
+
+
+def test_sms_timepoint_format_treats_naive_values_as_utc():
+    assert format_sms_timepoint(datetime(2025, 2, 3, 4, 5)) == "2025-02-03 04:05"
+    assert format_sms_timepoint(None) is None

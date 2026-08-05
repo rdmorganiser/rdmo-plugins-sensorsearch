@@ -264,7 +264,7 @@ def test_sms_device_refresh_maps_mount_height_depth_and_site(monkeypatch):
     )
     mapped_values = {}
 
-    errors = handler._set_mount_period(mapped_values, "607", instance=object())
+    errors = handler._set_mount_metadata(mapped_values, "607", instance=object())
 
     assert errors == []
     assert mapped_values[sms_device_handler_module.INSTRUMENT_START_ATTRIBUTE_URI] == "2020-08-25 12:00"

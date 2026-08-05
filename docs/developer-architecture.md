@@ -38,7 +38,9 @@ Device-detail materialization now has an explicit planning boundary:
 3. `services/device_metadata.py` invokes only the handlers marked for refresh,
    using a bounded worker pool, and converts handler responses into structured
    payloads or per-device errors.
-4. `persistence/device_details.py` applies the plan through an
+4. `handlers/sms_device_enrichment.py` is injected into that generic fetch
+   service and resolves SMS mount periods, height/depth, and site metadata.
+5. `persistence/device_details.py` applies the plan through an
    `RDMODeviceDetailStore` inside the transaction controlled by the signal,
    while recursive post-save processing is muted.
 
@@ -53,6 +55,9 @@ and rejects handler results containing nested collections or post-actions.
 Backend-specific enrichment remains an injected callback; the SMS adapter uses
 it to add mount periods and resolved location values without making the generic
 fetch service depend on SMS endpoints or Earth Sensor attribute URIs.
+`handlers/sms_mounting.py` contains the deterministic mount-period selection
+and mount-chain calculations shared by the bulk enricher and direct SMS device
+handler. Network response handling stays in the two handler adapters.
 
 ## Shared reconciliation and signal context
 
@@ -99,13 +104,13 @@ them without depending on signal registration or Django save hooks.
 
 ## Current refactoring boundary
 
-Device planning, bounded metadata fetching, and device-block persistence have
-been extracted from the larger `device_detail_sync.py` workflow. The signal
-retains transaction control, configuration-context lookup, handler resolution,
-and SMS-specific mount enrichment. Shared collection binding, value
-reconciliation, and recursive-signal context have also been moved out of the
-signal package. Future extractions should keep the same behavior and proceed in
-small tested slices.
+Device planning, bounded metadata fetching, SMS mount enrichment, and
+device-block persistence have been extracted from the larger
+`device_detail_sync.py` workflow. The signal retains transaction control,
+configuration-context lookup, handler resolution, and orchestration. Shared
+collection binding, value reconciliation, and recursive-signal context have
+also been moved out of the signal package. Future extractions should keep the
+same behavior and proceed in small tested slices.
 
 This is an internal module boundary, not a catalog migration. The Earth Sensor
 question, attribute, page, option-set, and condition URIs stay unchanged.

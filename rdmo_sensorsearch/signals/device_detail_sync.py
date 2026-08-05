@@ -1,17 +1,15 @@
 import logging
 from collections.abc import Iterable
-from datetime import datetime
-from datetime import timezone as dt_timezone
 from typing import Any
 
 from django.db import transaction
 
 from rdmo.projects.models import Value
 
-from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.sms_mounting import (
-    resolve_mount_location,
-    select_latest_device_mount_action,
+from rdmo_sensorsearch.handlers.sms_device_enrichment import (
+    INSTRUMENT_END_ATTRIBUTE_URI,
+    INSTRUMENT_START_ATTRIBUTE_URI,
+    SMSDeviceMetadataEnricher,
 )
 from rdmo_sensorsearch.naming import configuration_short_label
 from rdmo_sensorsearch.persistence.collection_binding import CollectionBinding, CollectionScope
@@ -22,7 +20,6 @@ from rdmo_sensorsearch.persistence.device_details import (
 )
 from rdmo_sensorsearch.services.device_details import (
     ConfigurationIdentity,
-    DeviceBlockPlan,
     SelectedDevice,
     compose_device_block_key,
     parse_external_id,
@@ -44,12 +41,6 @@ SELECTED_DEVICES_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/config
 DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
 USAGE_TECHNOLOGY_ATTRIBUTE_URI = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
-INSTRUMENT_START_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
-INSTRUMENT_END_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
-INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height"
-SURFACE_OFFSET_Z_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth"
-SITE_NAME_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
-SERIAL_NUMBER_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 
 
 def reconcile_device_details_from_selected_values(
@@ -221,20 +212,16 @@ def reconcile_device_details(
     for failure in reconciliation_plan.failures:
         logger.warning("No device handler found for selected device %s", failure.external_id)
 
+    metadata_enricher = SMSDeviceMetadataEnricher(
+        configuration_external_id=configuration_identity.external_id,
+        auth_token=auth_token,
+    )
     fetch_batch = fetch_device_metadata_batch(
         plans,
         root_attribute_id=root_attribute.id,
-        scoped_attribute_uris=(
-            INSTRUMENT_START_ATTRIBUTE_URI,
-            INSTRUMENT_END_ATTRIBUTE_URI,
-        ),
+        scoped_attribute_uris=metadata_enricher.scoped_attribute_uris,
         auth_token=auth_token,
-        enrich_payload=lambda mapped_values, plan: _enrich_device_metadata_payload(
-            mapped_values,
-            plan,
-            configuration_identity.external_id,
-            auth_token=auth_token,
-        ),
+        enrich_payload=metadata_enricher,
     )
     fetched_payloads = fetch_batch.payloads
     fetch_errors = tuple(RefreshError(external_id=error.external_id, message=error.message) for error in fetch_batch.errors)
@@ -390,28 +377,6 @@ def remove_orphaned_device_detail_blocks(
     return len(orphaned_scopes)
 
 
-def _enrich_device_metadata_payload(
-    mapped_values: dict[str, Any],
-    plan: DeviceBlockPlan,
-    configuration_external_id: str | None,
-    auth_token: str | None = None,
-) -> None:
-    _merge_mounting_period_values(
-        mapped_values,
-        plan.device,
-        plan.handler_binding,
-        plan.configuration_external_id or configuration_external_id,
-        auth_token=auth_token,
-    )
-    _merge_mount_location_values(
-        mapped_values,
-        plan.device,
-        plan.handler_binding,
-        plan.configuration_external_id or configuration_external_id,
-        auth_token=auth_token,
-    )
-
-
 def _resolve_device_handler_binding(catalog_uri: str, external_id: str) -> Any | None:
     id_prefix, _ = parse_external_id(external_id)
     if id_prefix is None:
@@ -538,235 +503,3 @@ def _configuration_label(
         if text:
             return text.split(":", 1)[0].strip() or str(source_set_index)
     return str(source_set_index)
-
-
-def _merge_mounting_period_values(
-    mapped_values: dict[str, Any],
-    device: SelectedDevice,
-    handler_binding: Any,
-    configuration_external_id: str | None,
-    auth_token: str | None = None,
-) -> None:
-    if INSTRUMENT_START_ATTRIBUTE_URI in mapped_values:
-        mapped_values.setdefault(INSTRUMENT_END_ATTRIBUTE_URI, "")
-        return
-    if device.instrument_start:
-        mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = device.instrument_start
-        mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = device.instrument_end or ""
-        return
-
-    start_value, end_value = _resolve_mounting_period_values(
-        mapped_values,
-        device,
-        handler_binding,
-        configuration_external_id,
-        auth_token=auth_token,
-    )
-    mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = start_value or ""
-    mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = end_value or ""
-
-
-def _merge_mount_location_values(
-    mapped_values: dict[str, Any],
-    device: SelectedDevice,
-    handler_binding: Any,
-    configuration_external_id: str | None,
-    auth_token: str | None = None,
-) -> None:
-    if device.mount_location_resolved:
-        height_amsl = device.height_amsl
-        vertical_surface_offset = device.vertical_surface_offset
-        site_name = device.site_name
-    else:
-        height_amsl, vertical_surface_offset, site_name = _resolve_mount_location_values(
-            device,
-            handler_binding,
-            configuration_external_id,
-            auth_token=auth_token,
-        )
-
-    mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = height_amsl if height_amsl is not None else ""
-    mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = vertical_surface_offset if vertical_surface_offset is not None else ""
-    mapped_values[SITE_NAME_ATTRIBUTE_URI] = site_name if site_name is not None else ""
-
-
-def _resolve_mount_location_values(
-    device: SelectedDevice,
-    handler_binding: Any,
-    configuration_external_id: str | None,
-    auth_token: str | None = None,
-) -> tuple[float | None, float | None, str | None]:
-    if not configuration_external_id:
-        return None, None, None
-    if not getattr(handler_binding.handler, "supports_mount_location_lookup", False):
-        return None, None, None
-
-    _, configuration_id = parse_external_id(configuration_external_id)
-    device_id = parse_external_id(device.external_id)[1]
-    if configuration_id is None or device_id is None:
-        return None, None, None
-
-    handler = handler_binding.handler
-    device_actions = _fetch_configuration_mount_actions(
-        handler,
-        "configuration_device_mount_actions_url",
-        (
-            "{base_url}/device-mount-actions?filter[configuration_id]={id}"
-            "&page[size]=10000&include=parent_platform,parent_device,configuration"
-        ),
-        configuration_id,
-        auth_token=auth_token,
-    )
-    device_action = select_latest_device_mount_action(
-        device_actions,
-        configuration_id,
-        device_id,
-    )
-    if device_action is None:
-        return None, None, None
-
-    platform_actions = _fetch_configuration_mount_actions(
-        handler,
-        "configuration_platform_mount_actions_url",
-        "{base_url}/platform-mount-actions?filter[configuration_id]={id}&page[size]=10000",
-        configuration_id,
-        auth_token=auth_token,
-    )
-    static_location_actions = _fetch_configuration_mount_actions(
-        handler,
-        "configuration_static_location_actions_url",
-        "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]=10000",
-        configuration_id,
-        auth_token=auth_token,
-    )
-    mount_location = resolve_mount_location(
-        device_action,
-        device_actions,
-        platform_actions,
-        static_location_actions,
-    )
-    return mount_location.height_amsl, mount_location.vertical_surface_offset, mount_location.site_name
-
-
-def _fetch_configuration_mount_actions(
-    handler: Any,
-    template_attribute: str,
-    default_template: str,
-    configuration_id: str,
-    auth_token: str | None = None,
-) -> list[dict]:
-    template = getattr(handler, template_attribute, default_template)
-    url = template.format(base_url=handler.base_url, id=configuration_id)
-    payload = fetch_json(url, auth_token=auth_token)
-    if isinstance(payload, dict) and "errors" in payload:
-        logger.warning(
-            "Could not fetch SMS configuration mount metadata from %s: %s",
-            url,
-            payload["errors"],
-        )
-        return []
-    if not isinstance(payload, dict):
-        return []
-    data = payload.get("data", [])
-    return data if isinstance(data, list) else []
-
-
-def _resolve_mounting_period_values(
-    mapped_values: dict[str, Any],
-    device: SelectedDevice,
-    handler_binding: Any,
-    configuration_external_id: str | None,
-    auth_token: str | None = None,
-) -> tuple[str | None, str | None]:
-    if not configuration_external_id:
-        return None, None
-
-    _, configuration_id = parse_external_id(configuration_external_id)
-    device_id = parse_external_id(device.external_id)[1]
-    if configuration_id is None or device_id is None:
-        return None, None
-
-    if not getattr(handler_binding.handler, "supports_mount_period_lookup", False):
-        return None, None
-
-    mount_actions = _fetch_device_mount_actions(handler_binding, device_id, auth_token=auth_token)
-    if not mount_actions:
-        return None, None
-
-    serial_number = mapped_values.get(SERIAL_NUMBER_ATTRIBUTE_URI)
-    if not isinstance(serial_number, str) or not serial_number.strip():
-        serial_number = _serial_number_from_text(device.text)
-
-    matching_actions = []
-    normalized_serial = serial_number.strip().casefold() if isinstance(serial_number, str) and serial_number.strip() else None
-    for item in mount_actions:
-        relationships = item.get("relationships", {})
-        configuration_ref = relationships.get("configuration", {}).get("data", {})
-        if configuration_ref.get("id") != configuration_id:
-            continue
-
-        action_device_ref = relationships.get("device", {}).get("data", {})
-        if action_device_ref.get("id") != device_id:
-            continue
-
-        attrs = item.get("attributes", {})
-        action_serial = attrs.get("serial_number")
-        if normalized_serial and isinstance(action_serial, str):
-            if action_serial.strip().casefold() != normalized_serial:
-                continue
-
-        begin_date = _parse_timepoint(attrs.get("begin_date"))
-        if begin_date is None:
-            continue
-        end_date = _parse_timepoint(attrs.get("end_date"))
-        matching_actions.append((begin_date, end_date))
-
-    if not matching_actions:
-        return None, None
-
-    latest_start, latest_end = max(matching_actions, key=lambda item: item[0])
-    return _format_timepoint(latest_start), _format_timepoint(latest_end)
-
-
-def _fetch_device_mount_actions(handler_binding: Any, device_id: str, auth_token: str | None = None) -> list[dict]:
-    url = (
-        f"{handler_binding.handler.base_url}/devices/{device_id}/device-mount-actions"
-        "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration"
-    )
-    action_data = fetch_json(url, auth_token=auth_token)
-    if isinstance(action_data, dict) and "errors" in action_data:
-        logger.warning(
-            "Could not fetch device mount actions for %s: %s",
-            device_id,
-            action_data["errors"],
-        )
-        return []
-    if not isinstance(action_data, dict):
-        return []
-    data = action_data.get("data", [])
-    return data if isinstance(data, list) else []
-
-
-def _parse_timepoint(value: Any) -> datetime | None:
-    if not isinstance(value, str) or not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-
-
-def _format_timepoint(value: datetime | None) -> str | None:
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=dt_timezone.utc)
-    return value.astimezone(dt_timezone.utc).strftime("%Y-%m-%d %H:%M")
-
-
-def _serial_number_from_text(text: str) -> str | None:
-    marker = "(s/n:"
-    if marker not in text:
-        return None
-    serial_fragment = text.split(marker, 1)[1]
-    return serial_fragment.split(")", 1)[0].strip() or None
