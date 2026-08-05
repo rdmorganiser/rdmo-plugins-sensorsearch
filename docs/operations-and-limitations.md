@@ -85,31 +85,26 @@ periods, but it cannot reconstruct changing physical mounts in the way SMS can.
 
 SMS location enrichment uses three concepts:
 
-- a configuration static-location action supplies the site label and its
-  vertical `z` anchor;
-- device and platform mount actions supply relative `offset_z` values and can
-  themselves contain an absolute `z` anchor;
-- the plugin follows the active mount chain and adds the vertical offsets below
-  the nearest usable anchor. If no mount action contains `z`, it uses the
-  static-location `z` after resolving a complete chain.
+- a configuration static-location action supplies the site label and station
+  elevation `z`;
+- device and platform mount actions supply relative `offset_z` values;
+- the plugin follows the active mount chain only to determine the relative
+  offset. It does not add an offset or a mount `z` to the station elevation.
 
-This can fill the Earth Sensor fields for site name, AMSL height, and relative
-height or depth. A negative relative value is retained and can represent, for
-example, a sensor one or two metres below the local surface.
+This can fill the Earth Sensor fields for site name, station elevation AMSL,
+and relative height or depth. A negative relative value is retained and can
+represent, for example, a sensor one or two metres below the local surface.
 
 Current limitations are important:
 
-- an absolute result requires either a usable `z` in the mount chain or both a
-  complete mount chain and a usable static-location `z`;
+- the AMSL result requires a usable static-location `z` at the resolved time;
 - the relative height/depth result requires a complete mount chain and
   represents its accumulated `offset_z` values;
 - missing or non-numeric offsets are treated as zero, so incomplete backend
-  metadata can make a calculated value less accurate without producing an API
+  metadata can make the relative result less accurate without producing an API
   error;
-- the plugin adds `z` and `offset_z`; it does not implement a general spatial
-  coordinate transformation;
-- radial, polar, or otherwise rotated local coordinate systems are not
-  converted into Cartesian vertical offsets;
+- no spatial coordinate transformation is applied; the configured SMS
+  static-location `z` is used directly as station elevation;
 - the correctness of units and coordinate-system interpretation depends on the
   metadata supplied by SMS.
 

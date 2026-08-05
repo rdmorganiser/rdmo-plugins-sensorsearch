@@ -79,7 +79,7 @@ def test_selected_device_metadata_takes_precedence_without_sms_requests(monkeypa
         external_id="sms-device:607",
         instrument_start="2025-04-01 08:00",
         instrument_end="2025-04-02 18:00",
-        height_amsl=98.5,
+        station_height_amsl=98.5,
         vertical_surface_offset=-1.5,
         site_name="Field plot",
         mount_location_resolved=True,
@@ -163,7 +163,7 @@ def test_sms_mount_period_and_location_are_resolved_from_action_endpoints(monkey
 
     assert mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] == "2025-01-02 10:00"
     assert mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] == "2025-01-03 11:30"
-    assert mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] == 98
+    assert mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] == 100
     assert mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] == -2
     assert mapped_values[SITE_NAME_ATTRIBUTE_URI] == "Test site"
     assert len(requested_urls) == 4

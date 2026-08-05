@@ -182,7 +182,9 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             platform_actions,
             static_location_actions,
         )
-        mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = location.height_amsl if location.height_amsl is not None else ""
+        mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = (
+            location.station_height_amsl if location.station_height_amsl is not None else ""
+        )
         mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = (
             location.vertical_surface_offset if location.vertical_surface_offset is not None else ""
         )

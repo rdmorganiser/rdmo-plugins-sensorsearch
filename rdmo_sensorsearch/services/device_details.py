@@ -13,7 +13,7 @@ class SelectedDevice:
     external_id: str
     instrument_start: str | None = None
     instrument_end: str | None = None
-    height_amsl: float | None = None
+    station_height_amsl: float | None = None
     vertical_surface_offset: float | None = None
     site_name: str | None = None
     mount_location_resolved: bool = False

@@ -223,7 +223,7 @@ def test_sms_device_refresh_fails_when_contact_request_fails(monkeypatch):
     assert result == {"errors": ["contacts unavailable"]}
 
 
-def test_sms_device_refresh_maps_mount_height_depth_and_site(monkeypatch):
+def test_sms_device_refresh_maps_station_height_depth_and_site(monkeypatch):
     device_action = {
         "type": "device_mount_action",
         "id": "647",
@@ -282,7 +282,7 @@ def test_sms_device_refresh_maps_mount_height_depth_and_site(monkeypatch):
     assert errors == []
     assert mapped_values[sms_device_handler_module.INSTRUMENT_START_ATTRIBUTE_URI] == "2020-08-25 12:00"
     assert mapped_values[sms_device_handler_module.INSTRUMENT_END_ATTRIBUTE_URI] == ""
-    assert mapped_values[sms_device_handler_module.INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] == 160
+    assert mapped_values[sms_device_handler_module.INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] == 110
     assert mapped_values[sms_device_handler_module.SURFACE_OFFSET_Z_ATTRIBUTE_URI] == 50
     assert mapped_values[sms_device_handler_module.SITE_NAME_ATTRIBUTE_URI] == "Wettermast_CN"
 
@@ -407,7 +407,7 @@ def test_sms_configuration_member_includes_derived_vertical_location():
     )
 
     assert errors == []
-    assert values[0]["height_amsl"] == 108
+    assert values[0]["station_height_amsl"] == 100
     assert values[0]["vertical_surface_offset"] == 8
     assert values[0]["site_name"] == "Test site"
 
@@ -577,7 +577,7 @@ def test_sms_configuration_range_selects_latest_mount_and_location_within_range(
     assert errors == []
     assert [value["external_id"] for value in values] == ["kitsms:327"]
     assert values[0]["instrument_start"] == "2025-03-01 00:00"
-    assert values[0]["height_amsl"] == 202
+    assert values[0]["station_height_amsl"] == 200
     assert values[0]["vertical_surface_offset"] == 2
     assert values[0]["site_name"] == "Range site"
 

@@ -6,7 +6,7 @@ from typing import Any
 
 @dataclass(frozen=True)
 class ResolvedMountLocation:
-    height_amsl: float | None
+    station_height_amsl: float | None
     vertical_surface_offset: float | None
     site_name: str | None
 
@@ -109,29 +109,18 @@ def resolve_mount_location(
 
     vertical_surface_offset = sum(_offset_z(action) for action in mount_chain) if chain_complete else None
 
-    offset_below_anchor = 0.0
-    height_amsl = None
-    for action in mount_chain:
-        explicit_height = _number(action.get("attributes", {}).get("z"))
-        if explicit_height is not None:
-            height_amsl = explicit_height + offset_below_anchor
-            break
-        offset_below_anchor += _offset_z(action)
-
     static_location = select_static_location_action(static_location_actions, reference_time)
-    if height_amsl is None and chain_complete and static_location is not None:
-        base_height = _number(static_location.get("attributes", {}).get("z"))
-        if base_height is not None and vertical_surface_offset is not None:
-            height_amsl = base_height + vertical_surface_offset
-
+    station_height_amsl = None
     site_name = None
     if static_location is not None:
-        label = static_location.get("attributes", {}).get("label")
+        static_location_attributes = static_location.get("attributes", {})
+        station_height_amsl = _number(static_location_attributes.get("z"))
+        label = static_location_attributes.get("label")
         if isinstance(label, str):
             site_name = label
 
     return ResolvedMountLocation(
-        height_amsl=height_amsl,
+        station_height_amsl=station_height_amsl,
         vertical_surface_offset=vertical_surface_offset,
         site_name=site_name,
     )

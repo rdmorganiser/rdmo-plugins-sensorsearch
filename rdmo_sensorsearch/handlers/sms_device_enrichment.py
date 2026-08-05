@@ -81,17 +81,17 @@ class SMSDeviceMetadataEnricher:
         configuration_external_id: str | None,
     ) -> None:
         if device.mount_location_resolved:
-            height_amsl = device.height_amsl
+            station_height_amsl = device.station_height_amsl
             vertical_surface_offset = device.vertical_surface_offset
             site_name = device.site_name
         else:
-            height_amsl, vertical_surface_offset, site_name = self._resolve_mount_location(
+            station_height_amsl, vertical_surface_offset, site_name = self._resolve_mount_location(
                 device,
                 handler_binding,
                 configuration_external_id,
             )
 
-        mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = height_amsl if height_amsl is not None else ""
+        mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = station_height_amsl if station_height_amsl is not None else ""
         mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = vertical_surface_offset if vertical_surface_offset is not None else ""
         mapped_values[SITE_NAME_ATTRIBUTE_URI] = site_name if site_name is not None else ""
 
@@ -182,7 +182,7 @@ class SMSDeviceMetadataEnricher:
             platform_actions,
             static_location_actions,
         )
-        return mount_location.height_amsl, mount_location.vertical_surface_offset, mount_location.site_name
+        return mount_location.station_height_amsl, mount_location.vertical_surface_offset, mount_location.site_name
 
     def _fetch_device_mount_actions(self, handler: Any, device_id: str) -> list[dict]:
         template = getattr(

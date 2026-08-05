@@ -197,18 +197,17 @@ Device parameter elements are:
 | Site name | `https://rdmo.nfdi4earth.de/terms/questions/instrument_location-name` | `https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location` |
 
 These three fields can be enriched for SMS devices from static-location and
-device/platform mount actions. The relative value retains its sign, so a
-negative `offset_z` can describe a sensor below the local surface. The AMSL
-value is based on the nearest absolute `z` anchor in the mount context, or on a
-static-location `z` plus the accumulated vertical offsets when the complete
-mount chain is available. See the calculation limits in
+device/platform mount actions. The AMSL value is the resolved static-location
+`z` without adjustment by device or platform mounts. The relative value retains
+its sign, so a negative `offset_z` can describe a sensor below the local
+surface. See the calculation limits in
 [Operations and limitations](operations-and-limitations.md#sms-location-height-and-depth).
 
 | Earth Sensor answer | SMS source |
 | --- | --- |
 | Site name | `/static-location-actions` → `attributes.label` at the resolved time |
 | Relative height/depth | Accumulated `attributes.offset_z` from the active device/platform mount chain |
-| Instrument location AMSL | Nearest active mount `attributes.z` plus offsets below it; otherwise `/static-location-actions` → `attributes.z` plus the complete mount-chain offset |
+| Instrument location AMSL | `/static-location-actions` → `attributes.z` at the resolved time, without mount offsets |
 
 The SMS configuration handler fetches configuration-scoped device mount,
 platform mount, and static-location action collections. The device handler can

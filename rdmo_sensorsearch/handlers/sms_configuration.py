@@ -224,7 +224,7 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
                         external_id=value["external_id"],
                         instrument_start=value.get("instrument_start"),
                         instrument_end=value.get("instrument_end"),
-                        height_amsl=value.get("height_amsl"),
+                        station_height_amsl=value.get("station_height_amsl"),
                         vertical_surface_offset=value.get("vertical_surface_offset"),
                         site_name=value.get("site_name"),
                         mount_location_resolved=True,

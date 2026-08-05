@@ -65,7 +65,7 @@ def _static_location(
     }
 
 
-def test_configuration_height_plus_device_offset_matches_tower_example():
+def test_station_height_is_not_combined_with_device_offset():
     device_action = _action("647", device_id="607", offset_z=50)
 
     mount_location = resolve_mount_location(
@@ -76,7 +76,7 @@ def test_configuration_height_plus_device_offset_matches_tower_example():
         now=datetime(2026, 7, 30, tzinfo=dt_timezone.utc),
     )
 
-    assert mount_location.height_amsl == 160
+    assert mount_location.station_height_amsl == 110
     assert mount_location.vertical_surface_offset == 50
     assert mount_location.site_name == "Wettermast_CN"
 
@@ -91,12 +91,12 @@ def test_negative_offset_is_preserved_as_depth_below_surface():
         [_static_location("66", z=96, label="")],
     )
 
-    assert mount_location.height_amsl == 95.6
+    assert mount_location.station_height_amsl == 96
     assert mount_location.vertical_surface_offset == -0.4
     assert mount_location.site_name == ""
 
 
-def test_explicit_mount_height_overrides_configuration_height():
+def test_mount_height_does_not_override_station_height():
     device_action = _action("652", device_id="49", offset_z=0, z=140)
 
     mount_location = resolve_mount_location(
@@ -106,7 +106,21 @@ def test_explicit_mount_height_overrides_configuration_height():
         [_static_location("14", z=110)],
     )
 
-    assert mount_location.height_amsl == 140
+    assert mount_location.station_height_amsl == 110
+    assert mount_location.vertical_surface_offset == 0
+
+
+def test_mount_height_is_not_used_when_static_location_has_no_height():
+    device_action = _action("652", device_id="49", offset_z=0, z=140)
+
+    mount_location = resolve_mount_location(
+        device_action,
+        [device_action],
+        [],
+        [_static_location("14", z=None)],
+    )
+
+    assert mount_location.station_height_amsl is None
     assert mount_location.vertical_surface_offset == 0
 
 
@@ -131,11 +145,11 @@ def test_nested_platform_offsets_are_summed_to_configuration_root():
         [_static_location("location-1", z=100)],
     )
 
-    assert mount_location.height_amsl == 108
+    assert mount_location.station_height_amsl == 100
     assert mount_location.vertical_surface_offset == 8
 
 
-def test_nearest_explicit_parent_height_anchors_child_offset():
+def test_parent_mount_height_does_not_override_station_height():
     platform_action = _action(
         "platform-1",
         action_type="platform_mount_action",
@@ -157,7 +171,7 @@ def test_nearest_explicit_parent_height_anchors_child_offset():
         [_static_location("location-1", z=100)],
     )
 
-    assert mount_location.height_amsl == 118
+    assert mount_location.station_height_amsl == 100
     assert mount_location.vertical_surface_offset == 8
 
 
@@ -190,11 +204,11 @@ def test_historical_mount_uses_static_location_at_end_of_mount():
         [old_location, new_location],
     )
 
-    assert mount_location.height_amsl == 202
+    assert mount_location.station_height_amsl == 200
     assert mount_location.site_name == "New site"
 
 
-def test_missing_parent_does_not_publish_partial_offset_or_derived_height():
+def test_missing_parent_keeps_station_height_but_not_partial_offset():
     device_action = _action(
         "device-1",
         device_id="sensor",
@@ -209,7 +223,7 @@ def test_missing_parent_does_not_publish_partial_offset_or_derived_height():
         [_static_location("location-1", z=100)],
     )
 
-    assert mount_location.height_amsl is None
+    assert mount_location.station_height_amsl == 100
     assert mount_location.vertical_surface_offset is None
 
 
@@ -236,7 +250,7 @@ def test_expired_static_location_is_not_reused_during_dynamic_location_period():
         now=datetime(2026, 7, 30, tzinfo=dt_timezone.utc),
     )
 
-    assert mount_location.height_amsl is None
+    assert mount_location.station_height_amsl is None
     assert mount_location.vertical_surface_offset == -2
     assert mount_location.site_name is None
 

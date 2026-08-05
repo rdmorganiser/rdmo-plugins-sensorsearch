@@ -46,7 +46,10 @@ def build_handlers_by_catalog() -> dict:
             catalog_uris = catalog_uri_values(merged_catalog) or [WILDCARD_CATALOG_URI]
             catalog_uri = catalog_uris[0]
             search_attribute_uri = merged_catalog.get("search_attribute_uri")
-            attribute_mapping = merged_catalog.get("attribute_mapping", {})
+            # Parsed deployment configuration is immutable. Handlers retain a
+            # concrete dictionary here because their public setter validates
+            # and stores a mutable mapping.
+            attribute_mapping = dict(merged_catalog.get("attribute_mapping", {}))
             catalog_extra_kwargs = {
                 key: value
                 for key, value in merged_catalog.items()

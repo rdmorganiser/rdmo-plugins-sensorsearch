@@ -22,7 +22,7 @@ class SMSConfigurationMember:
     external_id: str
     instrument_start: str | None
     instrument_end: str | None
-    height_amsl: float | None
+    station_height_amsl: float | None
     vertical_surface_offset: float | None
     site_name: str | None
 
@@ -32,7 +32,7 @@ class SMSConfigurationMember:
             "external_id": self.external_id,
             "instrument_start": self.instrument_start,
             "instrument_end": self.instrument_end,
-            "height_amsl": self.height_amsl,
+            "station_height_amsl": self.station_height_amsl,
             "vertical_surface_offset": self.vertical_surface_offset,
             "site_name": self.site_name,
         }
@@ -43,7 +43,7 @@ class SMSConfigurationMember:
             external_id=self.external_id,
             instrument_start=self.instrument_start,
             instrument_end=self.instrument_end,
-            height_amsl=self.height_amsl,
+            station_height_amsl=self.station_height_amsl,
             vertical_surface_offset=self.vertical_surface_offset,
             site_name=self.site_name,
             mount_location_resolved=True,
@@ -114,7 +114,7 @@ class SMSConfigurationMembershipResolver:
                     external_id=f"{self.device_id_prefix}:{device['id']}",
                     instrument_start=_format_mount_timepoint(attributes.get("begin_date")),
                     instrument_end=_format_mount_timepoint(attributes.get("end_date")),
-                    height_amsl=mount_location.height_amsl,
+                    station_height_amsl=mount_location.station_height_amsl,
                     vertical_surface_offset=mount_location.vertical_surface_offset,
                     site_name=mount_location.site_name,
                 )
