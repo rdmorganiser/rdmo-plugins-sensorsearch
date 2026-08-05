@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 from datetime import timezone as dt_timezone
 from functools import partial
 from urllib.parse import urljoin
@@ -18,9 +17,10 @@ from rdmo_sensorsearch.handlers.configuration_period import (
     catalog_has_date_range_trigger,
     read_configuration_period,
 )
+from rdmo_sensorsearch.handlers.jsonapi import fetch_paginated_jsonapi_collection
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping, parse_datetime
-from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location
-from rdmo_sensorsearch.naming import configuration_short_label
+from rdmo_sensorsearch.handlers.sms_configuration_membership import SMSConfigurationMembershipResolver
+from rdmo_sensorsearch.handlers.sms_mounting import select_static_location_action
 from rdmo_sensorsearch.services.device_details import SelectedDevice
 from rdmo_sensorsearch.workflows.device_details import reconcile_device_details_from_selected_devices
 
@@ -347,7 +347,7 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
                 for error in location_actions_data["errors"]
             ]
 
-        action = self._select_best_static_location_action(location_actions_data.get("data", []))
+        action = select_static_location_action(location_actions_data.get("data", []))
         if action is None:
             return []
 
@@ -374,80 +374,16 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
         page_size: int,
         auth_token: str | None = None,
     ) -> dict:
-        data: list[dict] = []
-        included: dict[tuple[str | None, str | None], dict] = {}
-        seen_pages: set[tuple[tuple[str | None, str | None], ...]] = set()
-        page_number = 1
-        pages_fetched = 0
-        next_url = url_template.format(
+        return fetch_paginated_jsonapi_collection(
+            url_template=url_template,
             base_url=self.base_url,
-            id=object_id,
+            object_id=object_id,
             page_size=page_size,
-            page_number=page_number,
+            max_pages=self.max_collection_pages,
+            fetch_page=lambda url: fetch_json(url, auth_token=auth_token),
+            error_label="SMS",
+            next_link_base_url=self.base_url_origin,
         )
-
-        while next_url and pages_fetched < self.max_collection_pages:
-            pages_fetched += 1
-            payload = fetch_json(next_url, auth_token=auth_token)
-            if isinstance(payload, dict) and "errors" in payload:
-                return payload
-            if not isinstance(payload, dict):
-                return {"errors": [f"Unexpected SMS collection payload: {type(payload).__name__}"]}
-
-            page_data = payload.get("data", [])
-            if not isinstance(page_data, list):
-                return {"errors": [f"Unexpected SMS collection data: {type(page_data).__name__}"]}
-
-            signature = tuple((item.get("type"), item.get("id")) for item in page_data)
-            if page_data and signature in seen_pages:
-                return {"errors": ["SMS collection pagination returned the same page more than once."]}
-            seen_pages.add(signature)
-            data.extend(page_data)
-
-            page_included = payload.get("included", [])
-            if not isinstance(page_included, list):
-                return {"errors": [f"Unexpected SMS included data: {type(page_included).__name__}"]}
-            for item in page_included:
-                included[(item.get("type"), item.get("id"))] = item
-
-            links = payload.get("links", {})
-            raw_next = links.get("next") if isinstance(links, dict) else None
-            if isinstance(raw_next, dict):
-                raw_next = raw_next.get("href")
-            if isinstance(raw_next, str) and raw_next:
-                next_url = urljoin(self.base_url_origin, raw_next)
-            elif len(page_data) >= page_size:
-                page_number = pages_fetched + 1
-                next_url = url_template.format(
-                    base_url=self.base_url,
-                    id=object_id,
-                    page_size=page_size,
-                    page_number=page_number,
-                )
-            else:
-                next_url = None
-
-        if next_url:
-            return {"errors": [f"SMS collection pagination exceeded {self.max_collection_pages} pages."]}
-        return {"data": data, "included": list(included.values())}
-
-    def _select_best_static_location_action(self, actions: list[dict]) -> dict | None:
-        if not actions:
-            return None
-
-        def parse_begin_timestamp(action: dict) -> float:
-            begin_raw = action.get("attributes", {}).get("begin_date")
-            parsed = parse_datetime(begin_raw) if begin_raw else None
-            if parsed is None:
-                return float("-inf")
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(tzinfo=dt_timezone.utc)
-            return parsed.timestamp()
-
-        active_actions = [action for action in actions if not action.get("attributes", {}).get("end_date")]
-        if active_actions:
-            return max(active_actions, key=parse_begin_timestamp)
-        return max(actions, key=parse_begin_timestamp)
 
     def _build_selected_device_values(
         self,
@@ -458,126 +394,37 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
         configuration_period: ConfigurationPeriod | None = None,
         auth_token: str | None = None,
     ) -> tuple[list[dict[str, object]], list[str]]:
-        included_devices = {item["id"]: item for item in mount_action_data.get("included", []) if item.get("type") == "device"}
+        resolver = SMSConfigurationMembershipResolver(
+            configuration_id_prefix=self.id_prefix,
+            device_id_prefix=getattr(self, "device_id_prefix", self.id_prefix),
+            device_text_prefix=getattr(self, "device_text_prefix", "SMS Sensor"),
+            fetch_device=partial(self._fetch_device, auth_token=auth_token),
+            fetch_mount_action=partial(self._fetch_mount_action, auth_token=auth_token),
+        )
+        members, errors = resolver.resolve(
+            configuration_data=configuration_data,
+            mount_action_data=mount_action_data,
+            platform_mount_action_data=platform_mount_action_data,
+            static_location_action_data=static_location_action_data,
+            configuration_period=configuration_period,
+        )
+        return [member.as_collection_value() for member in members], list(errors)
 
-        device_id_prefix = getattr(self, "device_id_prefix", self.id_prefix)
-        selected_device_values = []
-
-        mount_actions, errors = self._get_mount_actions(
-            configuration_data,
-            mount_action_data,
+    def _fetch_mount_action(
+        self,
+        action_id: str,
+        auth_token: str | None = None,
+    ) -> tuple[dict | None, list[str]]:
+        action_data = fetch_json(
+            self.device_mount_action_url.format(base_url=self.base_url, id=action_id),
             auth_token=auth_token,
         )
-        if errors:
-            return [], errors
-
-        platform_mount_actions = (
-            platform_mount_action_data.get("data", []) if isinstance(platform_mount_action_data, dict) else []
-        )
-        static_location_actions = (
-            static_location_action_data.get("data", []) if isinstance(static_location_action_data, dict) else []
-        )
-
-        selected_mount_actions = self._select_member_mount_actions(mount_actions, configuration_period)
-        reference_time = configuration_period.end if configuration_period is not None else None
-        for mount_action in selected_mount_actions:
-            device_ref = mount_action.get("relationships", {}).get("device", {}).get("data")
-            if not device_ref:
-                continue
-
-            device = included_devices.get(device_ref["id"])
-            if device is None:
-                device, device_errors = self._fetch_device(device_ref["id"], auth_token=auth_token)
-                if device_errors:
-                    errors.extend(device_errors)
-                    continue
-
-            attrs = mount_action.get("attributes", {})
-            mount_location = resolve_mount_location(
-                mount_action,
-                mount_actions,
-                platform_mount_actions,
-                static_location_actions,
-                reference_time=reference_time,
-            )
-            selected_device_values.append(
-                {
-                    "text": self._format_device_text(
-                        configuration_id=configuration_data.get("data", {}).get("id"),
-                        device_id=device["id"],
-                        attrs=device.get("attributes", {}),
-                    ),
-                    "external_id": f"{device_id_prefix}:{device['id']}",
-                    "instrument_start": self._format_mount_timepoint(attrs.get("begin_date")),
-                    "instrument_end": self._format_mount_timepoint(attrs.get("end_date")),
-                    "height_amsl": mount_location.height_amsl,
-                    "vertical_surface_offset": mount_location.vertical_surface_offset,
-                    "site_name": mount_location.site_name,
-                }
-            )
-
-        return selected_device_values, errors
-
-    def _format_device_text(
-        self,
-        configuration_id: str | None,
-        device_id: str,
-        attrs: dict,
-    ) -> str:
-        name = attrs.get("long_name") or attrs.get("short_name", "")
-        serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
-        device_text_prefix = getattr(self, "device_text_prefix", "SMS Sensor")
-        configuration_label = configuration_short_label(f"{self.id_prefix}:{configuration_id}") if configuration_id else None
-        configuration_prefix = f"{configuration_label} " if configuration_label else ""
-        return f"{configuration_prefix}{device_text_prefix}({device_id}): {name}{serial}"
-
-    def _format_mount_timepoint(self, value) -> str | None:
-        parsed = parse_datetime(value) if value else None
-        if parsed is None:
-            return None
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=dt_timezone.utc)
-        return parsed.astimezone(dt_timezone.utc).strftime("%Y-%m-%d %H:%M")
-
-    def _get_mount_actions(
-        self,
-        configuration_data: dict,
-        mount_action_data: dict,
-        auth_token: str | None = None,
-    ) -> tuple[list[dict], list[str]]:
-        mount_actions = mount_action_data.get("data", [])
-        if mount_actions:
-            return mount_actions, []
-
-        relationship_actions = (
-            configuration_data.get("data", {}).get("relationships", {}).get("device_mount_actions", {}).get("data", [])
-        )
-
-        resolved_mount_actions = []
-        errors = []
-        for action_ref in relationship_actions:
-            action_id = action_ref.get("id")
-            if not action_id:
-                continue
-
-            action_data = fetch_json(
-                self.device_mount_action_url.format(base_url=self.base_url, id=action_id),
-                auth_token=auth_token,
-            )
-            if isinstance(action_data, dict) and "errors" in action_data:
-                errors.extend(
-                    f"SMS mount action request for action {action_id} failed: {error}" for error in action_data["errors"]
-                )
-                continue
-            if not isinstance(action_data, dict):
-                errors.append(f"Unexpected SMS mount action payload for action {action_id}: {type(action_data).__name__}")
-                continue
-
-            action = action_data.get("data")
-            if action:
-                resolved_mount_actions.append(action)
-
-        return resolved_mount_actions, errors
+        if isinstance(action_data, dict) and "errors" in action_data:
+            return None, [f"SMS mount action request for action {action_id} failed: {error}" for error in action_data["errors"]]
+        if not isinstance(action_data, dict):
+            return None, [f"Unexpected SMS mount action payload for action {action_id}: {type(action_data).__name__}"]
+        action = action_data.get("data")
+        return (action, []) if isinstance(action, dict) else (None, [])
 
     def _fetch_device(
         self,
@@ -593,62 +440,3 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
         if not isinstance(device, dict):
             return None, [f"Unexpected SMS device data for mounted device {device_id}: {type(device).__name__}"]
         return device, []
-
-    def _parse_configuration_timepoint(self, value: str | None) -> datetime | None:
-        if value is None:
-            return None
-        parsed = parse_datetime(value)
-        if parsed is None:
-            return None
-        if parsed.tzinfo is None:
-            return parsed.replace(tzinfo=dt_timezone.utc)
-        return parsed.astimezone(dt_timezone.utc)
-
-    def _select_member_mount_actions(
-        self,
-        mount_actions: list[dict],
-        configuration_period: ConfigurationPeriod | None,
-    ) -> list[dict]:
-        selected_by_device: dict[str, dict] = {}
-        for mount_action in mount_actions:
-            if configuration_period is not None and not self._is_mount_action_in_period(mount_action, configuration_period):
-                continue
-
-            device_ref = mount_action.get("relationships", {}).get("device", {}).get("data")
-            if not isinstance(device_ref, dict) or not isinstance(device_ref.get("id"), str):
-                continue
-            device_id = device_ref["id"]
-            selected = selected_by_device.get(device_id)
-            if selected is None or self._mount_action_begin_sort_key(mount_action) > self._mount_action_begin_sort_key(selected):
-                selected_by_device[device_id] = mount_action
-        return list(selected_by_device.values())
-
-    def _mount_action_begin_sort_key(self, mount_action: dict) -> float:
-        parsed = self._parse_configuration_timepoint(mount_action.get("attributes", {}).get("begin_date"))
-        return parsed.timestamp() if parsed is not None else float("-inf")
-
-    def _is_mount_action_in_period(
-        self,
-        mount_action: dict,
-        configuration_period: ConfigurationPeriod,
-    ) -> bool:
-        attrs = mount_action.get("attributes", {})
-        begin_date = attrs.get("begin_date")
-        if not begin_date:
-            return False
-
-        mount_start = self._parse_configuration_timepoint(begin_date)
-        if mount_start is None:
-            return False
-
-        end_date = attrs.get("end_date")
-        if end_date:
-            mount_end = self._parse_configuration_timepoint(end_date)
-            if mount_end is None:
-                return False
-        else:
-            mount_end = None
-
-        if configuration_period.end is not None and mount_start > configuration_period.end:
-            return False
-        return mount_end is None or mount_end > configuration_period.start

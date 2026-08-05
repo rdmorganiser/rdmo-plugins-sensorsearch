@@ -53,6 +53,7 @@ o2a_item_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_item")
 o2a_mission_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_mission")
 sms_device_handler_module = import_module("rdmo_sensorsearch.handlers.sms_device")
 sms_configuration_handler_module = import_module("rdmo_sensorsearch.handlers.sms_configuration")
+sms_configuration_membership_module = import_module("rdmo_sensorsearch.handlers.sms_configuration_membership")
 
 
 class FakeResponse:
@@ -319,17 +320,19 @@ def test_sms_configuration_collection_fetches_every_page(monkeypatch):
 
 
 def test_sms_configuration_member_uses_compact_configuration_label():
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
-        attribute_mapping={},
-        id_prefix="kitcfg",
+    resolver = sms_configuration_membership_module.SMSConfigurationMembershipResolver(
+        configuration_id_prefix="kitcfg",
+        device_id_prefix="kitsms",
         device_text_prefix="KIT Sensor",
+        fetch_device=lambda _device_id: (None, []),
+        fetch_mount_action=lambda _action_id: (None, []),
     )
 
     assert (
-        handler._format_device_text(
+        resolver.format_device_text(
             configuration_id="49",
             device_id="327",
-            attrs={
+            attributes={
                 "long_name": "SMT100",
                 "serial_number": "SMTEB23",
             },
@@ -410,10 +413,6 @@ def test_sms_configuration_member_includes_derived_vertical_location():
 
 
 def test_sms_configuration_period_supports_an_optional_end_and_exclusive_unmount_boundary():
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
-        attribute_mapping={},
-        id_prefix="kitcfg",
-    )
     period, error = configuration_period.parse_configuration_period("2025-01-01 12:00", None)
 
     assert error is None
@@ -421,7 +420,7 @@ def test_sms_configuration_period_supports_an_optional_end_and_exclusive_unmount
     assert period.start.isoformat() == "2025-01-01T12:00:00+00:00"
     assert period.end is None
     assert (
-        handler._is_mount_action_in_period(
+        sms_configuration_membership_module.mount_action_overlaps_period(
             {
                 "attributes": {
                     "begin_date": "2024-01-01T00:00:00Z",
@@ -433,7 +432,7 @@ def test_sms_configuration_period_supports_an_optional_end_and_exclusive_unmount
         is False
     )
     assert (
-        handler._is_mount_action_in_period(
+        sms_configuration_membership_module.mount_action_overlaps_period(
             {
                 "attributes": {
                     "begin_date": "2025-01-01T12:00:00Z",

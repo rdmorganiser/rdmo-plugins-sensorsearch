@@ -61,14 +61,14 @@ def select_latest_device_mount_period(
             if action_serial.strip().casefold() != normalized_serial:
                 continue
 
-        start = _parse_timepoint(attributes.get("begin_date"))
+        start = parse_sms_timepoint(attributes.get("begin_date"))
         if start is None:
             continue
         periods.append(
             ResolvedMountPeriod(
                 action=action,
                 start=start,
-                end=_parse_timepoint(attributes.get("end_date")),
+                end=parse_sms_timepoint(attributes.get("end_date")),
             )
         )
 
@@ -224,8 +224,8 @@ def _relationship_id(action: dict, name: str) -> str | None:
 
 def _action_reference_time(action: dict, now: datetime | None = None) -> datetime | None:
     attrs = action.get("attributes", {})
-    begin = _parse_timepoint(attrs.get("begin_date"))
-    end = _parse_timepoint(attrs.get("end_date"))
+    begin = parse_sms_timepoint(attrs.get("begin_date"))
+    end = parse_sms_timepoint(attrs.get("end_date"))
     if end is not None:
         if begin is None or end > begin:
             return end - timedelta(microseconds=1)
@@ -244,8 +244,8 @@ def _clamp_to_action_period(action: dict, reference_time: datetime) -> datetime:
         reference_time = reference_time.astimezone(dt_timezone.utc)
 
     attrs = action.get("attributes", {})
-    begin = _parse_timepoint(attrs.get("begin_date"))
-    end = _parse_timepoint(attrs.get("end_date"))
+    begin = parse_sms_timepoint(attrs.get("begin_date"))
+    end = parse_sms_timepoint(attrs.get("end_date"))
     if begin is not None and reference_time < begin:
         return begin
     if end is not None and reference_time >= end:
@@ -257,15 +257,15 @@ def _clamp_to_action_period(action: dict, reference_time: datetime) -> datetime:
 
 def _action_contains(action: dict, reference_time: datetime) -> bool:
     attrs = action.get("attributes", {})
-    begin = _parse_timepoint(attrs.get("begin_date"))
-    end = _parse_timepoint(attrs.get("end_date"))
+    begin = parse_sms_timepoint(attrs.get("begin_date"))
+    end = parse_sms_timepoint(attrs.get("end_date"))
     if begin is not None and reference_time < begin:
         return False
     return end is None or reference_time < end
 
 
 def _action_begin_sort_key(action: dict) -> float:
-    begin = _parse_timepoint(action.get("attributes", {}).get("begin_date"))
+    begin = parse_sms_timepoint(action.get("attributes", {}).get("begin_date"))
     return begin.timestamp() if begin is not None else float("-inf")
 
 
@@ -283,7 +283,7 @@ def _number(value: Any) -> float | None:
     return float(value)
 
 
-def _parse_timepoint(value: Any) -> datetime | None:
+def parse_sms_timepoint(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value:
         return None
     try:

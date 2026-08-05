@@ -20,17 +20,17 @@ from rdmo_sensorsearch.signals.configuration_tab_sync import (
     sync_configuration_tab_from_root,
     sync_configuration_tab_from_source,
 )
-from rdmo_sensorsearch.signals.data_collection_variable_sync import (
-    get_data_collection_variable_sync_settings,
-    reconcile_data_collection_variables_for_selected_device,
-    remove_stale_generated_data_collection_variables,
-)
 from rdmo_sensorsearch.signals.metadata_refresh import (
     clear_refresh_state_for_source,
     get_refresh_action,
     get_refresh_actions_for_input,
     get_refresh_actions_for_source,
     run_metadata_refresh_action,
+)
+from rdmo_sensorsearch.workflows.data_collection_variables import (
+    get_data_collection_variable_sync_settings,
+    reconcile_data_collection_variables_for_selected_device,
+    remove_stale_generated_data_collection_variables,
 )
 from rdmo_sensorsearch.workflows.device_details import (
     get_configuration_scope_for_value,
