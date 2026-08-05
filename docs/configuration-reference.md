@@ -18,10 +18,44 @@ variables with the same names.
 | Setting | Meaning |
 | --- | --- |
 | `SENSORSEARCH_CONFIG_FILE_PATH` | Complete path to the TOML configuration. Takes precedence over the file name. |
-| `SENSORSEARCH_CONFIG_FILE_NAME` | File name resolved inside the package when no complete path is set. Defaults to `config.toml`. |
+| `SENSORSEARCH_CONFIG_FILE_NAME` | Configuration file name. Defaults to `sensorsearch.toml`. |
 | `SENSORSEARCH_REQUEST_TIMEOUT` | Timeout in seconds for backend HTTP requests. Defaults to `10`. |
 
-Without an override, the packaged `rdmo_sensorsearch/config.toml` is loaded.
+Without an override, the repository-level `sensorsearch.toml` is used during
+development and the identical packaged `rdmo_sensorsearch/sensorsearch.toml`
+resource is used after installation.
+
+## Configuration validation
+
+The plugin parses the TOML into immutable standard-library dataclasses before
+constructing providers or handlers. An invalid configuration therefore fails
+early instead of silently turning a misspelled setting into an unused keyword
+argument. The exception includes the path to the failing table or setting, for
+example:
+
+```text
+handlers.SensorManagementSystemConfigurationHandler.defaults: unknown setting(s): selected_device_attribute_uri
+```
+
+Validation currently covers:
+
+- known sections, provider and handler class names, and settings;
+- string, integer, boolean, and string-array value types;
+- required SMS URLs, labels, prefixes, and handler backends;
+- unique option ID prefixes and provider-to-handler prefix relationships;
+- SMS configuration-to-device and O2A mission-to-item prefix relationships;
+- paired configuration period start/end attributes;
+- required search and configuration-membership attributes;
+- explicit catalog scope for data-collection variable synchronization.
+
+Configuration is loaded once and cached for the process lifetime. Restart the
+RDMO application processes after editing the file. Tests can call
+`rdmo_sensorsearch.config.clear_config_cache()` when switching configuration
+files within one Python process.
+
+Only the repository-level `sensorsearch.toml` is maintained. The wheel build
+copies that exact file to `rdmo_sensorsearch/sensorsearch.toml`; do not maintain
+a second package-local source copy.
 
 ## Provider aggregators
 

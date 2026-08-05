@@ -105,7 +105,7 @@ refetching, and data collection parameter synchronization.
 
 ## Configuration
 
-With `config.toml` the providers which should be used can be configured. The
+With `sensorsearch.toml` the providers which should be used can be configured. The
 `DeviceSearchProvider` aggregates the results of the configured providers.
 `ConfigurationSearchProvider` works the same way for configuration backends.
 
@@ -113,10 +113,14 @@ To automatically fill out questions with results of the matching backend record,
 attribute mapping for the specific catalog(s) must be configured in the
 configuration file.
 
-The configuration file default location is inside the directory of the plugin.
-The location can be overwritten with `SENSORSEARCH_CONFIG_FILE_PATH`
-in the in `config/settings/local.py` or as environment variable with the same
-name.
+The repository-level `sensorsearch.toml` is the single maintained deployment
+configuration and is copied into the installed package when a wheel is built.
+Its structure and cross-references are validated when it is first loaded; an
+invalid or misspelled setting prevents plugin initialization and reports its
+TOML path. The location can be overwritten with
+`SENSORSEARCH_CONFIG_FILE_PATH` in `config/settings/local.py` or with an
+environment variable of the same name. Restart the RDMO application processes
+after changing the configuration because the validated model is cached.
 
 ### Configuration: Providers
 

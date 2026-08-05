@@ -43,6 +43,9 @@ source = "vcs"
 [tool.hatch.build.targets.wheel]
 packages = ["rdmo_sensorsearch"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"sensorsearch.toml" = "rdmo_sensorsearch/sensorsearch.toml"
+
 [tool.ruff]
 target-version = "py310"
 line-length = 120

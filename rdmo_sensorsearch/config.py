@@ -6,11 +6,14 @@
 import logging
 import os
 import sys
+from collections.abc import Mapping
 from functools import cache
 from pathlib import Path
 from typing import Any
 
 from django.conf import settings
+
+from rdmo_sensorsearch.config_models import ConfigValidationError, PluginConfig
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -21,12 +24,12 @@ else:
 logger = logging.getLogger(__name__)
 
 
-def catalog_matches(catalog_config: dict[str, Any], catalog_uri: str) -> bool:
+def catalog_matches(catalog_config: Mapping[str, Any], catalog_uri: str) -> bool:
     configured_catalog_uris = catalog_uri_values(catalog_config)
     return not configured_catalog_uris or catalog_uri in configured_catalog_uris
 
 
-def catalog_uri_values(catalog_config: dict[str, Any]) -> list[str]:
+def catalog_uri_values(catalog_config: Mapping[str, Any]) -> list[str]:
     catalog_uris = catalog_config.get("catalog_uris")
     if catalog_uris is None:
         catalog_uris = []
@@ -40,7 +43,7 @@ def catalog_uri_values(catalog_config: dict[str, Any]) -> list[str]:
     return list(dict.fromkeys(catalog_uris))
 
 
-def merge_config(base: dict[str, Any] | None, override: dict[str, Any] | None) -> dict[str, Any]:
+def merge_config(base: Mapping[str, Any] | None, override: Mapping[str, Any] | None) -> dict[str, Any]:
     """Merge two TOML-derived dictionaries recursively.
 
     Nested tables are merged, while scalar values and lists from ``override``
@@ -54,7 +57,7 @@ def merge_config(base: dict[str, Any] | None, override: dict[str, Any] | None) -
     merged: dict[str, Any] = dict(base)
     for key, value in override.items():
         current = merged.get(key)
-        if isinstance(current, dict) and isinstance(value, dict):
+        if isinstance(current, Mapping) and isinstance(value, Mapping):
             merged[key] = merge_config(current, value)
         else:
             merged[key] = value
@@ -65,7 +68,7 @@ def get_config_file_path() -> str:
     try:
         config_file_name = settings.SENSORSEARCH_CONFIG_FILE_NAME
     except AttributeError:
-        config_file_name = "config.toml"
+        config_file_name = "sensorsearch.toml"
 
     try:
         config_file_path = settings.SENSORSEARCH_CONFIG_FILE_PATH
@@ -75,14 +78,17 @@ def get_config_file_path() -> str:
     config_file_name = os.getenv("SENSORSEARCH_CONFIG_FILE_NAME", config_file_name)
     config_file_path = os.getenv("SENSORSEARCH_CONFIG_FILE_PATH", config_file_path)
 
-    if config_file_path is None:
-        config_file_path = os.path.join(Path(__file__).parent, config_file_name)
+    if config_file_path is not None:
+        return config_file_path
 
-    return config_file_path
+    repository_config_path = Path(__file__).parent.parent / config_file_name
+    if repository_config_path.is_file():
+        return str(repository_config_path)
+    return str(Path(__file__).parent / config_file_name)
 
 
 @cache
-def load_config():
+def load_config_model() -> PluginConfig:
     """
     Loads the sensor search provider configuration from a TOML file.
 
@@ -91,10 +97,10 @@ def load_config():
     from settings variables. If those are not defined, it uses default values.
     The function then checks for environment variables that might override the
     file name or path. Finally, it opens the configuration file using `tomllib`
-    and returns the parsed configuration as a dictionary.
+    validates it, and returns an immutable configuration model.
 
     Returns:
-        dict: A dictionary containing the loaded configuration settings.
+        PluginConfig: The validated immutable configuration model.
 
     Raises:
         FileNotFoundError:          If the configuration file is not found.
@@ -102,6 +108,8 @@ def load_config():
                                     the configuration file.
         tomllib.TOMLDecodeError:    If the configuration file cannot be
                                     decoded as valid TOML.
+        ConfigValidationError:      If the TOML structure or values violate
+                                    the plugin configuration schema.
 
     """
     config_file_path = get_config_file_path()
@@ -109,11 +117,12 @@ def load_config():
 
     try:
         with open(config_file_path, "rb") as config_file:
-            plugin_config = tomllib.load(config_file)
+            raw_config = tomllib.load(config_file)
+            plugin_config = PluginConfig.from_mapping(raw_config)
             logger.debug(
                 "Loaded sensor search configuration from %s with top-level keys: %s",
                 config_file_path,
-                sorted(plugin_config.keys()),
+                sorted(plugin_config.raw.keys()),
             )
             return plugin_config
     except (FileNotFoundError, PermissionError) as e:
@@ -122,3 +131,16 @@ def load_config():
     except tomllib.TOMLDecodeError as e:
         logger.error("Failed to decode configuration file: %s", config_file_path)
         raise e from e
+    except ConfigValidationError:
+        logger.exception("Invalid sensor search configuration: %s", config_file_path)
+        raise
+
+
+def load_config() -> Mapping[str, Any]:
+    """Return the validated configuration through its read-only mapping view."""
+    return load_config_model().raw
+
+
+def clear_config_cache() -> None:
+    """Clear the parsed configuration cache, primarily for tests and controlled reloads."""
+    load_config_model.cache_clear()

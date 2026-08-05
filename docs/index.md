@@ -29,10 +29,9 @@ The plugin supports four connected workflows:
 - [Operations and limitations](operations-and-limitations.md) describes runtime
   behavior, authentication, performance, and current backend limitations.
 
-The repository-level [`sensorsearch.toml`](../sensorsearch.toml) is the most
-complete editable configuration example. The packaged default is
-[`rdmo_sensorsearch/config.toml`](../rdmo_sensorsearch/config.toml). The Earth
-Sensor catalog used by this guide is
+The repository-level [`sensorsearch.toml`](../sensorsearch.toml) is the
+authoritative deployment configuration and is packaged into the plugin wheel.
+The Earth Sensor catalog used by this guide is
 [`xml/earth-sensor+refresh.xml`](../xml/earth-sensor+refresh.xml).
 
 ## The central editing rule

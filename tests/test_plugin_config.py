@@ -2,6 +2,8 @@ import sys
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from rdmo_sensorsearch.config_models import PluginConfig
+
 if sys.version_info >= (3, 11):
     import tomllib
 else:
@@ -9,13 +11,29 @@ else:
 
 
 ROOT = Path(__file__).parents[1]
-CONFIG_PATHS = (ROOT / "sensorsearch.toml", ROOT / "rdmo_sensorsearch" / "config.toml")
+CONFIG_PATHS = (ROOT / "sensorsearch.toml",)
 EARTH_SENSOR_CATALOG_URI = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature-v1"
 
 
 def _load_config(path):
     with path.open("rb") as config_file:
         return tomllib.load(config_file)
+
+
+def test_deployment_configuration_passes_schema_validation():
+    config = PluginConfig.from_mapping(_load_config(CONFIG_PATHS[0]))
+
+    assert len(config.device_search.providers) == 5
+    assert len(config.configuration_search.providers) == 4
+    assert len(config.handlers) == 5
+
+
+def test_wheel_build_packages_the_authoritative_deployment_configuration():
+    build_config = _load_config(ROOT / "pyproject.toml")
+
+    assert build_config["tool"]["hatch"]["build"]["targets"]["wheel"]["force-include"] == {
+        "sensorsearch.toml": "rdmo_sensorsearch/sensorsearch.toml"
+    }
 
 
 def _backend(config, section, id_prefix):
