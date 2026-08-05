@@ -160,6 +160,6 @@ def get_user_agent():
 @cache
 def get_request_timeout():
     try:
-        return settings.SENSORS_SEARCH_PROVIDER_REQUEST_TIMEOUT
+        return settings.SENSORSEARCH_REQUEST_TIMEOUT
     except AttributeError:
         return 10

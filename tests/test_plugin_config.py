@@ -29,14 +29,14 @@ def test_gfz_sms_handlers_and_providers_use_the_same_current_host():
     for path in CONFIG_PATHS:
         config = _load_config(path)
         handler_urls = (
-            _backend(config["handlers"], "SensorManagementSystemHandler", "gfzsms")["base_url"],
-            _backend(config["handlers"], "SensorManagementSystemConfigurationsHandler", "gfzcfg")["base_url"],
+            _backend(config["handlers"], "SensorManagementSystemDeviceHandler", "gfzsms")["base_url"],
+            _backend(config["handlers"], "SensorManagementSystemConfigurationHandler", "gfzcfg")["base_url"],
         )
         provider_urls = (
-            _backend(config["SensorsProvider"]["providers"], "SensorManagementSystemProvider", "gfzsms")["base_url"],
+            _backend(config["DeviceSearchProvider"]["providers"], "SensorManagementSystemDeviceProvider", "gfzsms")["base_url"],
             _backend(
-                config["ConfigurationsProvider"]["providers"],
-                "SensorManagementSystemConfigurationsProvider",
+                config["ConfigurationSearchProvider"]["providers"],
+                "SensorManagementSystemConfigurationProvider",
                 "gfzcfg",
             )["base_url"],
         )
@@ -87,11 +87,11 @@ def test_configuration_providers_use_compact_backend_labels():
 
     for path in CONFIG_PATHS:
         config = _load_config(path)
-        providers = config["ConfigurationsProvider"]["providers"]
+        providers = config["ConfigurationSearchProvider"]["providers"]
 
         for id_prefix, expected_prefix in expected_prefixes.items():
             provider_name = (
-                "O2ARegistryMissionsProvider" if id_prefix == "o2amission" else "SensorManagementSystemConfigurationsProvider"
+                "O2ARegistryMissionProvider" if id_prefix == "o2amission" else "SensorManagementSystemConfigurationProvider"
             )
             assert _backend(providers, provider_name, id_prefix)["text_prefix"] == expected_prefix
 
@@ -104,10 +104,10 @@ def test_configuration_handlers_define_the_shared_tab_collection_attribute():
         handlers = config["handlers"]
 
         assert (
-            handlers["SensorManagementSystemConfigurationsHandler"]["defaults"]["configuration_collection_attribute_uri"]
+            handlers["SensorManagementSystemConfigurationHandler"]["defaults"]["configuration_collection_attribute_uri"]
             == expected_uri
         )
-        assert handlers["O2ARegistryMissionsHandler"]["defaults"]["configuration_collection_attribute_uri"] == expected_uri
+        assert handlers["O2ARegistryMissionHandler"]["defaults"]["configuration_collection_attribute_uri"] == expected_uri
 
 
 def test_configuration_date_range_inputs_are_enabled_for_sms_and_o2a():
@@ -119,14 +119,14 @@ def test_configuration_date_range_inputs_are_enabled_for_sms_and_o2a():
         handlers = config["handlers"]
 
         for handler_name in (
-            "SensorManagementSystemConfigurationsHandler",
-            "O2ARegistryMissionsHandler",
+            "SensorManagementSystemConfigurationHandler",
+            "O2ARegistryMissionHandler",
         ):
             catalog_config = handlers[handler_name]["catalogs"][0]
             defaults = handlers[handler_name]["defaults"]
 
-            assert catalog_config["cfg_start_uri"] == expected_start_uri
-            assert catalog_config["cfg_end_uri"] == expected_end_uri
+            assert catalog_config["period_start_attribute_uri"] == expected_start_uri
+            assert catalog_config["period_end_attribute_uri"] == expected_end_uri
             assert expected_start_uri not in defaults["managed_attribute_uris"]
             assert expected_end_uri not in defaults["managed_attribute_uris"]
             assert expected_start_uri not in defaults["attribute_mapping"].values()
@@ -148,6 +148,6 @@ def test_apply_date_range_action_is_explicit_and_replaces_collections():
         )
 
         assert action["kind"] == "configuration"
-        assert action["replace_collections"] is True
+        assert action["replace_existing_collections"] is True
         assert action["require_configuration_period"] is True
         assert set(action["input_attribute_uris"]) == expected_inputs

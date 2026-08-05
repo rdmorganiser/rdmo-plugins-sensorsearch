@@ -18,7 +18,7 @@ trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-s
 status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
 message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
-replace_collections = true
+replace_existing_collections = true
 require_configuration_period = true
 input_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
@@ -46,11 +46,11 @@ status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh
 message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message"
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp"
 
-[handlers.O2ARegistrySearchHandler]
-[[handlers.O2ARegistrySearchHandler.catalogs]]
+[handlers.O2ARegistryItemHandler]
+[[handlers.O2ARegistryItemHandler.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-[handlers.O2ARegistrySearchHandler.catalogs.attribute_mapping]
+search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+[handlers.O2ARegistryItemHandler.catalogs.attribute_mapping]
 "longName || shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
 "type.generalName" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
 "manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
@@ -61,11 +61,11 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
 "contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
-[handlers.SensorManagementSystemHandler]
-[[handlers.SensorManagementSystemHandler.catalogs]]
+[handlers.SensorManagementSystemDeviceHandler]
+[[handlers.SensorManagementSystemDeviceHandler.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+[handlers.SensorManagementSystemDeviceHandler.catalogs.attribute_mapping]
 "data.attributes.long_name || data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
 "data.attributes.device_type_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
 "data.attributes.manufacturer_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
@@ -77,11 +77,11 @@ auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_techn
 "included[?type==`device_property`].attributes.unit_name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
 "included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
 
-[handlers.GeophysicalInstrumentPoolPotsdamHandler]
-[[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+[handlers.GIPPInstrumentHandler]
+[[handlers.GIPPInstrumentHandler.catalogs]]
 catalog_uri = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor"
-auto_complete_field_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs.attribute_mapping]
+search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
+[handlers.GIPPInstrumentHandler.catalogs.attribute_mapping]
 "Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
 "Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
 "Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"

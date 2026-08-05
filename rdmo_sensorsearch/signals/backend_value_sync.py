@@ -7,7 +7,7 @@ from rdmo.domain.models import Attribute
 
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers.factory import WILDCARD_CATALOG_URI, build_handlers_by_catalog
-from rdmo_sensorsearch.handlers.handler_sms import (
+from rdmo_sensorsearch.handlers.sms_device import (
     INSTRUMENT_END_ATTRIBUTE_URI,
     INSTRUMENT_START_ATTRIBUTE_URI,
 )
@@ -36,11 +36,11 @@ def get_handler_bindings_for_catalog(catalog_uri: str) -> list:
     catalog_bindings = HANDLERS_BY_CATALOG.get(catalog_uri, [])
     wildcard_bindings = HANDLERS_BY_CATALOG.get(WILDCARD_CATALOG_URI, [])
 
-    seen = {(binding.id_prefix, binding.auto_complete_field_uri, type(binding.handler)) for binding in catalog_bindings}
+    seen = {(binding.id_prefix, binding.search_attribute_uri, type(binding.handler)) for binding in catalog_bindings}
 
     merged_bindings = list(catalog_bindings)
     for binding in wildcard_bindings:
-        key = (binding.id_prefix, binding.auto_complete_field_uri, type(binding.handler))
+        key = (binding.id_prefix, binding.search_attribute_uri, type(binding.handler))
         if key not in seen:
             merged_bindings.append(binding)
 
@@ -48,13 +48,13 @@ def get_handler_bindings_for_catalog(catalog_uri: str) -> list:
 
 
 def _empty_handler_result(handler) -> HandlerResult:
-    member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+    selected_devices_attribute_uri = getattr(handler, "selected_devices_attribute_uri", None)
     selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
     collections = ()
-    if member_sensors_attribute_uri and selected_devices_page_uri:
+    if selected_devices_attribute_uri and selected_devices_page_uri:
         collections = (
             CollectionAssignment(
-                attribute_uri=member_sensors_attribute_uri,
+                attribute_uri=selected_devices_attribute_uri,
                 page_uri=selected_devices_page_uri,
                 values=(),
             ),
@@ -65,9 +65,9 @@ def _empty_handler_result(handler) -> HandlerResult:
 def _handler_ownership_signature(handler) -> tuple:
     managed_attribute_uris = tuple(sorted(handler.managed_attribute_uris))
     mapped_attribute_uris = tuple(sorted(set(handler.attribute_mapping.values())))
-    member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+    selected_devices_attribute_uri = getattr(handler, "selected_devices_attribute_uri", None)
     selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
-    return managed_attribute_uris, mapped_attribute_uris, member_sensors_attribute_uri, selected_devices_page_uri
+    return managed_attribute_uris, mapped_attribute_uris, selected_devices_attribute_uri, selected_devices_page_uri
 
 
 def _device_nested_questionset_scope(instance) -> tuple[str, int]:
@@ -83,8 +83,8 @@ def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
     input_attribute_uris = {
         attribute_uri
         for attribute_uri in (
-            getattr(handler, "cfg_start_uri", None),
-            getattr(handler, "cfg_end_uri", None),
+            getattr(handler, "period_start_attribute_uri", None),
+            getattr(handler, "period_end_attribute_uri", None),
         )
         if attribute_uri
     }
@@ -130,7 +130,7 @@ def sync_backend_value_after_save(instance, auth_token: str | None = None) -> No
         return
 
     handler_bindings = get_handler_bindings_for_catalog(catalog_uri)
-    matching_bindings = [binding for binding in handler_bindings if binding.auto_complete_field_uri == attribute_uri]
+    matching_bindings = [binding for binding in handler_bindings if binding.search_attribute_uri == attribute_uri]
 
     if not matching_bindings:
         logger.debug(
@@ -159,7 +159,7 @@ def sync_backend_value_after_save(instance, auth_token: str | None = None) -> No
 def refresh_value_from_backend(
     instance,
     auth_token: str | None = None,
-    preserve_collections: bool = False,
+    preserve_existing_collections: bool = False,
     require_configuration_period: bool = False,
 ) -> RefreshResult:
     external_id = getattr(instance, "external_id", None) or ""
@@ -180,7 +180,7 @@ def refresh_value_from_backend(
     bindings = [
         binding
         for binding in get_handler_bindings_for_catalog(catalog.uri)
-        if binding.id_prefix == id_prefix and binding.auto_complete_field_uri == attribute.uri
+        if binding.id_prefix == id_prefix and binding.search_attribute_uri == attribute.uri
     ]
     if not bindings:
         return _failed_refresh(external_id, "No matching backend handler is configured.")
@@ -189,7 +189,7 @@ def refresh_value_from_backend(
 
     binding = bindings[0]
     context = HandlerExecutionContext(
-        preserve_collections=preserve_collections,
+        preserve_existing_collections=preserve_existing_collections,
         require_configuration_period=require_configuration_period,
     )
     try:
@@ -217,7 +217,7 @@ def refresh_value_from_backend(
         return _failed_refresh(external_id, f"Handler returned {type(handler_output).__name__}, expected HandlerResult.")
 
     try:
-        if preserve_collections:
+        if preserve_existing_collections:
             handler_output = replace(
                 handler_output,
                 collections=_preserved_collection_assignments(instance, binding.handler),
@@ -230,7 +230,7 @@ def refresh_value_from_backend(
 
     try:
         post_action_results = [post_action() for post_action in post_actions]
-        if preserve_collections:
+        if preserve_existing_collections:
             post_action_results.append(
                 _refresh_selected_configuration_devices(
                     instance,
@@ -259,7 +259,7 @@ def _refresh_selected_configuration_devices(
     configuration_values,
     auth_token: str | None = None,
 ) -> RefreshResult:
-    selected_devices_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+    selected_devices_attribute_uri = getattr(handler, "selected_devices_attribute_uri", None)
     selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
     device_collection_attribute_uri = getattr(handler, "device_collection_attribute_uri", None)
     if not selected_devices_attribute_uri or not selected_devices_page_uri or not device_collection_attribute_uri:
@@ -310,7 +310,7 @@ def _refresh_selected_configuration_devices(
 
 
 def _preserved_collection_assignments(instance, handler) -> tuple[CollectionAssignment, ...]:
-    selected_devices_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+    selected_devices_attribute_uri = getattr(handler, "selected_devices_attribute_uri", None)
     selected_devices_page_uri = getattr(handler, "selected_devices_page_uri", None)
     if not selected_devices_attribute_uri or not selected_devices_page_uri:
         return ()

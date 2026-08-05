@@ -1594,7 +1594,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>configurations/optionset</uri_path>
 		<dc:comment/>
-		<provider_key>sensorssearch_configurations</provider_key>
+		<provider_key>sensorsearch_configurations</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>
@@ -1717,7 +1717,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>interview-page-refresh</uri_path>
 		<dc:comment>Marks metadata refresh triggers for an interview page value refetch after save.</dc:comment>
-		<provider_key>sensorssearch_interview_page_refresh</provider_key>
+		<provider_key>sensorsearch_interview_page_refresh</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>
@@ -1852,7 +1852,7 @@ Question: which parent attribute would we need here?</dc:comment>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/selected">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instruments/configuration-set/selected</uri_path>
-		<dc:comment>Configuration-scoped device selection populated by configuration handlers and editable through SensorsProvider.
+		<dc:comment>Configuration-scoped device selection populated by configuration handlers and editable through DeviceSearchProvider.
 Devices imported from the configuration backend or added individually through sensor search.</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"/>
 		<is_collection>True</is_collection>
@@ -1890,7 +1890,7 @@ Devices imported from the configuration backend or added individually through se
 		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
 		<uri_path>optionsets/sensorsearch</uri_path>
 		<dc:comment/>
-		<provider_key>sensorssearch</provider_key>
+		<provider_key>sensorsearch_devices</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>
@@ -3753,7 +3753,7 @@ WORK IN PROGRESS: Will be selectable from instruments entered in section 2)</hel
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>options/data-collection/devices/optionset</uri_path>
 		<dc:comment>Project-local devices selected in section 2 for data collection instrument questions.</dc:comment>
-		<provider_key>sensorssearch_project_data_collection_devices</provider_key>
+		<provider_key>sensorsearch_project_data_collection_devices</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>

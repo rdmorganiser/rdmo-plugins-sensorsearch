@@ -35,7 +35,7 @@ class BaseProjectAttributeOptionsProvider(Provider):
         try:
             attribute = Attribute.objects.get(uri=source_attribute_uri)
         except Attribute.DoesNotExist:
-            logger.warning("Configured project sensor source attribute does not exist: %s", source_attribute_uri)
+            logger.warning("Configured project device source attribute does not exist: %s", source_attribute_uri)
             return []
 
         values = (
@@ -78,12 +78,12 @@ class BaseProjectAttributeOptionsProvider(Provider):
         return None
 
 
-class ProjectConfigurationSensorsProvider(BaseProjectAttributeOptionsProvider):
+class ProjectConfigurationDevicesProvider(BaseProjectAttributeOptionsProvider):
     """
-    Provides project-local sensor options that were materialized from a selected configuration.
+    Provides project-local device options materialized from a selected configuration.
     """
 
-    config_section_name = "ProjectConfigurationSensorsProvider"
+    config_section_name = "ProjectConfigurationDevicesProvider"
 
 
 class ProjectDataCollectionDevicesProvider(BaseProjectAttributeOptionsProvider):

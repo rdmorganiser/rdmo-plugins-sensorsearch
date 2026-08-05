@@ -29,7 +29,7 @@ from rdmo_sensorsearch.signals.device_detail_sync import (
 logger = logging.getLogger(__name__)
 
 
-class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
+class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
     """
     Resolves one SMS configuration and materializes its mounted devices.
     """
@@ -48,9 +48,9 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
     static_location_actions_url = (
         "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]={page_size}&page[number]={page_number}"
     )
-    mounted_sensor_max_hits = 100
-    mounted_platform_max_hits = 100
-    static_location_max_hits = 100
+    device_mount_action_page_size = 100
+    platform_mount_action_page_size = 100
+    static_location_action_page_size = 100
     max_collection_pages = 1000
     configuration_self_link_path = "data.links.self"
     configuration_start_date_path = "data.attributes.start_date"
@@ -83,11 +83,11 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
         if not isinstance(configuration_data.get("data"), dict):
             return {"errors": [f"SMS configuration request for ID {backend_id} returned no configuration data."]}
 
-        member_sensors_attribute_uri = getattr(self, "member_sensors_attribute_uri", None)
-        preserve_collections = bool(context and context.preserve_collections)
+        selected_devices_attribute_uri = getattr(self, "selected_devices_attribute_uri", None)
+        preserve_existing_collections = bool(context and context.preserve_existing_collections)
         require_configuration_period = bool(context and context.require_configuration_period)
-        period_start_attribute_uri = getattr(self, "cfg_start_uri", None)
-        period_end_attribute_uri = getattr(self, "cfg_end_uri", None)
+        period_start_attribute_uri = getattr(self, "period_start_attribute_uri", None)
+        period_end_attribute_uri = getattr(self, "period_end_attribute_uri", None)
         use_configuration_period = require_configuration_period or (
             instance is not None and catalog_has_date_range_trigger(instance)
         )
@@ -107,7 +107,7 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
             return {"errors": [period_error]}
 
         defer_member_collection = bool(
-            member_sensors_attribute_uri and not preserve_collections and use_configuration_period and period_error
+            selected_devices_attribute_uri and not preserve_existing_collections and use_configuration_period and period_error
         )
         if defer_member_collection:
             logger.info(
@@ -118,11 +118,11 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
 
         mount_action_data = None
         platform_mount_action_data = None
-        if member_sensors_attribute_uri and not preserve_collections and not defer_member_collection:
+        if selected_devices_attribute_uri and not preserve_existing_collections and not defer_member_collection:
             mount_action_data = self._fetch_jsonapi_collection(
                 self.device_mount_actions_url,
                 backend_id,
-                self.mounted_sensor_max_hits,
+                self.device_mount_action_page_size,
                 auth_token=auth_token,
             )
             if "errors" in mount_action_data:
@@ -136,7 +136,7 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
             platform_mount_action_data = self._fetch_jsonapi_collection(
                 self.platform_mount_actions_url,
                 backend_id,
-                self.mounted_platform_max_hits,
+                self.platform_mount_action_page_size,
                 auth_token=auth_token,
             )
             if "errors" in platform_mount_action_data:
@@ -160,7 +160,7 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
             location_actions_data = self._fetch_jsonapi_collection(
                 self.static_location_actions_url,
                 backend_id,
-                self.static_location_max_hits,
+                self.static_location_action_page_size,
                 auth_token=auth_token,
             )
             if "errors" in location_actions_data:
@@ -193,13 +193,13 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
         if defer_member_collection:
             collections.append(
                 CollectionAssignment(
-                    attribute_uri=member_sensors_attribute_uri,
+                    attribute_uri=selected_devices_attribute_uri,
                     page_uri=self.selected_devices_page_uri,
                     values=(),
                 )
             )
 
-        if member_sensors_attribute_uri and mount_action_data is not None:
+        if selected_devices_attribute_uri and mount_action_data is not None:
             selected_device_values, member_errors = self._build_selected_device_values(
                 configuration_data=configuration_data,
                 mount_action_data=mount_action_data,
@@ -212,7 +212,7 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
                 return {"errors": member_errors}
             collections.append(
                 CollectionAssignment(
-                    attribute_uri=member_sensors_attribute_uri,
+                    attribute_uri=selected_devices_attribute_uri,
                     page_uri=self.selected_devices_page_uri,
                     values=tuple(selected_device_values),
                 )
@@ -242,7 +242,7 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
                         scope_prefix=instance.set_prefix,
                         source_set_index=instance.set_index,
                         selected_devices=selected_devices,
-                        selected_devices_attribute_uri=member_sensors_attribute_uri,
+                        selected_devices_attribute_uri=selected_devices_attribute_uri,
                         device_collection_attribute_uri=device_collection_attribute_uri,
                         configuration_search_attribute_uri=instance.attribute.uri,
                         configuration_external_id=instance.external_id,
@@ -340,7 +340,7 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
             location_actions_data = self._fetch_jsonapi_collection(
                 self.static_location_actions_url,
                 configuration_id,
-                self.static_location_max_hits,
+                self.static_location_action_page_size,
                 auth_token=auth_token,
             )
         if "errors" in location_actions_data:
@@ -462,7 +462,7 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
     ) -> tuple[list[dict[str, object]], list[str]]:
         included_devices = {item["id"]: item for item in mount_action_data.get("included", []) if item.get("type") == "device"}
 
-        device_id_prefix = getattr(self, "sensor_id_prefix", self.id_prefix)
+        device_id_prefix = getattr(self, "device_id_prefix", self.id_prefix)
         selected_device_values = []
 
         mount_actions, errors = self._get_mount_actions(
@@ -528,7 +528,7 @@ class SensorManagementSystemConfigurationsHandler(BackendRecordHandler):
     ) -> str:
         name = attrs.get("long_name") or attrs.get("short_name", "")
         serial = f" (s/n: {attrs['serial_number']})" if attrs.get("serial_number") else ""
-        device_text_prefix = getattr(self, "sensor_text_prefix", "SMS Sensor")
+        device_text_prefix = getattr(self, "device_text_prefix", "SMS Sensor")
         configuration_label = configuration_short_label(f"{self.id_prefix}:{configuration_id}") if configuration_id else None
         configuration_prefix = f"{configuration_label} " if configuration_label else ""
         return f"{configuration_prefix}{device_text_prefix}({device_id}): {name}{serial}"

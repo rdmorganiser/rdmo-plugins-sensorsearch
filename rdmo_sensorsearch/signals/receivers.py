@@ -54,13 +54,13 @@ def _schedule_orphaned_device_block_cleanup(instance) -> None:
     affected_device_collections = set()
     for candidate in get_handler_bindings_for_catalog(instance.project.catalog.uri):
         handler = candidate.handler
-        member_sensors_attribute_uri = getattr(handler, "member_sensors_attribute_uri", None)
+        selected_devices_attribute_uri = getattr(handler, "selected_devices_attribute_uri", None)
         device_collection_attribute_uri = getattr(handler, "device_collection_attribute_uri", None)
-        if not member_sensors_attribute_uri or not device_collection_attribute_uri:
+        if not selected_devices_attribute_uri or not device_collection_attribute_uri:
             continue
 
-        source_uris_by_device_collection.setdefault(device_collection_attribute_uri, set()).add(candidate.auto_complete_field_uri)
-        if candidate.auto_complete_field_uri == instance.attribute.uri:
+        source_uris_by_device_collection.setdefault(device_collection_attribute_uri, set()).add(candidate.search_attribute_uri)
+        if candidate.search_attribute_uri == instance.attribute.uri:
             affected_device_collections.add(device_collection_attribute_uri)
 
     for device_collection_attribute_uri in affected_device_collections:
@@ -79,7 +79,7 @@ def _schedule_orphaned_device_block_cleanup(instance) -> None:
 
 def _configuration_tab_bindings(catalog_uri: str) -> set[tuple[str, str]]:
     return {
-        (candidate.auto_complete_field_uri, collection_attribute_uri)
+        (candidate.search_attribute_uri, collection_attribute_uri)
         for candidate in get_handler_bindings_for_catalog(catalog_uri)
         if (
             collection_attribute_uri := getattr(
@@ -154,7 +154,7 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
 
     catalog_uri = instance.project.catalog.uri
     for candidate in get_handler_bindings_for_catalog(catalog_uri):
-        selected_devices_attribute_uri = getattr(candidate.handler, "member_sensors_attribute_uri", None)
+        selected_devices_attribute_uri = getattr(candidate.handler, "selected_devices_attribute_uri", None)
         selected_devices_page_uri = getattr(candidate.handler, "selected_devices_page_uri", None)
         device_collection_attribute_uri = getattr(candidate.handler, "device_collection_attribute_uri", None)
         if not selected_devices_attribute_uri or not selected_devices_page_uri or not device_collection_attribute_uri:
@@ -182,7 +182,7 @@ def sync_device_details_from_selected_devices(sender, instance, **kwargs):
             )
             return
 
-        configuration_search_attribute_uri = candidate.auto_complete_field_uri
+        configuration_search_attribute_uri = candidate.search_attribute_uri
 
         if kwargs.get("signal") is post_delete:
             remaining_values = get_selected_device_values_for_configuration_scope(

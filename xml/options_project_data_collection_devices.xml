@@ -11,7 +11,7 @@ SPDX-License-Identifier: Apache-2.0
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>options/data-collection/devices/optionset</uri_path>
 		<dc:comment>Project-local devices selected in section 2 for data collection instrument questions.</dc:comment>
-		<provider_key>sensorssearch_project_data_collection_devices</provider_key>
+		<provider_key>sensorsearch_project_data_collection_devices</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>

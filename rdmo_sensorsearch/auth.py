@@ -47,7 +47,7 @@ def get_sms_auth_token(user=None, request=None) -> str | None:
 
 
 def _get_custom_auth_token(user=None, request=None) -> str | None:
-    resolver = getattr(settings, "SENSORS_SEARCH_AUTH_TOKEN_RESOLVER", None)
+    resolver = getattr(settings, "SENSORSEARCH_AUTH_TOKEN_RESOLVER", None)
     if not resolver:
         return None
 
@@ -67,7 +67,7 @@ def _get_session_auth_token(request) -> str | None:
     if not session:
         return None
 
-    configured_keys = getattr(settings, "SENSORS_SEARCH_AUTH_SESSION_TOKEN_KEYS", None)
+    configured_keys = getattr(settings, "SENSORSEARCH_AUTH_SESSION_TOKEN_KEYS", None)
     if configured_keys:
         for key in configured_keys:
             token = _normalize_token(session.get(key))
@@ -96,7 +96,7 @@ def _get_social_auth_token(user) -> str | None:
     except ImportError:
         return None
 
-    provider_ids = getattr(settings, "SENSORS_SEARCH_AUTH_SOCIALACCOUNT_PROVIDERS", None)
+    provider_ids = getattr(settings, "SENSORSEARCH_AUTH_SOCIALACCOUNT_PROVIDERS", None)
     tokens = SocialToken.objects.filter(account__user=user).exclude(token__isnull=True).exclude(token__exact="")
 
     if provider_ids:
@@ -110,7 +110,7 @@ def _get_social_auth_token(user) -> str | None:
         providers = sorted({token.account.provider for token in tokens})
         logger.warning(
             "Skipping SMS auth token reuse because multiple social auth tokens are available. "
-            "Configure SENSORS_SEARCH_AUTH_SOCIALACCOUNT_PROVIDERS to select one provider. Providers: %s",
+            "Configure SENSORSEARCH_AUTH_SOCIALACCOUNT_PROVIDERS to select one provider. Providers: %s",
             providers,
         )
         return None

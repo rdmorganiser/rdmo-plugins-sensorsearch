@@ -27,7 +27,7 @@ from rdmo_sensorsearch.signals.device_detail_sync import (
 logger = logging.getLogger(__name__)
 
 
-class O2ARegistryMissionsHandler(BackendRecordHandler):
+class O2ARegistryMissionHandler(BackendRecordHandler):
     """
     Resolves one O2A Registry mission and materializes its associated items.
     """
@@ -38,7 +38,7 @@ class O2ARegistryMissionsHandler(BackendRecordHandler):
     mission_url = "{base_url}/missions/{id}"
     mission_items_url = "{base_url}/missions/{id}/items?offset={offset}&hits={page_size}"
     item_url = "{base_url}/items/{id}"
-    mission_item_max_hits = 100
+    mission_item_page_size = 100
     max_collection_pages = 1000
 
     item_id_prefix = "o2aregistry"
@@ -69,8 +69,8 @@ class O2ARegistryMissionsHandler(BackendRecordHandler):
         if not mission_data:
             return {"errors": [f"O2A mission request for ID {backend_id} returned no mission data."]}
 
-        period_start_attribute_uri = getattr(self, "cfg_start_uri", None)
-        period_end_attribute_uri = getattr(self, "cfg_end_uri", None)
+        period_start_attribute_uri = getattr(self, "period_start_attribute_uri", None)
+        period_end_attribute_uri = getattr(self, "period_end_attribute_uri", None)
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, mission_data)
         if period_start_attribute_uri:
             mapped_values.pop(period_start_attribute_uri, None)
@@ -81,10 +81,10 @@ class O2ARegistryMissionsHandler(BackendRecordHandler):
 
         collections = []
         post_actions = []
-        member_sensors_attribute_uri = getattr(self, "member_sensors_attribute_uri", None)
-        preserve_collections = bool(context and context.preserve_collections)
+        selected_devices_attribute_uri = getattr(self, "selected_devices_attribute_uri", None)
+        preserve_existing_collections = bool(context and context.preserve_existing_collections)
         require_configuration_period = bool(context and context.require_configuration_period)
-        if not member_sensors_attribute_uri or preserve_collections:
+        if not selected_devices_attribute_uri or preserve_existing_collections:
             return HandlerResult(mapped_values=mapped_values)
 
         use_configuration_period = require_configuration_period or (
@@ -114,7 +114,7 @@ class O2ARegistryMissionsHandler(BackendRecordHandler):
                 mapped_values=mapped_values,
                 collections=(
                     CollectionAssignment(
-                        attribute_uri=member_sensors_attribute_uri,
+                        attribute_uri=selected_devices_attribute_uri,
                         page_uri=self.selected_devices_page_uri,
                         values=(),
                     ),
@@ -141,7 +141,7 @@ class O2ARegistryMissionsHandler(BackendRecordHandler):
             return {"errors": member_errors}
         collections.append(
             CollectionAssignment(
-                attribute_uri=member_sensors_attribute_uri,
+                attribute_uri=selected_devices_attribute_uri,
                 page_uri=self.selected_devices_page_uri,
                 values=tuple(selected_device_values),
             )
@@ -167,7 +167,7 @@ class O2ARegistryMissionsHandler(BackendRecordHandler):
                     scope_prefix=instance.set_prefix,
                     source_set_index=instance.set_index,
                     selected_devices=selected_devices,
-                    selected_devices_attribute_uri=member_sensors_attribute_uri,
+                    selected_devices_attribute_uri=selected_devices_attribute_uri,
                     device_collection_attribute_uri=device_collection_attribute_uri,
                     configuration_search_attribute_uri=instance.attribute.uri,
                     configuration_external_id=instance.external_id,
@@ -213,8 +213,8 @@ class O2ARegistryMissionsHandler(BackendRecordHandler):
                 mapped_values[attribute_uri] = formatted
 
     def get_member_device_period(self, instance, _mapped_values=None) -> tuple[str | None, str | None]:
-        period_start_attribute_uri = getattr(self, "cfg_start_uri", None)
-        period_end_attribute_uri = getattr(self, "cfg_end_uri", None)
+        period_start_attribute_uri = getattr(self, "period_start_attribute_uri", None)
+        period_end_attribute_uri = getattr(self, "period_end_attribute_uri", None)
         if (
             instance is None
             or not period_start_attribute_uri
@@ -271,7 +271,7 @@ class O2ARegistryMissionsHandler(BackendRecordHandler):
                     base_url=self.base_url,
                     id=mission_id,
                     offset=offset,
-                    page_size=self.mission_item_max_hits,
+                    page_size=self.mission_item_page_size,
                 )
             )
             if isinstance(payload, dict) and "errors" in payload:
@@ -286,9 +286,9 @@ class O2ARegistryMissionsHandler(BackendRecordHandler):
             seen_pages.add(signature)
             records.extend(page_records)
 
-            if len(page_records) < self.mission_item_max_hits:
+            if len(page_records) < self.mission_item_page_size:
                 return {"records": records}
-            offset += self.mission_item_max_hits
+            offset += self.mission_item_page_size
 
         return {"errors": [f"O2A mission item pagination exceeded {self.max_collection_pages} pages."]}
 

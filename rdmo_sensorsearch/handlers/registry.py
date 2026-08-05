@@ -1,15 +1,15 @@
-from rdmo_sensorsearch.handlers.handler_gfz_gipp import GeophysicalInstrumentPoolPotsdamHandler
-from rdmo_sensorsearch.handlers.handler_o2a_registry import O2ARegistrySearchHandler
-from rdmo_sensorsearch.handlers.handler_o2a_registry_missions import O2ARegistryMissionsHandler
-from rdmo_sensorsearch.handlers.handler_sms import SensorManagementSystemHandler
-from rdmo_sensorsearch.handlers.handler_sms_configurations import (
-    SensorManagementSystemConfigurationsHandler,
+from rdmo_sensorsearch.handlers.gipp_instrument import GIPPInstrumentHandler
+from rdmo_sensorsearch.handlers.o2a_item import O2ARegistryItemHandler
+from rdmo_sensorsearch.handlers.o2a_mission import O2ARegistryMissionHandler
+from rdmo_sensorsearch.handlers.sms_configuration import (
+    SensorManagementSystemConfigurationHandler,
 )
+from rdmo_sensorsearch.handlers.sms_device import SensorManagementSystemDeviceHandler
 
 HANDLER_REGISTRY = {
-    "O2ARegistrySearchHandler": O2ARegistrySearchHandler,
-    "O2ARegistryMissionsHandler": O2ARegistryMissionsHandler,
-    "SensorManagementSystemHandler": SensorManagementSystemHandler,
-    "SensorManagementSystemConfigurationsHandler": SensorManagementSystemConfigurationsHandler,
-    "GeophysicalInstrumentPoolPotsdamHandler": GeophysicalInstrumentPoolPotsdamHandler,
+    "O2ARegistryItemHandler": O2ARegistryItemHandler,
+    "O2ARegistryMissionHandler": O2ARegistryMissionHandler,
+    "SensorManagementSystemDeviceHandler": SensorManagementSystemDeviceHandler,
+    "SensorManagementSystemConfigurationHandler": SensorManagementSystemConfigurationHandler,
+    "GIPPInstrumentHandler": GIPPInstrumentHandler,
 }

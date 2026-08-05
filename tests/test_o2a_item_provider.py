@@ -1,3 +1,5 @@
+"""Tests for the O2A Registry item provider."""
+
 import sys
 from importlib import import_module
 from pathlib import Path
@@ -17,11 +19,11 @@ def _install_rdmo_provider_stub():
 
 
 _install_rdmo_provider_stub()
-provider_o2a_registry = import_module("rdmo_sensorsearch.providers.provider_o2a_registry")
+o2a_item_provider_module = import_module("rdmo_sensorsearch.providers.o2a_item")
 
 
 def test_o2a_registry_option_uses_item_id_in_display_name():
-    provider = provider_o2a_registry.O2ARegistrySearchProvider()
+    provider = o2a_item_provider_module.O2ARegistryItemProvider()
 
     option = provider.parse_option(
         {

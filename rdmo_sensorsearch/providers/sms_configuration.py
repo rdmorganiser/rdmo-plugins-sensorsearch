@@ -8,7 +8,7 @@ from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 logger = logging.getLogger(__name__)
 
 
-class SensorManagementSystemConfigurationsProvider(BaseRemoteSearchProvider):
+class SensorManagementSystemConfigurationProvider(BaseRemoteSearchProvider):
     """
     Searches a Sensor Management System (SMS) API for configurations.
 

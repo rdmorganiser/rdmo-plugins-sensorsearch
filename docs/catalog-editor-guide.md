@@ -16,26 +16,26 @@ keys, and collection indexes.
 | Catalog element | TOML counterpart | Purpose |
 | --- | --- | --- |
 | Catalog URI | `catalog_uri` or `catalog_uris` | Selects the mapping used for the current project. Omitting both makes a mapping a wildcard. |
-| Search question attribute | `auto_complete_field_uri` | Starts item, device, configuration, or mission synchronization after selection. |
+| Search question attribute | `search_attribute_uri` | Starts item, device, configuration, or mission synchronization after selection. |
 | Output question attribute | `attribute_mapping` value | Receives a value selected from a backend response using the mapping's JMESPath expression. |
 | Managed output attribute | `managed_attribute_uris` | Declares fields owned by synchronization even when the current response contains no value. |
 | Configuration collection attribute | `configuration_collection_attribute_uri` | Identifies one repeated configuration or mission block. |
 | Device collection attribute | `device_collection_attribute_uri` | Identifies one repeated device-detail block. |
-| Selected devices attribute | `member_sensors_attribute_uri` and project-local provider source | Stores the devices assigned to a configuration. |
+| Selected devices attribute | `selected_devices_attribute_uri` and project-local provider source | Stores the devices assigned to a configuration. |
 | Refresh question attribute | `MetadataRefresh.actions[].trigger_attribute_uri` | Executes one refresh action. |
-| Date input attributes | `cfg_start_uri`, `cfg_end_uri`, and `input_attribute_uris` | Supply a user-entered period for device assignment. |
+| Date input attributes | `period_start_attribute_uri`, `period_end_attribute_uri`, and `input_attribute_uris` | Supply a user-entered period for device assignment. |
 | Optionset provider key | Django `OPTIONSET_PROVIDERS` entry | Connects an RDMO optionset to the plugin provider. |
 
 ## Search and metadata synchronization
 
 Two aggregate providers are available:
 
-- `sensorssearch` searches devices in every configured device provider;
-- `sensorssearch_configurations` searches configurations and O2A missions.
+- `sensorsearch_devices` searches devices in every configured device provider;
+- `sensorsearch_configurations` searches configurations and O2A missions.
 
 Set the provider on an RDMO optionset and attach that optionset to the intended
 search question. The question's attribute URI must equal the relevant
-handler's `auto_complete_field_uri`.
+handler's `search_attribute_uri`.
 
 When an option is selected, its ID prefix selects a handler. For example,
 `kitsms:324` belongs to the KIT SMS device handler, while `kitcfg:27` belongs
@@ -46,7 +46,7 @@ Mapping keys are JMESPath expressions evaluated against the backend response.
 Mapping values are exact RDMO attribute URIs. A simple mapping is:
 
 ```toml
-[handlers.SensorManagementSystemHandler.catalogs.attribute_mapping]
+[handlers.SensorManagementSystemDeviceHandler.catalogs.attribute_mapping]
 "data.attributes.serial_number" = "https://example.org/attributes/device/serial-number"
 ```
 
@@ -58,15 +58,15 @@ must not be managed or mapped from backend dates.
 ## Configuration and mission device sets
 
 Selecting a configuration or mission creates or updates one configuration
-collection and stores its assigned devices in `member_sensors_attribute_uri`.
+collection and stores its assigned devices in `selected_devices_attribute_uri`.
 Those values feed two project-local providers:
 
-- `sensorssearch_project_sensors` presents devices already associated with the
+- `sensorsearch_project_configuration_devices` presents devices already associated with the
   project's configurations;
-- `sensorssearch_project_data_collection_devices` presents the same source for
+- `sensorsearch_project_data_collection_devices` presents the same source for
   data-collection instrument questions.
 
-With `sync_device_detail_blocks = true` on the matching device handler, the
+With `materialize_device_details = true` on the matching device handler, the
 plugin also creates or updates repeated device-detail blocks. Device attributes
 such as name, serial number, parameters, deployment period, and location can
 then be mapped into ordinary catalog questions.
@@ -105,12 +105,12 @@ The workflow is:
 The action should use:
 
 ```toml
-replace_collections = true
+replace_existing_collections = true
 require_configuration_period = true
 input_attribute_uris = ["<start attribute URI>", "<end attribute URI>"]
 ```
 
-The same URIs must be configured as `cfg_start_uri` and `cfg_end_uri` on both
+The same URIs must be configured as `period_start_attribute_uri` and `period_end_attribute_uri` on both
 the SMS configuration and O2A mission catalog mappings that use this feature.
 The start field is required when applying a range; a missing end is open-ended.
 An end earlier than the start is invalid.
@@ -133,7 +133,7 @@ configurations, or all devices. Each action has one trigger URI and can have
 status, message, and timestamp output URIs. Those output fields are useful for
 showing success, partial failure, or validation errors in the interview.
 
-Attach the `sensorssearch_interview_page_refresh` provider to a one-option
+Attach the `sensorsearch_interview_page_refresh` provider to a one-option
 optionset used by trigger questions. It intentionally has no remote search
 logic; it causes the page to be refetched after the answer has been saved.
 

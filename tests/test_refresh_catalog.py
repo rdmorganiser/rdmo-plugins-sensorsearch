@@ -52,7 +52,7 @@ def test_refresh_optionset_uses_interview_page_refresh_provider():
         if optionset.attrib[DC_URI] == INTERVIEW_PAGE_REFRESH_OPTIONSET_URI
     )
 
-    assert refresh_optionset.findtext("provider_key") == "sensorssearch_interview_page_refresh"
+    assert refresh_optionset.findtext("provider_key") == "sensorsearch_interview_page_refresh"
 
 
 def test_refresh_optionset_is_attached_to_every_trigger_question_only():

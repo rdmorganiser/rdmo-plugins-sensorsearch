@@ -8,7 +8,7 @@ from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 logger = logging.getLogger(__name__)
 
 
-class O2ARegistryMissionsProvider(BaseRemoteSearchProvider):
+class O2ARegistryMissionProvider(BaseRemoteSearchProvider):
     """
     Searches the O2A Registry missions API and returns options for selection.
     """

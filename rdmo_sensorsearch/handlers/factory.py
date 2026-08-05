@@ -14,7 +14,7 @@ WILDCARD_CATALOG_URI = "*"
 class HandlerBinding:
     id_prefix: str
     handler: BackendRecordHandler
-    auto_complete_field_uri: str
+    search_attribute_uri: str
     catalog_uri: str
 
 
@@ -46,17 +46,17 @@ def build_handlers_by_catalog() -> dict:
 
             catalog_uris = catalog_uri_values(merged_catalog) or [WILDCARD_CATALOG_URI]
             catalog_uri = catalog_uris[0]
-            auto_field_uri = merged_catalog.get("auto_complete_field_uri")
+            search_attribute_uri = merged_catalog.get("search_attribute_uri")
             attribute_mapping = merged_catalog.get("attribute_mapping", {})
             catalog_extra_kwargs = {
                 key: value
                 for key, value in merged_catalog.items()
-                if key not in {"catalog_uri", "catalog_uris", "auto_complete_field_uri", "attribute_mapping"}
+                if key not in {"catalog_uri", "catalog_uris", "search_attribute_uri", "attribute_mapping"}
             }
 
-            if not auto_field_uri:
+            if not search_attribute_uri:
                 logger.warning(
-                    "Skipping handler config with missing auto_complete_field_uri for handler %s",
+                    "Skipping handler config with missing search_attribute_uri for handler %s",
                     handler_name,
                 )
                 continue
@@ -77,7 +77,7 @@ def build_handlers_by_catalog() -> dict:
                         id_prefix=instance.id_prefix,
                         handler=instance,
                         catalog_uri=catalog_uri,
-                        auto_complete_field_uri=auto_field_uri,
+                        search_attribute_uri=search_attribute_uri,
                     )
                     _register_handler_binding(handlers_by_catalog, catalog_uris, binding)
                 except Exception as e:
@@ -105,7 +105,7 @@ def build_handlers_by_catalog() -> dict:
                         id_prefix=instance.id_prefix,
                         handler=instance,
                         catalog_uri=catalog_uri,
-                        auto_complete_field_uri=auto_field_uri,
+                        search_attribute_uri=search_attribute_uri,
                     )
                     _register_handler_binding(handlers_by_catalog, catalog_uris, binding)
                 except Exception as e:
@@ -125,6 +125,6 @@ def _register_handler_binding(
                 id_prefix=handler_binding.id_prefix,
                 handler=handler_binding.handler,
                 catalog_uri=catalog_uri,
-                auto_complete_field_uri=handler_binding.auto_complete_field_uri,
+                search_attribute_uri=handler_binding.search_attribute_uri,
             )
         )

@@ -8,7 +8,7 @@ from .parser import evaluate_jmespath_mapping
 logger = logging.getLogger(__name__)
 
 
-class GeophysicalInstrumentPoolPotsdamHandler(BackendRecordHandler):
+class GIPPInstrumentHandler(BackendRecordHandler):
     """
     Handles for the Geophysical Instrument Pool Potsdam (GIPP).
 

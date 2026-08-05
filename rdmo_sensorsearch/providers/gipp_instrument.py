@@ -6,7 +6,7 @@ from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 logger = logging.getLogger(__name__)
 
 
-class GeophysicalInstrumentPoolPotsdamProvider(BaseRemoteSearchProvider):
+class GIPPInstrumentProvider(BaseRemoteSearchProvider):
     """
     Searches the GFZ Potsdam Geophysical Instrument Pool (GIPP) for instruments
     and returns options.

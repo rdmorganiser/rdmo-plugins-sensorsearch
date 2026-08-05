@@ -1,16 +1,16 @@
-from rdmo_sensorsearch.providers.provider_gfz_gipp import GeophysicalInstrumentPoolPotsdamProvider
-from rdmo_sensorsearch.providers.provider_o2a_registry import O2ARegistrySearchProvider
-from rdmo_sensorsearch.providers.provider_o2a_registry_missions import O2ARegistryMissionsProvider
-from rdmo_sensorsearch.providers.provider_sms import SensorManagementSystemProvider
-from rdmo_sensorsearch.providers.provider_sms_configurations import (
-    SensorManagementSystemConfigurationsProvider,
+from rdmo_sensorsearch.providers.gipp_instrument import GIPPInstrumentProvider
+from rdmo_sensorsearch.providers.o2a_item import O2ARegistryItemProvider
+from rdmo_sensorsearch.providers.o2a_mission import O2ARegistryMissionProvider
+from rdmo_sensorsearch.providers.sms_configuration import (
+    SensorManagementSystemConfigurationProvider,
 )
+from rdmo_sensorsearch.providers.sms_device import SensorManagementSystemDeviceProvider
 
-# dict of known sensor data provider
+# Backend provider classes addressable from the TOML configuration.
 PROVIDER_REGISTRY = {
-    "O2ARegistrySearchProvider": O2ARegistrySearchProvider,
-    "O2ARegistryMissionsProvider": O2ARegistryMissionsProvider,
-    "SensorManagementSystemProvider": SensorManagementSystemProvider,
-    "SensorManagementSystemConfigurationsProvider": SensorManagementSystemConfigurationsProvider,
-    "GeophysicalInstrumentPoolPotsdamProvider": GeophysicalInstrumentPoolPotsdamProvider,
+    "O2ARegistryItemProvider": O2ARegistryItemProvider,
+    "O2ARegistryMissionProvider": O2ARegistryMissionProvider,
+    "SensorManagementSystemDeviceProvider": SensorManagementSystemDeviceProvider,
+    "SensorManagementSystemConfigurationProvider": SensorManagementSystemConfigurationProvider,
+    "GIPPInstrumentProvider": GIPPInstrumentProvider,
 }

@@ -21,7 +21,7 @@ are deduplicated. These measures reduce repeated work but do not remove remote
 API latency.
 
 The request timeout is controlled by the Django setting
-`SENSORS_SEARCH_PROVIDER_REQUEST_TIMEOUT` and defaults to 10 seconds. A shorter
+`SENSORSEARCH_REQUEST_TIMEOUT` and defaults to 10 seconds. A shorter
 timeout fails faster on an unavailable backend; a longer timeout may make an
 interview save appear stalled.
 
@@ -160,7 +160,7 @@ When a selection produces no metadata, check these items in order:
 
 1. the option ID prefix has a matching provider backend and handler backend;
 2. the current catalog URI matches a handler catalog entry or wildcard entry;
-3. the search question uses the exact configured `auto_complete_field_uri`;
+3. the search question uses the exact configured `search_attribute_uri`;
 4. mapping target attributes exist in the catalog's relevant collection;
 5. configuration, selected-device, and device collection indexes line up;
 6. the remote record is accessible with the current authentication context;

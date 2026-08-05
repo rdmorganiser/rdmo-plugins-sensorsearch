@@ -59,10 +59,10 @@ _install_host_application_stubs()
 client = import_module("rdmo_sensorsearch.client")
 handler_base = import_module("rdmo_sensorsearch.handlers.base")
 configuration_period = import_module("rdmo_sensorsearch.handlers.configuration_period")
-handler_o2a_registry = import_module("rdmo_sensorsearch.handlers.handler_o2a_registry")
-handler_o2a_missions = import_module("rdmo_sensorsearch.handlers.handler_o2a_registry_missions")
-handler_sms = import_module("rdmo_sensorsearch.handlers.handler_sms")
-handler_sms_configurations = import_module("rdmo_sensorsearch.handlers.handler_sms_configurations")
+o2a_item_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_item")
+o2a_mission_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_mission")
+sms_device_handler_module = import_module("rdmo_sensorsearch.handlers.sms_device")
+sms_configuration_handler_module = import_module("rdmo_sensorsearch.handlers.sms_configuration")
 
 
 class FakeResponse:
@@ -79,7 +79,7 @@ class FakeResponse:
 
 
 def test_handler_builds_authoritative_values_for_its_complete_ownership():
-    handler = handler_sms.SensorManagementSystemHandler(
+    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
         attribute_mapping={
             "data.attributes.name": "attribute:name",
             "included[].attributes.unit": "attribute:units",
@@ -102,7 +102,7 @@ def test_handler_builds_authoritative_values_for_its_complete_ownership():
 
 
 def test_handler_authoritative_values_honor_scope_exclusions():
-    handler = handler_sms.SensorManagementSystemHandler(
+    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
         attribute_mapping={"data.attributes.name": "attribute:name"},
         managed_attribute_uris=["attribute:scoped"],
         base_url="https://sms.example/api",
@@ -197,8 +197,8 @@ def test_o2a_device_refresh_fails_when_an_auxiliary_request_fails(monkeypatch):
             {"records": []},
         )
     )
-    monkeypatch.setattr(handler_o2a_registry, "fetch_json", lambda url: next(responses))
-    handler = handler_o2a_registry.O2ARegistrySearchHandler(attribute_mapping={})
+    monkeypatch.setattr(o2a_item_handler_module, "fetch_json", lambda url: next(responses))
+    handler = o2a_item_handler_module.O2ARegistryItemHandler(attribute_mapping={})
 
     result = handler.handle("42")
 
@@ -212,8 +212,8 @@ def test_sms_device_refresh_fails_when_contact_request_fails(monkeypatch):
             {"errors": ["contacts unavailable"]},
         )
     )
-    monkeypatch.setattr(handler_sms, "fetch_json", lambda url, auth_token=None: next(responses))
-    handler = handler_sms.SensorManagementSystemHandler(
+    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
+    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
         attribute_mapping={},
         base_url="https://sms.example/api",
     )
@@ -265,8 +265,8 @@ def test_sms_device_refresh_maps_mount_height_depth_and_site(monkeypatch):
             }
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(handler_sms, "fetch_json", fetch_json)
-    handler = handler_sms.SensorManagementSystemHandler(
+    monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch_json)
+    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
         attribute_mapping={},
         base_url="https://sms.example/api",
     )
@@ -280,11 +280,11 @@ def test_sms_device_refresh_maps_mount_height_depth_and_site(monkeypatch):
     errors = handler._set_mount_period(mapped_values, "607", instance=object())
 
     assert errors == []
-    assert mapped_values[handler_sms.INSTRUMENT_START_ATTRIBUTE_URI] == "2020-08-25 12:00"
-    assert mapped_values[handler_sms.INSTRUMENT_END_ATTRIBUTE_URI] == ""
-    assert mapped_values[handler_sms.INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] == 160
-    assert mapped_values[handler_sms.SURFACE_OFFSET_Z_ATTRIBUTE_URI] == 50
-    assert mapped_values[handler_sms.SITE_NAME_ATTRIBUTE_URI] == "Wettermast_CN"
+    assert mapped_values[sms_device_handler_module.INSTRUMENT_START_ATTRIBUTE_URI] == "2020-08-25 12:00"
+    assert mapped_values[sms_device_handler_module.INSTRUMENT_END_ATTRIBUTE_URI] == ""
+    assert mapped_values[sms_device_handler_module.INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] == 160
+    assert mapped_values[sms_device_handler_module.SURFACE_OFFSET_Z_ATTRIBUTE_URI] == 50
+    assert mapped_values[sms_device_handler_module.SITE_NAME_ATTRIBUTE_URI] == "Wettermast_CN"
 
 
 def test_sms_configuration_collection_fetches_every_page(monkeypatch):
@@ -302,8 +302,8 @@ def test_sms_configuration_collection_fetches_every_page(monkeypatch):
             "included": [{"type": "device", "id": "11"}],
         }
 
-    monkeypatch.setattr(handler_sms_configurations, "fetch_json", fetch_json)
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={},
         base_url="https://sms.example/api",
     )
@@ -320,10 +320,10 @@ def test_sms_configuration_collection_fetches_every_page(monkeypatch):
 
 
 def test_sms_configuration_member_uses_compact_configuration_label():
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={},
         id_prefix="kitcfg",
-        sensor_text_prefix="KIT Sensor",
+        device_text_prefix="KIT Sensor",
     )
 
     assert (
@@ -340,10 +340,10 @@ def test_sms_configuration_member_uses_compact_configuration_label():
 
 
 def test_sms_configuration_member_includes_derived_vertical_location():
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={},
         id_prefix="kitcfg",
-        sensor_id_prefix="kitsms",
+        device_id_prefix="kitsms",
     )
     platform_action = {
         "type": "platform_mount_action",
@@ -411,7 +411,7 @@ def test_sms_configuration_member_includes_derived_vertical_location():
 
 
 def test_sms_configuration_period_supports_an_optional_end_and_exclusive_unmount_boundary():
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={},
         id_prefix="kitcfg",
     )
@@ -483,10 +483,10 @@ def test_configuration_period_workflow_depends_on_the_catalog_trigger():
 
 
 def test_sms_configuration_range_selects_latest_mount_and_location_within_range():
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={},
         id_prefix="kitcfg",
-        sensor_id_prefix="kitsms",
+        device_id_prefix="kitsms",
     )
 
     def device_action(action_id, device_id, begin_date, end_date, offset_z):
@@ -605,11 +605,11 @@ def test_sms_configuration_refresh_aborts_when_a_member_cannot_be_resolved(monke
             return {"errors": ["device unavailable"]}
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(handler_sms_configurations, "fetch_json", fetch_json)
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={},
         base_url="https://sms.example/api",
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
     )
 
@@ -637,23 +637,23 @@ def test_sms_configuration_refresh_can_preserve_the_current_device_set(monkeypat
             }
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(handler_sms_configurations, "fetch_json", fetch_json)
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={
             "data.attributes.description": "configuration:description",
             "data.attributes.start_date": "configuration:start",
             "data.attributes.end_date": "configuration:end",
         },
         base_url="https://sms.example/api",
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        cfg_start_uri="configuration:start",
-        cfg_end_uri="configuration:end",
+        period_start_attribute_uri="configuration:start",
+        period_end_attribute_uri="configuration:end",
     )
 
     result = handler.handle(
         "49",
-        context=handler_base.HandlerExecutionContext(preserve_collections=True),
+        context=handler_base.HandlerExecutionContext(preserve_existing_collections=True),
     )
 
     assert result == handler_base.HandlerResult(
@@ -669,24 +669,24 @@ def test_sms_configuration_defers_device_assignments_until_the_period_is_applied
         requested_urls.append(url)
         return {"data": {"id": "49", "attributes": {"description": "Configuration"}, "links": {}}}
 
-    monkeypatch.setattr(handler_sms_configurations, "fetch_json", fetch_json)
+    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
     monkeypatch.setattr(
-        handler_sms_configurations,
+        sms_configuration_handler_module,
         "catalog_has_date_range_trigger",
         lambda instance: True,
     )
     monkeypatch.setattr(
-        handler_sms_configurations,
+        sms_configuration_handler_module,
         "read_configuration_period",
         lambda instance, start_uri, end_uri: (None, "Enter a configuration start date."),
     )
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={"data.attributes.description": "configuration:description"},
         base_url="https://sms.example/api",
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        cfg_start_uri="configuration:start",
-        cfg_end_uri="configuration:end",
+        period_start_attribute_uri="configuration:start",
+        period_end_attribute_uri="configuration:end",
     )
 
     result = handler.handle("49", instance=SimpleNamespace())
@@ -722,19 +722,19 @@ def test_sms_configuration_without_apply_trigger_syncs_immediately_without_a_per
             return {"data": [], "included": []}
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(handler_sms_configurations, "fetch_json", fetch_json)
+    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
     monkeypatch.setattr(
-        handler_sms_configurations,
+        sms_configuration_handler_module,
         "read_configuration_period",
         lambda *args: (_ for _ in ()).throw(AssertionError("The period must not be read")),
     )
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={"data.attributes.description": "configuration:description"},
         base_url="https://sms.example/api",
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        cfg_start_uri="configuration:start",
-        cfg_end_uri="configuration:end",
+        period_start_attribute_uri="configuration:start",
+        period_end_attribute_uri="configuration:end",
     )
     catalog = SimpleNamespace(pages=[], prefetch_elements=lambda: None)
 
@@ -758,22 +758,22 @@ def test_sms_configuration_without_apply_trigger_syncs_immediately_without_a_per
 
 def test_sms_apply_date_range_fails_closed_when_the_period_is_invalid(monkeypatch):
     monkeypatch.setattr(
-        handler_sms_configurations,
+        sms_configuration_handler_module,
         "fetch_json",
         lambda url, auth_token=None: {"data": {"id": "49", "attributes": {}, "links": {}}},
     )
     monkeypatch.setattr(
-        handler_sms_configurations,
+        sms_configuration_handler_module,
         "read_configuration_period",
         lambda instance, start_uri, end_uri: (None, "The end date must not be earlier than the start date."),
     )
-    handler = handler_sms_configurations.SensorManagementSystemConfigurationsHandler(
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={},
         base_url="https://sms.example/api",
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        cfg_start_uri="configuration:start",
-        cfg_end_uri="configuration:end",
+        period_start_attribute_uri="configuration:start",
+        period_end_attribute_uri="configuration:end",
     )
 
     result = handler.handle(
@@ -794,10 +794,10 @@ def test_o2a_mission_collection_fetches_every_page(monkeypatch):
             return {"records": [{"id": "1", "itemId": 10}, {"id": "2", "itemId": 11}]}
         return {"records": [{"id": "3", "itemId": 12}]}
 
-    monkeypatch.setattr(handler_o2a_missions, "fetch_json", fetch_json)
-    handler = handler_o2a_missions.O2ARegistryMissionsHandler(
+    monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={},
-        mission_item_max_hits=2,
+        mission_item_page_size=2,
     )
 
     result = handler._fetch_mission_items("30")
@@ -807,7 +807,7 @@ def test_o2a_mission_collection_fetches_every_page(monkeypatch):
 
 
 def test_o2a_mission_member_uses_compact_mission_label():
-    handler = handler_o2a_missions.O2ARegistryMissionsHandler(attribute_mapping={})
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(attribute_mapping={})
 
     assert (
         handler._format_item_text(
@@ -834,10 +834,10 @@ def test_o2a_mission_refresh_aborts_when_a_member_cannot_be_resolved(monkeypatch
             return {"errors": ["item unavailable"]}
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(handler_o2a_missions, "fetch_json", fetch_json)
-    handler = handler_o2a_missions.O2ARegistryMissionsHandler(
+    monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={},
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
     )
 
@@ -859,22 +859,22 @@ def test_o2a_mission_refresh_can_preserve_the_current_device_set(monkeypatch):
             }
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(handler_o2a_missions, "fetch_json", fetch_json)
-    handler = handler_o2a_missions.O2ARegistryMissionsHandler(
+    monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={
             "name": "configuration:name",
             "startDate": "configuration:start",
             "endDate": "configuration:end",
         },
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        cfg_start_uri="configuration:start",
-        cfg_end_uri="configuration:end",
+        period_start_attribute_uri="configuration:start",
+        period_end_attribute_uri="configuration:end",
     )
 
     result = handler.handle(
         "30",
-        context=handler_base.HandlerExecutionContext(preserve_collections=True),
+        context=handler_base.HandlerExecutionContext(preserve_existing_collections=True),
     )
 
     assert result == handler_base.HandlerResult(
@@ -890,23 +890,23 @@ def test_o2a_mission_defers_device_assignments_until_the_period_is_applied(monke
         requested_urls.append(url)
         return {"name": "Mission"}
 
-    monkeypatch.setattr(handler_o2a_missions, "fetch_json", fetch_json)
+    monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
     monkeypatch.setattr(
-        handler_o2a_missions,
+        o2a_mission_handler_module,
         "catalog_has_date_range_trigger",
         lambda instance: True,
     )
     monkeypatch.setattr(
-        handler_o2a_missions,
+        o2a_mission_handler_module,
         "read_configuration_period",
         lambda instance, start_uri, end_uri: (None, "Enter a mission start date."),
     )
-    handler = handler_o2a_missions.O2ARegistryMissionsHandler(
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={"name": "configuration:name"},
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        cfg_start_uri="configuration:start",
-        cfg_end_uri="configuration:end",
+        period_start_attribute_uri="configuration:start",
+        period_end_attribute_uri="configuration:end",
     )
 
     result = handler.handle("30", instance=SimpleNamespace())
@@ -935,18 +935,18 @@ def test_o2a_mission_without_apply_trigger_syncs_immediately_without_a_period(mo
             return {"records": []}
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(handler_o2a_missions, "fetch_json", fetch_json)
+    monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
     monkeypatch.setattr(
-        handler_o2a_missions,
+        o2a_mission_handler_module,
         "read_configuration_period",
         lambda *args: (_ for _ in ()).throw(AssertionError("The period must not be read")),
     )
-    handler = handler_o2a_missions.O2ARegistryMissionsHandler(
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={"name": "configuration:name"},
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        cfg_start_uri="configuration:start",
-        cfg_end_uri="configuration:end",
+        period_start_attribute_uri="configuration:start",
+        period_end_attribute_uri="configuration:end",
     )
     catalog = SimpleNamespace(pages=[], prefetch_elements=lambda: None)
 
@@ -984,18 +984,18 @@ def test_o2a_mission_applies_the_user_period_to_its_devices(monkeypatch):
             return {"id": 4152, "longName": "CTD"}
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(handler_o2a_missions, "fetch_json", fetch_json)
+    monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
     monkeypatch.setattr(
-        handler_o2a_missions,
+        o2a_mission_handler_module,
         "read_configuration_period",
         lambda instance, start_uri, end_uri: (period, None),
     )
-    handler = handler_o2a_missions.O2ARegistryMissionsHandler(
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={},
-        member_sensors_attribute_uri="selected-devices",
+        selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        cfg_start_uri="configuration:start",
-        cfg_end_uri="configuration:end",
+        period_start_attribute_uri="configuration:start",
+        period_end_attribute_uri="configuration:end",
     )
 
     result = handler.handle(
@@ -1015,19 +1015,19 @@ def test_o2a_mission_exposes_the_user_period_for_preserved_devices(monkeypatch):
     )
     assert error is None
     monkeypatch.setattr(
-        handler_o2a_missions,
+        o2a_mission_handler_module,
         "read_configuration_period",
         lambda instance, start_uri, end_uri: (period, None),
     )
     monkeypatch.setattr(
-        handler_o2a_missions,
+        o2a_mission_handler_module,
         "catalog_has_date_range_trigger",
         lambda instance: True,
     )
-    handler = handler_o2a_missions.O2ARegistryMissionsHandler(
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={},
-        cfg_start_uri="configuration:start",
-        cfg_end_uri="configuration:end",
+        period_start_attribute_uri="configuration:start",
+        period_end_attribute_uri="configuration:end",
     )
 
     period = handler.get_member_device_period(

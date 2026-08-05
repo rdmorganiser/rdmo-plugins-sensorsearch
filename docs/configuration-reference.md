@@ -11,37 +11,45 @@ This reference follows the repository's [`sensorsearch.toml`](../sensorsearch.to
 The file is an example deployment configuration, so backend URLs and catalog
 scope should be reviewed before using it in production.
 
-The path can be selected with the Django setting or environment variable
-`SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH`. Otherwise the packaged
-`rdmo_sensorsearch/config.toml` is loaded.
+The configuration source and request timeout use consistently prefixed Django
+settings. The two configuration settings can also be supplied as environment
+variables with the same names.
+
+| Setting | Meaning |
+| --- | --- |
+| `SENSORSEARCH_CONFIG_FILE_PATH` | Complete path to the TOML configuration. Takes precedence over the file name. |
+| `SENSORSEARCH_CONFIG_FILE_NAME` | File name resolved inside the package when no complete path is set. Defaults to `config.toml`. |
+| `SENSORSEARCH_REQUEST_TIMEOUT` | Timeout in seconds for backend HTTP requests. Defaults to `10`. |
+
+Without an override, the packaged `rdmo_sensorsearch/config.toml` is loaded.
 
 ## Provider aggregators
 
-### `[SensorsProvider]`
+### `[DeviceSearchProvider]`
 
 | Setting | Meaning |
 | --- | --- |
 | `min_search_len` | Minimum number of typed characters before remote device providers are queried. |
-| `filter_sms_by_selected_configuration` | When `true`, SMS device search is restricted to the SMS backend matching a selected configuration. Leave `false` when manual searches should cover all SMS instances. |
+| `filter_sms_devices_by_selected_configuration` | When `true`, SMS device search is restricted to the SMS backend matching a selected configuration. Leave `false` when manual searches should cover all SMS instances. |
 
-Each `[[SensorsProvider.providers.<ProviderClass>]]` entry enables one device
+Each `[[DeviceSearchProvider.providers.<ProviderClass>]]` entry enables one device
 source. Multiple entries of the same class are allowed. Common provider fields
 are `id_prefix`, `text_prefix`, and `base_url`; provider-specific URL templates
 can be overridden when required.
 
 The example enables:
 
-- `O2ARegistrySearchProvider`;
-- three `SensorManagementSystemProvider` instances for GFZ, KIT, and UFZ;
-- `GeophysicalInstrumentPoolPotsdamProvider`.
+- `O2ARegistryItemProvider`;
+- three `SensorManagementSystemDeviceProvider` instances for GFZ, KIT, and UFZ;
+- `GIPPInstrumentProvider`.
 
 Prefixes must be unique across the aggregate provider because they are used to
 route a selected option to its handler.
 
-### `[ConfigurationsProvider]`
+### `[ConfigurationSearchProvider]`
 
 `min_search_len` has the same meaning for configuration and mission search.
-Each `[[ConfigurationsProvider.providers.<ProviderClass>]]` entry enables a
+Each `[[ConfigurationSearchProvider.providers.<ProviderClass>]]` entry enables a
 configuration source. The example uses three SMS configuration providers and
 one O2A mission provider.
 
@@ -55,9 +63,9 @@ For SMS, keep configuration and device prefixes paired:
 
 ## Project-local providers
 
-### `[ProjectConfigurationSensorsProvider]`
+### `[ProjectConfigurationDevicesProvider]`
 
-Each `[[ProjectConfigurationSensorsProvider.catalogs]]` entry selects an
+Each `[[ProjectConfigurationDevicesProvider.catalogs]]` entry selects an
 attribute whose project values become device options. In the Earth Sensor
 catalog it is the selected-devices attribute. Use `catalog_uri` for one catalog,
 `catalog_uris` for several, or omit both for a wildcard mapping.
@@ -66,7 +74,7 @@ catalog it is the selected-devices attribute. Use `catalog_uri` for one catalog,
 
 This section has the same catalog scoping and `source_attribute_uri` setting,
 but supplies the data-collection device optionset. It can reuse the same source
-as `ProjectConfigurationSensorsProvider`.
+as `ProjectConfigurationDevicesProvider`.
 
 ## `[DataCollectionVariableSync]`
 
@@ -105,7 +113,7 @@ Each `[[MetadataRefresh.actions]]` supports:
 | `status_attribute_uri` | Optional target for machine-readable or concise status text. |
 | `message_attribute_uri` | Optional target for user-facing details and errors. |
 | `timestamp_attribute_uri` | Optional target for the refresh time. |
-| `replace_collections` | Rebuild configuration device membership instead of preserving existing collections. Used by explicit period application. |
+| `replace_existing_collections` | Rebuild configuration device membership instead of preserving existing collections. Used by explicit period application. |
 | `require_configuration_period` | Reject the action unless the configured start/end inputs form a valid period. |
 | `input_attribute_uris` | User-owned input fields that affect this action. Changes clear stale feedback but do not execute the action. |
 
@@ -135,7 +143,7 @@ base_url = "https://api.example.org"
 
 [[handlers.SomeHandler.catalogs]]
 catalog_uri = "https://example.org/catalog"
-auto_complete_field_uri = "https://example.org/attributes/search"
+search_attribute_uri = "https://example.org/attributes/search"
 managed_attribute_uris = ["https://example.org/attributes/output"]
 
 [handlers.SomeHandler.catalogs.attribute_mapping]
@@ -151,21 +159,21 @@ Common handler settings are:
 
 | Setting | Meaning |
 | --- | --- |
-| `auto_complete_field_uri` | Search attribute monitored for a selected backend option. |
+| `search_attribute_uri` | Search attribute monitored for a selected backend option. |
 | `attribute_mapping` | JMESPath-to-RDMO-attribute mapping. Array results create indexed values. |
 | `managed_attribute_uris` | Additional fields authoritatively owned by the handler. |
-| `sync_device_detail_blocks` | Allows selected devices to be materialized into repeated detail collections. |
+| `materialize_device_details` | Allows selected devices to be materialized into repeated detail collections. |
 | `device_link_attribute_uri` | Target for a backend or frontend record link. |
 | `catalog_uri`, `catalog_uris` | Catalog scope; omitted means wildcard. |
 
-### `O2ARegistrySearchHandler`
+### `O2ARegistryItemHandler`
 
 This handler fetches one O2A item. Its mapping can read names, type,
 manufacturer, model, serial number, citation, parameters, units, and contacts.
 `item_api_link_template` and `item_frontend_link_template` configure record
 links.
 
-### `SensorManagementSystemHandler`
+### `SensorManagementSystemDeviceHandler`
 
 This handler fetches one SMS device. Multiple `backends` associate SMS
 `id_prefix` values with base URLs. Important settings are:
@@ -174,43 +182,43 @@ This handler fetches one SMS device. Multiple `backends` associate SMS
 | --- | --- |
 | `backend_link_marker` | Recognizes and normalizes SMS backend links. |
 | `device_mount_actions_url` | Endpoint template used for device deployment periods and mount context. |
-| `supports_mount_action_period_lookup` | Enables SMS mount-action enrichment for device detail blocks. |
+| `supports_mount_period_lookup` | Enables SMS mount-action enrichment for device detail blocks. |
 
 SMS mount enrichment can derive a device's active period, site name, and
 vertical position. See [Operations and limitations](operations-and-limitations.md#sms-location-height-and-depth).
 
-### `SensorManagementSystemConfigurationsHandler`
+### `SensorManagementSystemConfigurationHandler`
 
 This handler fetches one SMS configuration and its mounted devices.
 
 | Setting | Meaning |
 | --- | --- |
 | `configuration_collection_attribute_uri` | Repeated configuration collection root. |
-| `member_sensors_attribute_uri` | Attribute storing selected or mounted devices. |
+| `selected_devices_attribute_uri` | Attribute storing selected or mounted devices. |
 | `selected_devices_page_uri` | Page containing the selected device set. |
 | `device_collection_attribute_uri` | Repeated device-detail collection root. |
 | `frontend_link_attribute_uri` | Configuration link target. |
 | `latitude_attribute_uri`, `longitude_attribute_uri` | Configuration static-location targets. |
-| `cfg_start_uri`, `cfg_end_uri` | User-entered filtering period inputs. These are not backend output mappings. |
-| `sensor_id_prefix`, `sensor_text_prefix` | Converts a mounted SMS device into an option understood by the matching device handler. |
+| `period_start_attribute_uri`, `period_end_attribute_uri` | User-entered filtering period inputs. These are not backend output mappings. |
+| `device_id_prefix`, `device_text_prefix` | Converts a mounted SMS device into an option understood by the matching device handler. |
 
 The configuration provider's `id_prefix` must match the handler backend entry,
-and `sensor_id_prefix` must match a configured SMS device provider and handler.
+and `device_id_prefix` must match a configured SMS device provider and handler.
 
-### `O2ARegistryMissionsHandler`
+### `O2ARegistryMissionHandler`
 
 This handler treats an O2A mission as a configuration and its items as member
-devices. The configuration collection, member sensor, selected-device page,
-device collection, frontend link, and `cfg_start_uri`/`cfg_end_uri` settings
+devices. The configuration collection, selected-devices attribute and page,
+device collection, frontend link, and `period_start_attribute_uri`/`period_end_attribute_uri` settings
 have the same catalog meaning as for SMS.
 
 `mission_url`, `mission_items_url`, and `item_url` control API requests.
-`mission_item_max_hits` limits the page size. `item_id_prefix` must match the
+`mission_item_page_size` limits the page size. `item_id_prefix` must match the
 O2A device provider. `mission_start_date_path`, `mission_end_date_path`, and
 `date_mapping_paths` describe dates present in the mission API; they do not
 make the catalog's user-entered start/end attributes backend-managed outputs.
 
-### `GeophysicalInstrumentPoolPotsdamHandler`
+### `GIPPInstrumentHandler`
 
 This handler maps GIPP records, including instrument code, category,
 manufacturer, serial number, PID, and contact. It participates in device search

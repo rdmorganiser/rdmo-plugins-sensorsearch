@@ -12,7 +12,7 @@ SPDX-License-Identifier: Apache-2.0
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>configurations/optionset</uri_path>
 		<dc:comment/>
-		<provider_key>sensorssearch_configurations</provider_key>
+		<provider_key>sensorsearch_configurations</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>

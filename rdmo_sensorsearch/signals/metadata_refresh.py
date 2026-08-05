@@ -76,7 +76,7 @@ def _get_refresh_actions(catalog_uri: str) -> tuple[RefreshAction, ...]:
                 status_attribute_uri=action_config.get("status_attribute_uri"),
                 message_attribute_uri=action_config.get("message_attribute_uri"),
                 timestamp_attribute_uri=action_config.get("timestamp_attribute_uri"),
-                replace_collections=bool(action_config.get("replace_collections", False)),
+                replace_existing_collections=bool(action_config.get("replace_existing_collections", False)),
                 require_configuration_period=bool(action_config.get("require_configuration_period", False)),
                 input_attribute_uris=tuple(
                     attribute_uri
@@ -161,7 +161,7 @@ def _refresh_current_configuration(
         "No backend configuration exists in this configuration scope.",
         canonical_configuration_label,
         auth_token=auth_token,
-        preserve_collections=not action.replace_collections,
+        preserve_existing_collections=not action.replace_existing_collections,
         require_configuration_period=action.require_configuration_period,
     )
 
@@ -186,7 +186,7 @@ def _refresh_current_value(
     missing_value_message: str,
     label_formatter: Callable[[str, str | None], str],
     auth_token: str | None = None,
-    preserve_collections: bool = False,
+    preserve_existing_collections: bool = False,
     require_configuration_period: bool = False,
 ) -> tuple[RefreshResult, str]:
     source_value = (
@@ -209,7 +209,7 @@ def _refresh_current_value(
         refresh_value_from_backend(
             source_value,
             auth_token=auth_token,
-            preserve_collections=preserve_collections,
+            preserve_existing_collections=preserve_existing_collections,
             require_configuration_period=require_configuration_period,
         ),
         label_formatter(source_value.text or source_value.external_id, source_value.external_id),
@@ -236,7 +236,7 @@ def _refresh_all_configurations(
         refresh_value_from_backend(
             value,
             auth_token=auth_token,
-            preserve_collections=True,
+            preserve_existing_collections=True,
         )
         for value in configurations_by_scope.values()
     )

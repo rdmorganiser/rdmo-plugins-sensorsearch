@@ -63,11 +63,11 @@ Add the plugin to the `OPTIONSET_PROVIDERS` in `config/settings/local.py`:
 
 ```python
 OPTIONSET_PROVIDERS = [
-    ('sensorssearch', _('Sensor Search'), 'rdmo_sensorsearch.providers.SensorsProvider'),
-    ('sensorssearch_configurations', _('Configuration Search'), 'rdmo_sensorsearch.providers.ConfigurationsProvider'),
-    ('sensorssearch_project_sensors', _('Project Configuration Sensors'), 'rdmo_sensorsearch.providers.ProjectConfigurationSensorsProvider'),
-    ('sensorssearch_project_data_collection_devices', _('Project Data Collection Devices'), 'rdmo_sensorsearch.providers.ProjectDataCollectionDevicesProvider'),
-    ('sensorssearch_interview_page_refresh', _('Interview Page Refresh'), 'rdmo_sensorsearch.providers.InterviewPageRefreshProvider'),
+    ('sensorsearch_devices', _('Device Search'), 'rdmo_sensorsearch.providers.DeviceSearchProvider'),
+    ('sensorsearch_configurations', _('Configuration Search'), 'rdmo_sensorsearch.providers.ConfigurationSearchProvider'),
+    ('sensorsearch_project_configuration_devices', _('Project Configuration Devices'), 'rdmo_sensorsearch.providers.ProjectConfigurationDevicesProvider'),
+    ('sensorsearch_project_data_collection_devices', _('Project Data Collection Devices'), 'rdmo_sensorsearch.providers.ProjectDataCollectionDevicesProvider'),
+    ('sensorsearch_interview_page_refresh', _('Interview Page Refresh'), 'rdmo_sensorsearch.providers.InterviewPageRefreshProvider'),
 ]
 ```
 
@@ -88,10 +88,10 @@ MIDDLEWARE = [
 ]
 ```
 
-After restarting RDMO, the `Sensor Search` should be selectable as a provider
+After restarting RDMO, `Device Search` should be selectable as a provider
 option for option sets. If you enable the additional provider entries, a
 separate `Configuration Search` provider, a project-local reuse provider for
-mounted sensors, and a data collection devices provider are available as well.
+mounted devices, and a data collection devices provider are available as well.
 The data collection devices provider uses the same project-local value source
 for data collection instrument selection questions. The no-op `Interview Page
 Refresh` provider can be attached to metadata refresh trigger questions so
@@ -106,36 +106,36 @@ refetching, and data collection parameter synchronization.
 ## Configuration
 
 With `config.toml` the providers which should be used can be configured. The
-`SensorsProvider` aggregates the results of the configured providers.
-`ConfigurationsProvider` works the same way for configuration backends.
+`DeviceSearchProvider` aggregates the results of the configured providers.
+`ConfigurationSearchProvider` works the same way for configuration backends.
 
-To automatically fill out questions with results of the matching sensor,
+To automatically fill out questions with results of the matching backend record,
 attribute mapping for the specific catalog(s) must be configured in the
 configuration file.
 
 The configuration file default location is inside the directory of the plugin.
-The location can be overwritten with `SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH`
+The location can be overwritten with `SENSORSEARCH_CONFIG_FILE_PATH`
 in the in `config/settings/local.py` or as environment variable with the same
 name.
 
 ### Configuration: Providers
 
 ```toml
-[SensorsProvider]
+[DeviceSearchProvider]
 min_search_len = 3
 # Optional: restrict SMS device searches to the SMS backend that matches a
 # selected configuration in the current project. Leave false for manual
 # instrument searches that should query all configured SMS instances.
-filter_sms_by_selected_configuration = false
+filter_sms_devices_by_selected_configuration = false
 
-[SensorsProvider.provider_defaults.SensorManagementSystemProvider]
+[DeviceSearchProvider.provider_defaults.SensorManagementSystemDeviceProvider]
 max_hits = 20
 
-[ConfigurationsProvider]
+[ConfigurationSearchProvider]
 min_search_len = 3
 
-[ProjectConfigurationSensorsProvider]
-[[ProjectConfigurationSensorsProvider.catalogs]]
+[ProjectConfigurationDevicesProvider]
+[[ProjectConfigurationDevicesProvider.catalogs]]
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 
@@ -161,7 +161,7 @@ trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-s
 status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
 message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
-replace_collections = true
+replace_existing_collections = true
 require_configuration_period = true
 input_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
@@ -189,77 +189,77 @@ status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh
 message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/message"
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp"
 
-[[SensorsProvider.providers.O2ARegistrySearchProvider]]
+[[DeviceSearchProvider.providers.O2ARegistryItemProvider]]
 
-[[SensorsProvider.providers.SensorManagementSystemProvider]]
+[[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
 id_prefix = "gfzsms"
 text_prefix = "GFZ Sensor"
 base_url = "https://sensors.gfz.de/backend/api/v1/devices"
 
-[[SensorsProvider.providers.SensorManagementSystemProvider]]
+[[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
 id_prefix = "kitsms"
 text_prefix = "KIT Sensor"
 base_url = "https://sms.atmohub.kit.edu/backend/api/v1/devices"
 
-[[SensorsProvider.providers.SensorManagementSystemProvider]]
+[[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
 id_prefix = "ufzsms"
 text_prefix = "UFZ Sensor"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
-[[SensorsProvider.providers.GeophysicalInstrumentPoolPotsdamProvider]]
+[[DeviceSearchProvider.providers.GIPPInstrumentProvider]]
 
-[[ConfigurationsProvider.providers.SensorManagementSystemConfigurationsProvider]]
+[[ConfigurationSearchProvider.providers.SensorManagementSystemConfigurationProvider]]
 id_prefix = "gfzcfg"
 text_prefix = "GFZ Cfg"
 base_url = "https://sensors.gfz.de/backend/api/v1/configurations"
 
-[[ConfigurationsProvider.providers.O2ARegistryMissionsProvider]]
+[[ConfigurationSearchProvider.providers.O2ARegistryMissionProvider]]
 id_prefix = "o2amission"
 text_prefix = "O2A M"
 base_url = "https://registry.o2a-data.de/rest/v2/missions"
 where_template = "name=ILIKE=\"*{query}*\""
 
-[handlers.SensorManagementSystemConfigurationsHandler]
-[[handlers.SensorManagementSystemConfigurationsHandler.backends]]
+[handlers.SensorManagementSystemConfigurationHandler]
+[[handlers.SensorManagementSystemConfigurationHandler.backends]]
 id_prefix = "gfzcfg"
 base_url = "https://sensors.gfz.de/backend/api/v1"
-sensor_id_prefix = "gfzsms"
-[handlers.SensorManagementSystemConfigurationsHandler.defaults]
-auto_complete_field_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
+device_id_prefix = "gfzsms"
+[handlers.SensorManagementSystemConfigurationHandler.defaults]
+search_attribute_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
 configuration_collection_attribute_uri = "http://example.com/terms/domain/configuration-set"
-member_sensors_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
+selected_devices_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 frontend_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/uri"
 api_link_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
 location_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/spatial"
-[handlers.SensorManagementSystemConfigurationsHandler.defaults.attribute_mapping]
+[handlers.SensorManagementSystemConfigurationHandler.defaults.attribute_mapping]
 "data.id" = "https://rdmorganiser.github.io/terms/domain/project/dataset/identifier"
 "data.attributes.label" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
 "data.attributes.project" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
 "data.attributes.persistent_identifier" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
 "data.attributes.description" = "https://rdmorganiser.github.io/terms/domain/project/dataset/annotation"
 "data.links.self" = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
-[[handlers.SensorManagementSystemConfigurationsHandler.catalogs]]
+[[handlers.SensorManagementSystemConfigurationHandler.catalogs]]
 catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
 
-[handlers.O2ARegistryMissionsHandler]
-[handlers.O2ARegistryMissionsHandler.defaults]
-auto_complete_field_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
+[handlers.O2ARegistryMissionHandler]
+[handlers.O2ARegistryMissionHandler.defaults]
+search_attribute_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
 configuration_collection_attribute_uri = "http://example.com/terms/domain/configuration-set"
-member_sensors_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
+selected_devices_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 device_collection_attribute_uri = "http://example.com/terms/domain/instruments/id"
 item_id_prefix = "o2aregistry"
 item_text_template = "{configuration} {prefix}({item_id}): {name}{serial}"
-[handlers.O2ARegistryMissionsHandler.defaults.attribute_mapping]
+[handlers.O2ARegistryMissionHandler.defaults.attribute_mapping]
 "description" = "http://example.com/terms/domain/configuration-set/description"
-[[handlers.O2ARegistryMissionsHandler.catalogs]]
+[[handlers.O2ARegistryMissionHandler.catalogs]]
 catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
 # These are user-entered filtering inputs, not mission metadata outputs.
-cfg_start_uri = "http://example.com/terms/domain/configuration-set/start"
-cfg_end_uri = "http://example.com/terms/domain/configuration-set/end"
+period_start_attribute_uri = "http://example.com/terms/domain/configuration-set/start"
+period_end_attribute_uri = "http://example.com/terms/domain/configuration-set/end"
 ```
 
 This configures all available providers with three SMS instances to query. The
-`SensorsProvider` will only query the configured providers if at least three
+`DeviceSearchProvider` will only query the configured providers if at least three
 characters are entered.
 
 Provider labels follow a common `<backend> <entity>(<id>): <label>` convention:
@@ -288,27 +288,27 @@ the synchronized label identifies the same tab on both pages.
 
 By default, SMS device search is not restricted by configurations already
 selected in the project, so manual instrument searches query all configured SMS
-instances. Set `filter_sms_by_selected_configuration = true` in
-`[SensorsProvider]` only if device searches should be narrowed to the SMS
+instances. Set `filter_sms_devices_by_selected_configuration = true` in
+`[DeviceSearchProvider]` only if device searches should be narrowed to the SMS
 backend corresponding to an already selected configuration, such as
 `kitcfg -> kitsms`.
 
 When RDMO initializes an asynchronous select containing an existing answer, it
-requests options using the complete stored answer text. The meta-providers
+requests options using the complete stored answer text. The aggregate providers
 resolve an exact match from current project values when its external ID belongs
 to an enabled backend. These initialization requests therefore avoid backend
 authentication and external API calls. Partial or otherwise unmatched searches
 continue to query the configured backends normally.
 
-The `O2ARegistrySearchProvider` and `GeophysicalInstrumentPoolPotsdamProvider`
+The `O2ARegistryItemProvider` and `GIPPInstrumentProvider`
 use their default values for `id_prefix`, `text_prefix`, `base_url` and
 `max_hits`.
 
-There is no default `base_url` for `SensorManagementSystemProvider` defined,
+There is no default `base_url` for `SensorManagementSystemDeviceProvider` defined,
 therefore the `base_url` for every instance must be set. In addition the
 `text_prefix` and `id_prefix` is configured. The `text_prefix` is displayed
 before the result, so that the user can identify the correct registry and
-sensor. The `id_prefix` is used internally, to prefix the id which is saved
+device. The `id_prefix` is used internally, to prefix the id which is saved
 along the value in `external_id`. This is used by the handler to query the
 correct registry when filling out questions with attribute mapping
 automatically.
@@ -319,19 +319,19 @@ In conclusion, every remote provider has the following options:
   registry
 - `max_hits` defaults to `10` and limits the results to display
 - `base_url` the API URL of the used instance, must be set for the
-  `SensorManagementSystemProvider` and
-  `SensorManagementSystemConfigurationsProvider`
+  `SensorManagementSystemDeviceProvider` and
+  `SensorManagementSystemConfigurationProvider`
 
 To avoid repeating shared provider settings, provider defaults can be declared
-once per meta-provider and provider class:
+once per aggregate provider and backend provider class:
 
 ```toml
-[SensorsProvider.provider_defaults.SensorManagementSystemProvider]
+[DeviceSearchProvider.provider_defaults.SensorManagementSystemDeviceProvider]
 max_hits = 20
 ```
 
 These defaults are merged into every
-`[[SensorsProvider.providers.SensorManagementSystemProvider]]` entry. Any value
+`[[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]` entry. Any value
 declared on the concrete provider entry still overrides the default.
 
 ### Configuration: SMS authentication
@@ -345,25 +345,25 @@ Authorization: Bearer <access-token>
 
 Token resolution is intentionally conservative:
 
-- If `SENSORS_SEARCH_AUTH_TOKEN_RESOLVER` is configured, it is used first. The
+- If `SENSORSEARCH_AUTH_TOKEN_RESOLVER` is configured, it is used first. The
   resolver can be a callable or dotted import path accepting `user` and
   `request` keyword arguments.
 - If the auth context middleware is enabled, session keys from
-  `SENSORS_SEARCH_AUTH_SESSION_TOKEN_KEYS` are checked next. Without explicit
+  `SENSORSEARCH_AUTH_SESSION_TOKEN_KEYS` are checked next. Without explicit
   keys, a single unambiguous `access_token` or `*.access_token` session value is
   used.
 - If django-allauth social tokens are available for the user, a single
   unexpired token is used. If several social tokens exist, configure
-  `SENSORS_SEARCH_AUTH_SOCIALACCOUNT_PROVIDERS`, for example:
+  `SENSORSEARCH_AUTH_SOCIALACCOUNT_PROVIDERS`, for example:
 
 ```python
-SENSORS_SEARCH_AUTH_SOCIALACCOUNT_PROVIDERS = ['helmholtz-aai']
+SENSORSEARCH_AUTH_SOCIALACCOUNT_PROVIDERS = ['helmholtz-aai']
 ```
 
 If no unambiguous token can be resolved, the plugin keeps making public SMS
 requests without an `Authorization` header.
 
-The `ProjectConfigurationSensorsProvider` and
+The `ProjectConfigurationDevicesProvider` and
 `ProjectDataCollectionDevicesProvider` are different. They do not query a
 remote backend, but read project-local values which were materialized by a
 configuration handler after a configuration was selected. For the Earth-Sensor
@@ -470,9 +470,9 @@ catalog_uris = [
 # unit_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-unit"
 ```
 
-O2A Registry missions are exposed through `O2ARegistryMissionsProvider`. They
+O2A Registry missions are exposed through `O2ARegistryMissionProvider`. They
 follow the same configuration flow as SMS configurations: selecting a mission
-can materialize its items into the configured project-local sensor collection.
+can materialize its items into the configured project-local device collection.
 The default search query uses the O2A RSQL form `name=ILIKE="*{query}*"`.
 
 ### Configuration: Handlers
@@ -486,56 +486,56 @@ catalogs or even applied as a wildcard mapping for any catalog which uses the
 same autocomplete field.
 
 ```toml
-[handlers.O2ARegistrySearchHandler]
-#[[handlers.O2ARegistrySearchHandler.backends]]
+[handlers.O2ARegistryItemHandler]
+#[[handlers.O2ARegistryItemHandler.backends]]
 #id_prefix = "o2aregistry"
-[handlers.O2ARegistrySearchHandler.defaults]
-auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
-sync_device_detail_blocks = true
+[handlers.O2ARegistryItemHandler.defaults]
+search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
+materialize_device_details = true
 device_link_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/device-link"
-[handlers.O2ARegistrySearchHandler.defaults.attribute_mapping]
+[handlers.O2ARegistryItemHandler.defaults.attribute_mapping]
 "longName" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
 "shortName" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
 "serialNumber" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
-[[handlers.O2ARegistrySearchHandler.catalogs]]
+[[handlers.O2ARegistryItemHandler.catalogs]]
 catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
 # optional per-catalog overrides can be added here
 
-[handlers.SensorManagementSystemHandler]
-[[handlers.SensorManagementSystemHandler.backends]]
+[handlers.SensorManagementSystemDeviceHandler]
+[[handlers.SensorManagementSystemDeviceHandler.backends]]
 id_prefix = "gfzsms"
 base_url = "https://sensors.gfz.de/backend/api/v1"
-[[handlers.SensorManagementSystemHandler.backends]]
+[[handlers.SensorManagementSystemDeviceHandler.backends]]
 id_prefix = "kitsms"
 base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
-[[handlers.SensorManagementSystemHandler.backends]]
+[[handlers.SensorManagementSystemDeviceHandler.backends]]
 id_prefix = "ufzsms"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1"
-[handlers.SensorManagementSystemHandler.defaults]
-auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
-[handlers.SensorManagementSystemHandler.defaults.attribute_mapping]
+[handlers.SensorManagementSystemDeviceHandler.defaults]
+search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
+[handlers.SensorManagementSystemDeviceHandler.defaults.attribute_mapping]
 "data.attributes.long_name" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
 "data.attributes.short_name" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
 "data.attributes.serial_number" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
-[[handlers.SensorManagementSystemHandler.catalogs]]
+[[handlers.SensorManagementSystemDeviceHandler.catalogs]]
 catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
 
-[handlers.GeophysicalInstrumentPoolPotsdamHandler]
-[handlers.GeophysicalInstrumentPoolPotsdamHandler.defaults]
-auto_complete_field_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
-[handlers.GeophysicalInstrumentPoolPotsdamHandler.defaults.attribute_mapping]
+[handlers.GIPPInstrumentHandler]
+[handlers.GIPPInstrumentHandler.defaults]
+search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
+[handlers.GIPPInstrumentHandler.defaults.attribute_mapping]
 "Instrument.code" = "http://rdmo-dev.local/terms/domain/sensor/awi/type-name"
 "Instrumentcategory.name" = "http://rdmo-dev.local/terms/domain/sensor/awi/name"
 "Instrument.serialNo" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
-[[handlers.GeophysicalInstrumentPoolPotsdamHandler.catalogs]]
+[[handlers.GIPPInstrumentHandler.catalogs]]
 catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
 ```
 
 A `backends` configuration must be defined in the case of
-`SensorManagementSystemHandler` or if more than one instance of one provider is
+`SensorManagementSystemDeviceHandler` or if more than one instance of one provider is
 used. Here the `id_prefix` and the `base_url` is critical and must be the same
 as in the `providers` configuration, so that additional requests can be made
 to the correct endpoint.
@@ -545,7 +545,7 @@ attribute mapping should be used to map values from the API response to
 attributes of the catalog. It is possible to configure more than one catalog.
 - `catalog_uri` is the uri of the catalog where the handler should map values
   to attributes
-- `auto_complete_field_uri` is the uri of the question with the option set
+- `search_attribute_uri` is the uri of the question with the option set
   provider used in the catalog
 - `managed_attribute_uris` adds attributes to the handler's ownership beyond
   those in `attribute_mapping`. Every successful refresh is authoritative for
@@ -553,13 +553,13 @@ attributes of the catalog. It is possible to configure more than one catalog.
   owned values omitted by the backend are removed. Unmanaged interview values
   are left untouched. Clearing the source question applies the same ownership
   rules with an empty result.
-- `sync_device_detail_blocks = true` marks an item/sensor handler as eligible
+- `materialize_device_details = true` marks an item or device handler as eligible
   for configuration or mission based detail-block synchronization.
-- `supports_mount_action_period_lookup = true` enables the SMS-specific
+- `supports_mount_period_lookup = true` enables the SMS-specific
   fallback that resolves instrument start/end from device mount actions.
 
 The new `defaults` table is merged into every `catalogs` entry for the same
-handler. If `defaults` define `auto_complete_field_uri`, they also act as a
+handler. If `defaults` define `search_attribute_uri`, they also act as a
 wildcard handler configuration for any catalog using that field, even when no
 explicit `[[handlers.<Handler>.catalogs]]` entry exists. Explicit catalog
 entries take precedence over the wildcard defaults.

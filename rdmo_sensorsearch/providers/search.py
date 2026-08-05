@@ -11,8 +11,8 @@ from rdmo_sensorsearch.providers.factory import build_provider_instances
 
 logger = logging.getLogger(__name__)
 
-SENSORS_PROVIDER_CONFIG_SECTION = "SensorsProvider"
-CONFIGURATIONS_PROVIDER_CONFIG_SECTION = "ConfigurationsProvider"
+DEVICE_SEARCH_CONFIG_SECTION = "DeviceSearchProvider"
+CONFIGURATION_SEARCH_CONFIG_SECTION = "ConfigurationSearchProvider"
 CONFIGURATION_SEARCH_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
 
 
@@ -31,7 +31,7 @@ class AggregatingSearchProvider(Provider):
         section_config = plugin_config.get(self.config_section_name, {})
         min_search_len = section_config.get("min_search_len", 3)
         providers = build_provider_instances(self.config_section_name)
-        if section_config.get("filter_sms_by_selected_configuration", False):
+        if section_config.get("filter_sms_devices_by_selected_configuration", False):
             providers = self._filter_providers_for_project(project, providers)
 
         logger.debug(
@@ -137,9 +137,9 @@ class AggregatingSearchProvider(Provider):
         return options
 
     def _canonical_option_text(self, text: str, external_id: str) -> str:
-        if self.config_section_name == SENSORS_PROVIDER_CONFIG_SECTION:
+        if self.config_section_name == DEVICE_SEARCH_CONFIG_SECTION:
             return canonical_device_label(text, external_id)
-        if self.config_section_name == CONFIGURATIONS_PROVIDER_CONFIG_SECTION:
+        if self.config_section_name == CONFIGURATION_SEARCH_CONFIG_SECTION:
             return canonical_configuration_label(text, external_id)
         return text
 
@@ -182,7 +182,7 @@ class AggregatingSearchProvider(Provider):
             return []
 
     def _filter_providers_for_project(self, project, providers: list[Provider]) -> list[Provider]:
-        if self.config_section_name != SENSORS_PROVIDER_CONFIG_SECTION or project is None:
+        if self.config_section_name != DEVICE_SEARCH_CONFIG_SECTION or project is None:
             return providers
 
         allowed_sms_prefixes = self._allowed_sms_prefixes(project)
@@ -191,7 +191,7 @@ class AggregatingSearchProvider(Provider):
 
         filtered = []
         for provider in providers:
-            if provider.__class__.__name__ != "SensorManagementSystemProvider":
+            if provider.__class__.__name__ != "SensorManagementSystemDeviceProvider":
                 filtered.append(provider)
                 continue
 
@@ -225,17 +225,17 @@ class AggregatingSearchProvider(Provider):
         return prefixes
 
 
-class SensorsProvider(AggregatingSearchProvider):
+class DeviceSearchProvider(AggregatingSearchProvider):
     """
-    A meta-provider for searching sensor data across multiple sources.
-    """
-
-    config_section_name = SENSORS_PROVIDER_CONFIG_SECTION
-
-
-class ConfigurationsProvider(AggregatingSearchProvider):
-    """
-    A meta-provider for searching configuration data across multiple sources.
+    An aggregate provider for searching devices across multiple sources.
     """
 
-    config_section_name = CONFIGURATIONS_PROVIDER_CONFIG_SECTION
+    config_section_name = DEVICE_SEARCH_CONFIG_SECTION
+
+
+class ConfigurationSearchProvider(AggregatingSearchProvider):
+    """
+    An aggregate provider for searching configurations across multiple sources.
+    """
+
+    config_section_name = CONFIGURATION_SEARCH_CONFIG_SECTION

@@ -7,12 +7,12 @@ from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 logger = logging.getLogger(__name__)
 
 
-class O2ARegistrySearchProvider(BaseRemoteSearchProvider):
+class O2ARegistryItemProvider(BaseRemoteSearchProvider):
     """
-    Searches the O2A REGISTRY for sensor data and returns options for selection.
+    Searches the O2A Registry for items and returns options for selection.
 
-    This provider queries the O2A REGISTRY API for sensor data matching a
-    given search term. It then constructs option objects containing the sensor
+    This provider queries the O2A Registry API for items matching a
+    given search term. It then constructs option objects containing the item
     title, serial number (if available), and unique ID from the registry.
 
     Attributes:
@@ -76,7 +76,7 @@ class O2ARegistrySearchProvider(BaseRemoteSearchProvider):
         Converts a single data_set entry to an option dictionary.
 
         Args:
-            data_set (dict): The JSON dictionary for a single sensor record.
+            data_set (dict): The JSON dictionary for a single registry item.
 
         Returns:
             dict: An option dictionary with "id" and "text" keys.

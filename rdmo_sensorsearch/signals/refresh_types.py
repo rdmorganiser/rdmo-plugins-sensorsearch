@@ -19,7 +19,7 @@ class RefreshAction:
     status_attribute_uri: str | None = None
     message_attribute_uri: str | None = None
     timestamp_attribute_uri: str | None = None
-    replace_collections: bool = False
+    replace_existing_collections: bool = False
     require_configuration_period: bool = False
     input_attribute_uris: tuple[str, ...] = ()
 

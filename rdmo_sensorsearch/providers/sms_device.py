@@ -9,13 +9,13 @@ from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 logger = logging.getLogger(__name__)
 
 
-class SensorManagementSystemProvider(BaseRemoteSearchProvider):
+class SensorManagementSystemDeviceProvider(BaseRemoteSearchProvider):
     """
-    Searches a Sensor Management System (SMS) API for sensor data and returns
+    Searches a Sensor Management System (SMS) API for devices and returns
     options for selection.
 
-    This provider queries an SMS API endpoint for sensors matching a given
-    search term. It then constructs option objects containing the sensor's
+    This provider queries an SMS API endpoint for devices matching a given
+    search term. It then constructs option objects containing the device's
     long name (if available), short name, serial number (if available), and
     unique ID from the SMS.
 

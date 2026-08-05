@@ -4,7 +4,7 @@
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>interview-page-refresh</uri_path>
 		<dc:comment>Marks metadata refresh triggers for an interview page value refetch after save.</dc:comment>
-		<provider_key>sensorssearch_interview_page_refresh</provider_key>
+		<provider_key>sensorsearch_interview_page_refresh</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>

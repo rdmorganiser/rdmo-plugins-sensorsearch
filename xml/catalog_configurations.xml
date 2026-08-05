@@ -96,7 +96,7 @@ In case you did not use campaigns or missions in your sensor management system j
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>configurations/optionset</uri_path>
 		<dc:comment/>
-		<provider_key>sensorssearch_configurations</provider_key>
+		<provider_key>sensorsearch_configurations</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>
@@ -369,7 +369,7 @@ In case you did not use campaigns or missions in your sensor management system j
 	<page dc:uri="http://example.com/terms/questions/configurations/member-sensors">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>configurations/member-sensors</uri_path>
-		<dc:comment>Technical storage page for member sensors materialized from the selected configuration.</dc:comment>
+		<dc:comment>Technical storage page for member devices materialized from the selected configuration.</dc:comment>
 		<attribute dc:uri="http://example.com/terms/domain/configuration-set"/>
 		<is_collection>True</is_collection>
 		<title lang="en">Member Sensors</title>
@@ -393,7 +393,7 @@ In case you did not use campaigns or missions in your sensor management system j
 	<question dc:uri="http://example.com/terms/questions/configurations/member-sensor">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>configurations/member-sensor</uri_path>
-		<dc:comment>Technical collection used by the configuration handler to cache mounted sensors.</dc:comment>
+		<dc:comment>Technical collection used by the configuration handler to cache mounted devices.</dc:comment>
 		<attribute dc:uri="http://example.com/terms/domain/configuration-set/member-sensor"/>
 		<is_collection>True</is_collection>
 		<is_optional>True</is_optional>
@@ -568,7 +568,7 @@ In case you did not use campaigns or missions in your sensor management system j
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>configurations/project-sensors/optionset</uri_path>
 		<dc:comment>Project-local options generated from a selected configuration.</dc:comment>
-		<provider_key>sensorssearch_project_sensors</provider_key>
+		<provider_key>sensorsearch_project_configuration_devices</provider_key>
 		<options/>
 		<conditions/>
 	</optionset>

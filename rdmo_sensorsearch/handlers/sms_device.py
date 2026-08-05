@@ -21,7 +21,7 @@ SURFACE_OFFSET_Z_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usag
 SITE_NAME_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
 
 
-class SensorManagementSystemHandler(BackendRecordHandler):
+class SensorManagementSystemDeviceHandler(BackendRecordHandler):
     """
     Synchronizes device information from a Sensor Management System (SMS).
 
@@ -30,8 +30,8 @@ class SensorManagementSystemHandler(BackendRecordHandler):
     """
 
     # id_prefix = "sms"
-    sync_device_detail_blocks = True
-    supports_mount_action_period_lookup = True
+    materialize_device_details = True
+    supports_mount_period_lookup = True
     supports_mount_location_lookup = True
 
     # URL templates with placeholders

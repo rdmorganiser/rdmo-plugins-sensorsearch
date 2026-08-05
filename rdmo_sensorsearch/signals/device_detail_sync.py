@@ -261,7 +261,7 @@ def reconcile_device_details(
         else:
             set_index = next_index
             next_index += 1
-        search_attribute_uri = handler_binding.auto_complete_field_uri
+        search_attribute_uri = handler_binding.search_attribute_uri
         needs_metadata_write = block is None or not _device_block_metadata_is_current(
             project=project,
             root_attribute=root_attribute,
@@ -318,7 +318,7 @@ def reconcile_device_details(
                     block_key=plan.block_key,
                 )
 
-                search_attribute_uri = plan.handler_binding.auto_complete_field_uri
+                search_attribute_uri = plan.handler_binding.search_attribute_uri
                 _upsert_search_value(
                     project=project,
                     attribute_uri=search_attribute_uri,
@@ -595,10 +595,10 @@ def _fetch_device_detail_payload(
     else:
         handler_result = plan.handler_binding.handler.handle(backend_id=device_id, instance=fetch_instance)
     if isinstance(handler_result, dict) and "errors" in handler_result:
-        logger.error("Sensor handler returned errors for %s: %s", plan.device.external_id, handler_result["errors"])
+        logger.error("Device handler returned errors for %s: %s", plan.device.external_id, handler_result["errors"])
         return DeviceFetchFailure(message=_format_handler_errors(handler_result["errors"]))
     if not isinstance(handler_result, HandlerResult):
-        message = f"Sensor handler returned unexpected payload type: {type(handler_result).__name__}."
+        message = f"Device handler returned unexpected payload type: {type(handler_result).__name__}."
         logger.warning(
             "Sensor handler returned unexpected payload for %s: %s",
             plan.device.external_id,
@@ -647,7 +647,7 @@ def _resolve_device_handler_binding(catalog_uri: str, external_id: str) -> Any |
     from rdmo_sensorsearch.signals.backend_value_sync import get_handler_bindings_for_catalog
 
     for binding in get_handler_bindings_for_catalog(catalog_uri):
-        if binding.id_prefix == id_prefix and getattr(binding.handler, "sync_device_detail_blocks", False):
+        if binding.id_prefix == id_prefix and getattr(binding.handler, "materialize_device_details", False):
             return binding
     return None
 
@@ -1312,7 +1312,7 @@ def _resolve_mounting_period_values(
     if configuration_id is None or device_id is None:
         return None, None
 
-    if not getattr(handler_binding.handler, "supports_mount_action_period_lookup", False):
+    if not getattr(handler_binding.handler, "supports_mount_period_lookup", False):
         return None, None
 
     mount_actions = _fetch_device_mount_actions(handler_binding, device_id, auth_token=auth_token)

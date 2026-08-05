@@ -8,14 +8,14 @@ from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
 logger = logging.getLogger(__name__)
 
 
-class O2ARegistrySearchHandler(BackendRecordHandler):
+class O2ARegistryItemHandler(BackendRecordHandler):
     """
     Synchronizes an item and its related metadata from the O2A Registry.
 
     To fetch additional data from the O2A REGISTRY at least three API calls
     must be made:
-    1. Basic information about the sensor
-    2. Parameters of the sensor
+    1. Basic information about the item
+    2. Parameters of the item
     3. Units to add them to the parameters
     4. Global units list (for parameter unit lookup)
 
@@ -26,7 +26,7 @@ class O2ARegistrySearchHandler(BackendRecordHandler):
 
     id_prefix = "o2aregistry"
     base_url = "https://registry.o2a-data.de/rest/v2"
-    sync_device_detail_blocks = True
+    materialize_device_details = True
 
     # URL templates
     item_url = "{base_url}/items/{id}"
@@ -39,7 +39,7 @@ class O2ARegistrySearchHandler(BackendRecordHandler):
 
     def __init__(self, attribute_mapping=None, id_prefix=None, base_url=None, **kwargs):
         """
-        Initializes the O2ARegistrySearchHandler.
+        Initializes the O2ARegistryItemHandler.
 
         Args:
 

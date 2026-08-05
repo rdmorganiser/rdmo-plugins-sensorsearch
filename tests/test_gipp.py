@@ -1,3 +1,5 @@
+"""Tests for the GIPP instrument backend integration."""
+
 import sys
 from importlib import import_module
 from pathlib import Path
@@ -31,9 +33,9 @@ def _install_host_application_stubs():
 
 _install_host_application_stubs()
 
-handler_gfz_gipp = import_module("rdmo_sensorsearch.handlers.handler_gfz_gipp")
+gipp_handler_module = import_module("rdmo_sensorsearch.handlers.gipp_instrument")
 handler_base = import_module("rdmo_sensorsearch.handlers.base")
-provider_gfz_gipp = import_module("rdmo_sensorsearch.providers.provider_gfz_gipp")
+gipp_provider_module = import_module("rdmo_sensorsearch.providers.gipp_instrument")
 
 
 def test_provider_uses_current_gipp_hostname(monkeypatch):
@@ -52,9 +54,9 @@ def test_provider_uses_current_gipp_hostname(monkeypatch):
         requested_urls.append(url)
         return instruments
 
-    monkeypatch.setattr(provider_gfz_gipp, "fetch_json", fetch_json)
+    monkeypatch.setattr(gipp_provider_module, "fetch_json", fetch_json)
 
-    options = provider_gfz_gipp.GeophysicalInstrumentPoolPotsdamProvider().get_options(
+    options = gipp_provider_module.GIPPInstrumentProvider().get_options(
         project=None,
         search="BASE_X2",
     )
@@ -75,9 +77,9 @@ def test_handler_uses_current_gipp_hostname(monkeypatch):
         requested_urls.append(url)
         return {"Instrument": {"code": "BASE_X2-26115"}}
 
-    monkeypatch.setattr(handler_gfz_gipp, "fetch_json", fetch_json)
+    monkeypatch.setattr(gipp_handler_module, "fetch_json", fetch_json)
 
-    handler = handler_gfz_gipp.GeophysicalInstrumentPoolPotsdamHandler(attribute_mapping={"Instrument.code": "uri"})
+    handler = gipp_handler_module.GIPPInstrumentHandler(attribute_mapping={"Instrument.code": "uri"})
     result = handler.handle("1")
 
     assert requested_urls == ["https://gipp.gfz.de/instruments/rest/1.json"]
@@ -86,11 +88,11 @@ def test_handler_uses_current_gipp_hostname(monkeypatch):
 
 def test_handler_propagates_backend_errors(monkeypatch):
     monkeypatch.setattr(
-        handler_gfz_gipp,
+        gipp_handler_module,
         "fetch_json",
         lambda url: {"errors": ["instrument unavailable"]},
     )
-    handler = handler_gfz_gipp.GeophysicalInstrumentPoolPotsdamHandler(attribute_mapping={"Instrument.code": "uri"})
+    handler = gipp_handler_module.GIPPInstrumentHandler(attribute_mapping={"Instrument.code": "uri"})
 
     result = handler.handle("1")
 

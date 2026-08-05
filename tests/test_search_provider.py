@@ -1,3 +1,5 @@
+"""Tests for aggregate backend search providers."""
+
 import sys
 from importlib import import_module
 from pathlib import Path
@@ -46,7 +48,7 @@ def _install_host_application_stubs():
 
 _install_host_application_stubs()
 
-meta_provider = import_module("rdmo_sensorsearch.providers.meta_provider")
+search_provider = import_module("rdmo_sensorsearch.providers.search")
 
 
 class FakeQuerySet:
@@ -97,27 +99,27 @@ class FakeBackendProvider:
 
 def _configure_provider(monkeypatch, config_section_name, providers, rows, min_search_len=3):
     monkeypatch.setattr(
-        meta_provider,
+        search_provider,
         "load_config",
         lambda: {config_section_name: {"min_search_len": min_search_len}},
     )
-    monkeypatch.setattr(meta_provider, "get_config_file_path", lambda: "test-config.toml")
-    monkeypatch.setattr(meta_provider, "build_provider_instances", lambda key: providers)
-    monkeypatch.setattr(meta_provider.Value, "objects", FakeManager(rows), raising=False)
+    monkeypatch.setattr(search_provider, "get_config_file_path", lambda: "test-config.toml")
+    monkeypatch.setattr(search_provider, "build_provider_instances", lambda key: providers)
+    monkeypatch.setattr(search_provider.Value, "objects", FakeManager(rows), raising=False)
 
 
 @pytest.mark.parametrize(
     ("provider_class", "config_section_name", "external_id", "expected_text"),
     (
         (
-            meta_provider.SensorsProvider,
-            meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
+            search_provider.DeviceSearchProvider,
+            search_provider.DEVICE_SEARCH_CONFIG_SECTION,
             "kitsms:327",
             "KIT Sensor(327): Existing project option",
         ),
         (
-            meta_provider.ConfigurationsProvider,
-            meta_provider.CONFIGURATIONS_PROVIDER_CONFIG_SECTION,
+            search_provider.ConfigurationSearchProvider,
+            search_provider.CONFIGURATION_SEARCH_CONFIG_SECTION,
             "kitcfg:49",
             "KIT Cfg(49): Existing project option",
         ),
@@ -143,7 +145,7 @@ def test_exact_project_value_skips_backend_and_auth(
     def fail_auth(**kwargs):
         raise AssertionError("Authentication should not be resolved for a project-local match")
 
-    monkeypatch.setattr(meta_provider, "get_sms_auth_token", fail_auth)
+    monkeypatch.setattr(search_provider, "get_sms_auth_token", fail_auth)
 
     options = provider_class().get_options(project, search=text, user=object(), site=object())
 
@@ -157,7 +159,7 @@ def test_project_options_are_deduplicated_and_keep_distinct_external_ids(monkeyp
     backend = FakeBackendProvider("kitsms")
     _configure_provider(
         monkeypatch,
-        meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
+        search_provider.DEVICE_SEARCH_CONFIG_SECTION,
         [backend],
         [
             {"id": 1, "project": project, "snapshot": None, "text": text, "external_id": "kitsms:1"},
@@ -166,7 +168,7 @@ def test_project_options_are_deduplicated_and_keep_distinct_external_ids(monkeyp
         ],
     )
 
-    options = meta_provider.SensorsProvider().get_options(project, search=text)
+    options = search_provider.DeviceSearchProvider().get_options(project, search=text)
 
     assert options == [
         {"id": "kitsms:1", "text": "KIT Sensor(1): Shared device label"},
@@ -191,13 +193,13 @@ def test_invalid_project_match_falls_through_to_backend(monkeypatch, external_id
     backend = FakeBackendProvider("kitsms", [remote_option])
     _configure_provider(
         monkeypatch,
-        meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
+        search_provider.DEVICE_SEARCH_CONFIG_SECTION,
         [backend],
         [{"id": 1, "project": project, "snapshot": None, "text": text, "external_id": external_id}],
     )
-    monkeypatch.setattr(meta_provider, "get_sms_auth_token", lambda **kwargs: "token")
+    monkeypatch.setattr(search_provider, "get_sms_auth_token", lambda **kwargs: "token")
 
-    options = meta_provider.SensorsProvider().get_options(project, search=text)
+    options = search_provider.DeviceSearchProvider().get_options(project, search=text)
 
     assert options == [remote_option]
     assert backend.calls == [(project, text, None, None)]
@@ -210,7 +212,7 @@ def test_nonexact_and_snapshot_values_fall_through_to_backend(monkeypatch):
     backend = FakeBackendProvider("kitsms", [remote_option])
     _configure_provider(
         monkeypatch,
-        meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
+        search_provider.DEVICE_SEARCH_CONFIG_SECTION,
         [backend],
         [
             {
@@ -229,9 +231,9 @@ def test_nonexact_and_snapshot_values_fall_through_to_backend(monkeypatch):
             },
         ],
     )
-    monkeypatch.setattr(meta_provider, "get_sms_auth_token", lambda **kwargs: None)
+    monkeypatch.setattr(search_provider, "get_sms_auth_token", lambda **kwargs: None)
 
-    options = meta_provider.SensorsProvider().get_options(project, search="Device search")
+    options = search_provider.DeviceSearchProvider().get_options(project, search="Device search")
 
     assert options == [remote_option]
     assert backend.calls == [(project, "Device search", None, None)]
@@ -242,13 +244,13 @@ def test_search_shorter_than_minimum_skips_project_and_backend_queries(monkeypat
     backend = FakeBackendProvider("kitsms")
     _configure_provider(
         monkeypatch,
-        meta_provider.SENSORS_PROVIDER_CONFIG_SECTION,
+        search_provider.DEVICE_SEARCH_CONFIG_SECTION,
         [backend],
         [{"id": 1, "project": project, "snapshot": None, "text": "ab", "external_id": "kitsms:1"}],
     )
-    monkeypatch.setattr(meta_provider, "get_sms_auth_token", lambda **kwargs: None)
+    monkeypatch.setattr(search_provider, "get_sms_auth_token", lambda **kwargs: None)
 
-    options = meta_provider.SensorsProvider().get_options(project, search="ab")
+    options = search_provider.DeviceSearchProvider().get_options(project, search="ab")
 
     assert options == []
     assert backend.calls == []

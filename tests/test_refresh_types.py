@@ -50,12 +50,12 @@ def test_refresh_action_can_define_inputs_for_a_destructive_collection_refresh()
         trigger_attribute_uri="apply",
         configuration_search_attribute_uri="configuration-source",
         device_search_attribute_uri="device-source",
-        replace_collections=True,
+        replace_existing_collections=True,
         require_configuration_period=True,
         input_attribute_uris=("start", "end"),
     )
 
-    assert action.replace_collections is True
+    assert action.replace_existing_collections is True
     assert action.require_configuration_period is True
     assert action.input_attribute_uris == ("start", "end")
 

@@ -27,11 +27,11 @@ the selected device-set page.
 | Search question | `https://rdmo.nfdi4earth.de/terms/questions/configuration_ident_api` |
 | Search attribute | `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search` |
 | Search optionset | `https://rdmo.nfdi4earth.de/terms/options/configurations/optionset` |
-| Optionset provider key | `sensorssearch_configurations` |
+| Optionset provider key | `sensorsearch_configurations` |
 
 The search attribute is configured as
 `MetadataRefresh.configuration_search_attribute_uri` and as the
-`auto_complete_field_uri` of both configuration handlers. The collection
+`search_attribute_uri` of both configuration handlers. The collection
 attribute is configured as `configuration_collection_attribute_uri`.
 
 Configuration metadata targets are:
@@ -69,7 +69,7 @@ configuration dates or O2A mission dates.
 | Apply question | `https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply` |
 | Apply trigger attribute | `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range` |
 | Apply optionset | `https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh` |
-| Optionset provider key | `sensorssearch_interview_page_refresh` |
+| Optionset provider key | `sensorsearch_interview_page_refresh` |
 
 The accepted interview format is `YYYY-MM-DD hh:mm`; values with timezone
 information are also normalized when supported by the parser. Start is required
@@ -77,15 +77,15 @@ for **Apply date range**, while end is optional. Editing either text field clear
 old refresh feedback but does not synchronize. This prevents a remote request
 on every keystroke.
 
-The same start and end attributes appear as `cfg_start_uri` and `cfg_end_uri`
+The same start and end attributes appear as `period_start_attribute_uri` and `period_end_attribute_uri`
 under both:
 
-- `handlers.SensorManagementSystemConfigurationsHandler.catalogs`;
-- `handlers.O2ARegistryMissionsHandler.catalogs`.
+- `handlers.SensorManagementSystemConfigurationHandler.catalogs`;
+- `handlers.O2ARegistryMissionHandler.catalogs`.
 
 The apply action repeats them in `MetadataRefresh.actions[].input_attribute_uris`
 and sets `require_configuration_period = true` and
-`replace_collections = true`.
+`replace_existing_collections = true`.
 
 If the apply trigger attribute is removed from a derived catalog, selecting a
 configuration or mission immediately synchronizes all its devices without
@@ -119,16 +119,16 @@ authoritatively rebuilds the filtered device set.
 | Selected devices question | `https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/selected` |
 | Selected devices attribute | `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices` |
 | Optionset | `https://rdmo-sandbox.gfz-potsdam.de/terms/options/optionsets/sensorsearch` |
-| Optionset provider key | `sensorssearch` |
+| Optionset provider key | `sensorsearch_devices` |
 
 The selected devices attribute is used by:
 
-- `member_sensors_attribute_uri` on SMS configuration and O2A mission handlers;
-- `ProjectConfigurationSensorsProvider.catalogs[].source_attribute_uri`;
+- `selected_devices_attribute_uri` on SMS configuration and O2A mission handlers;
+- `ProjectConfigurationDevicesProvider.catalogs[].source_attribute_uri`;
 - `ProjectDataCollectionDevicesProvider.catalogs[].source_attribute_uri`.
 
 The page URI is configured as `selected_devices_page_uri`. The remote
-`sensorssearch` optionset also permits manual additions. A later authoritative
+`sensorsearch_devices` optionset also permits manual additions. A later authoritative
 date-range application can replace membership with the backend-derived set.
 
 ## Device detail pages
@@ -150,10 +150,10 @@ handlers.
 | Device search question | `https://rdmo.nfdi4earth.de/terms/questions/instrument_ident_api` |
 | Device search attribute | `https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords` |
 | Remote optionset | `https://rdmo-sandbox.gfz-potsdam.de/terms/options/optionsets/sensorsearch` |
-| Optionset provider key | `sensorssearch` |
+| Optionset provider key | `sensorsearch_devices` |
 
 The device search attribute is the item/device handlers'
-`auto_complete_field_uri` and
+`search_attribute_uri` and
 `MetadataRefresh.device_search_attribute_uri`.
 
 Core device metadata questions are:
@@ -269,7 +269,7 @@ The feedback fields are:
 
 Both trigger questions use
 `https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh` with provider
-key `sensorssearch_interview_page_refresh`.
+key `sensorsearch_interview_page_refresh`.
 
 ## Data-collection device and variable sync
 
@@ -278,7 +278,7 @@ key `sensorssearch_interview_page_refresh`.
 | Data-collection device question | `https://rdmo.nfdi4earth.de/terms/questions/dc-instruments` |
 | Device attribute | `https://rdmorganiser.github.io/terms/domain/project/dataset/collaboration_tools` |
 | Device optionset | `https://rdmo.nfdi4earth.de/terms/options/options/data-collection/devices/optionset` |
-| Optionset provider key | `sensorssearch_project_data_collection_devices` |
+| Optionset provider key | `sensorsearch_project_data_collection_devices` |
 | Variable question set | `https://rdmo.nfdi4earth.de/terms/questions/dc-variables` |
 | Variable question | `https://rdmo.nfdi4earth.de/terms/questions/dc-variables/variable` |
 | Variable attribute | `https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-variable` |

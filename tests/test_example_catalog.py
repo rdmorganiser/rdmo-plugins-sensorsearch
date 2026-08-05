@@ -6,11 +6,11 @@ CATALOG_PATH = Path(__file__).parents[1] / "xml" / "example_catalog_sensorsearch
 DC_URI = "{http://purl.org/dc/elements/1.1/}uri"
 INTERVIEW_PAGE_REFRESH_OPTIONSET_URI = "https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"
 EXPECTED_PROVIDER_KEYS = {
-    "sensorssearch",
-    "sensorssearch_configurations",
-    "sensorssearch_interview_page_refresh",
-    "sensorssearch_project_data_collection_devices",
-    "sensorssearch_project_sensors",
+    "sensorsearch_devices",
+    "sensorsearch_configurations",
+    "sensorsearch_interview_page_refresh",
+    "sensorsearch_project_data_collection_devices",
+    "sensorsearch_project_configuration_devices",
 }
 EXPECTED_REFRESH_TRIGGER_ATTRIBUTES = {
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range",

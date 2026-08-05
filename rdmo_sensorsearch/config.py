@@ -63,17 +63,17 @@ def merge_config(base: dict[str, Any] | None, override: dict[str, Any] | None) -
 
 def get_config_file_path() -> str:
     try:
-        config_file_name = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME
+        config_file_name = settings.SENSORSEARCH_CONFIG_FILE_NAME
     except AttributeError:
         config_file_name = "config.toml"
 
     try:
-        config_file_path = settings.SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH
+        config_file_path = settings.SENSORSEARCH_CONFIG_FILE_PATH
     except AttributeError:
         config_file_path = None
 
-    config_file_name = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_NAME", config_file_name)
-    config_file_path = os.getenv("SENSORS_SEARCH_PROVIDER_CONFIG_FILE_PATH", config_file_path)
+    config_file_name = os.getenv("SENSORSEARCH_CONFIG_FILE_NAME", config_file_name)
+    config_file_path = os.getenv("SENSORSEARCH_CONFIG_FILE_PATH", config_file_path)
 
     if config_file_path is None:
         config_file_path = os.path.join(Path(__file__).parent, config_file_name)

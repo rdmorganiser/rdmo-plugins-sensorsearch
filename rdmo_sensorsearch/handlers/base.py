@@ -24,7 +24,7 @@ class HandlerResult:
 
 @dataclass(frozen=True)
 class HandlerExecutionContext:
-    preserve_collections: bool = False
+    preserve_existing_collections: bool = False
     require_configuration_period: bool = False
 
 
