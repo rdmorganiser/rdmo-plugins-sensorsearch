@@ -34,7 +34,9 @@ Device-detail materialization now has an explicit planning boundary:
 2. `services/device_details.py` deduplicates selected devices and produces a
    `DeviceDetailReconciliationPlan` containing retained/new blocks, stale
    blocks, and routing failures.
-3. The signal adapter fetches only the block payloads marked for refresh.
+3. `services/device_metadata.py` invokes only the handlers marked for refresh,
+   using a bounded worker pool, and converts handler responses into structured
+   payloads or per-device errors.
 4. The signal adapter applies the plan inside a database transaction and mutes
    recursive post-save processing while it writes generated values.
 
@@ -42,6 +44,13 @@ The planner deliberately receives small callbacks for handler resolution and
 current-state checks. This keeps registry and database access outside the
 service while making allocation, stale detection, routing failures, and refresh
 decisions directly unit-testable.
+
+The metadata fetch service propagates the current Python context into each
+worker, passes an authentication token only to handlers that declare support,
+and rejects handler results containing nested collections or post-actions.
+Backend-specific enrichment remains an injected callback; the SMS adapter uses
+it to add mount periods and resolved location values without making the generic
+fetch service depend on SMS endpoints or Earth Sensor attribute URIs.
 
 Device block external IDs use this internal identity format:
 
@@ -70,11 +79,10 @@ them without depending on signal registration or Django save hooks.
 
 ## Current refactoring boundary
 
-The device planning service is the first extraction from the larger
-`device_detail_sync.py` workflow. Remote payload fetching and RDMO persistence
-remain in that signal adapter. Future extractions should keep the same behavior
-and proceed in small tested slices; likely candidates are device metadata fetch
-coordination and collection persistence.
+Device planning and bounded metadata fetching have been extracted from the
+larger `device_detail_sync.py` workflow. RDMO persistence remains in that signal
+adapter. Future extractions should keep the same behavior and proceed in small
+tested slices; the next likely candidate is device collection persistence.
 
 This is an internal module boundary, not a catalog migration. The Earth Sensor
 question, attribute, page, option-set, and condition URIs stay unchanged.

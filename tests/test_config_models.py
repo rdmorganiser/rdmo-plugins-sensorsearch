@@ -37,9 +37,9 @@ def test_configuration_model_exposes_typed_sections_and_read_only_raw_data():
 
 def test_unknown_top_level_section_is_rejected_with_its_path():
     data = _config_data()
-    data["DeviceSearchProvider"] = {}
+    data["UnsupportedProviderSection"] = {}
 
-    with pytest.raises(ConfigValidationError, match=r"^config: unknown setting\(s\): DeviceSearchProvider$"):
+    with pytest.raises(ConfigValidationError, match=r"^config: unknown setting\(s\): UnsupportedProviderSection$"):
         PluginConfig.from_mapping(data)
 
 
