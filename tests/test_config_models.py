@@ -4,6 +4,8 @@ from pathlib import Path
 import pytest
 
 from rdmo_sensorsearch.config_models import ConfigValidationError, PluginConfig
+from rdmo_sensorsearch.config_models.models import PluginConfig as InternalPluginConfig
+from rdmo_sensorsearch.config_models.validation import ConfigValidationError as InternalConfigValidationError
 
 try:
     import tomllib
@@ -12,6 +14,11 @@ except ModuleNotFoundError:
 
 
 CONFIG_PATH = Path(__file__).parents[1] / "sensorsearch.toml"
+
+
+def test_config_models_package_preserves_public_model_and_error_exports():
+    assert PluginConfig is InternalPluginConfig
+    assert ConfigValidationError is InternalConfigValidationError
 
 
 def _config_data():

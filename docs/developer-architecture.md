@@ -15,7 +15,7 @@ must not rename them.
 
 | Area | Responsibility | May depend on Django models? |
 | --- | --- | --- |
-| `config_models.py` | Parse and validate the complete TOML schema and its cross-references. | No |
+| `config_models/` | Define, parse, and validate the complete TOML schema and its cross-references. | No |
 | `providers/` | Turn user search text into backend options. | Only aggregate/project-aware adapters |
 | `handlers/` | Fetch one selected backend record and return `HandlerResult`. | Only where interview context is required |
 | `services/` | Hold backend-neutral domain data, deterministic decisions, and synchronization context state. | No |
@@ -26,6 +26,22 @@ must not rename them.
 New decision logic should normally enter `services/`. Signal receivers should
 remain transaction and framework adapters; they should not become the only
 place where a synchronization rule can be tested.
+
+## Configuration model
+
+`rdmo_sensorsearch.config_models` remains the public import path for
+`PluginConfig`, `ConfigValidationError`, and the section dataclasses. Its
+implementation is grouped by responsibility:
+
+- `contracts.py` contains supported provider/handler names, defaults, and
+  allowed TOML settings;
+- `models.py` contains the immutable section dataclasses;
+- `parsing.py` converts TOML mappings into those models;
+- `validation.py` contains primitive validation helpers and cross-reference
+  checks such as provider-to-handler prefix matching.
+
+These modules must remain independent of Django and RDMO models so deployment
+configuration can be validated in isolation.
 
 ## Device-detail synchronization
 

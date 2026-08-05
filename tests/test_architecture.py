@@ -17,7 +17,7 @@ def _signal_imports(path: Path) -> list[str]:
     return [module for module in imported_modules if module.startswith("rdmo_sensorsearch.signals")]
 
 
-@pytest.mark.parametrize("package_name", ("handlers", "services", "workflows"))
+@pytest.mark.parametrize("package_name", ("config_models", "handlers", "services", "workflows"))
 def test_lower_level_packages_do_not_import_signal_adapters(package_name):
     violations = {
         str(path.relative_to(PACKAGE_ROOT)): _signal_imports(path)
@@ -28,9 +28,10 @@ def test_lower_level_packages_do_not_import_signal_adapters(package_name):
     assert violations == {}
 
 
-def test_services_do_not_import_django_or_rdmo_models():
+@pytest.mark.parametrize("package_name", ("config_models", "services"))
+def test_framework_independent_packages_do_not_import_django_or_rdmo_models(package_name):
     violations = {}
-    for path in sorted((PACKAGE_ROOT / "services").glob("*.py")):
+    for path in sorted((PACKAGE_ROOT / package_name).glob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         framework_imports = []
         for node in ast.walk(tree):
