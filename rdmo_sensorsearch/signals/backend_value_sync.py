@@ -230,12 +230,21 @@ def refresh_value_from_backend(
         return _failed_refresh(external_id, f"Could not complete backend update: {error}")
 
     device_result = combine_refresh_results(result for result in post_action_results if isinstance(result, RefreshResult))
+    notices = tuple(handler_output.notices) + tuple(device_result.notices)
+    for notice in notices:
+        logger.info(
+            "Backend synchronization notice for %s: %s %s",
+            notice.external_id or external_id,
+            notice.code,
+            dict(notice.details),
+        )
     return RefreshResult(
         requested_count=1,
         refreshed_count=1,
         errors=device_result.errors,
         device_requested_count=device_result.requested_count,
         device_refreshed_count=device_result.refreshed_count,
+        notices=notices,
     )
 
 

@@ -1,6 +1,9 @@
 import sys
+from copy import deepcopy
 from pathlib import Path
 from urllib.parse import urlsplit
+
+import pytest
 
 from rdmo_sensorsearch.config_models import PluginConfig
 
@@ -169,3 +172,50 @@ def test_apply_date_range_action_is_explicit_and_replaces_collections():
         assert action["replace_existing_collections"] is True
         assert action["require_configuration_period"] is True
         assert set(action["input_attribute_uris"]) == expected_inputs
+
+
+def test_sms_handlers_share_mount_location_resolution_settings():
+    config = _load_config(CONFIG_PATHS[0])
+    handlers = config["handlers"]
+
+    for handler_name in (
+        "SensorManagementSystemDeviceHandler",
+        "SensorManagementSystemConfigurationHandler",
+    ):
+        defaults = handlers[handler_name]["defaults"]
+        assert defaults["static_location_end_tolerance_seconds"] == 120
+        assert defaults["incomplete_mount_chain_policy"] == "direct_device_offset"
+
+
+@pytest.mark.parametrize("invalid_value", (-1, True, "120", 1.5))
+def test_mount_location_tolerance_validation_rejects_invalid_values(invalid_value):
+    config = deepcopy(_load_config(CONFIG_PATHS[0]))
+    config["handlers"]["SensorManagementSystemDeviceHandler"]["defaults"]["static_location_end_tolerance_seconds"] = invalid_value
+
+    with pytest.raises(ValueError, match="static_location_end_tolerance_seconds"):
+        PluginConfig.from_mapping(config)
+
+
+def test_mount_location_tolerance_validation_accepts_zero():
+    config = deepcopy(_load_config(CONFIG_PATHS[0]))
+    config["handlers"]["SensorManagementSystemDeviceHandler"]["defaults"]["static_location_end_tolerance_seconds"] = 0
+
+    PluginConfig.from_mapping(config)
+
+
+def test_incomplete_mount_chain_policy_validation_rejects_unknown_value():
+    config = deepcopy(_load_config(CONFIG_PATHS[0]))
+    config["handlers"]["SensorManagementSystemConfigurationHandler"]["defaults"]["incomplete_mount_chain_policy"] = "guess"
+
+    with pytest.raises(ValueError, match=r"incomplete_mount_chain_policy.*direct_device_offset, strict"):
+        PluginConfig.from_mapping(config)
+
+
+@pytest.mark.parametrize("policy", ("strict", "direct_device_offset"))
+def test_incomplete_mount_chain_policy_validation_accepts_supported_values(policy):
+    config = deepcopy(_load_config(CONFIG_PATHS[0]))
+    config["handlers"]["SensorManagementSystemConfigurationHandler"]["defaults"]["incomplete_mount_chain_policy"] = policy
+
+    parsed = PluginConfig.from_mapping(config)
+
+    assert parsed.handlers["SensorManagementSystemConfigurationHandler"].defaults["incomplete_mount_chain_policy"] == policy

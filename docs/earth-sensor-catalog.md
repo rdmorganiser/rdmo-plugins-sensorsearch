@@ -212,7 +212,9 @@ surface. See the calculation limits in
 The SMS configuration handler fetches configuration-scoped device mount,
 platform mount, and static-location action collections. The device handler can
 also inspect `/devices/{id}/device-mount-actions` when refreshing an already
-materialized device.
+materialized device. An exact static-location interval is preferred; the
+optional bounded end-time tolerance and incomplete-chain policy are documented
+under [SMS location, height, and depth](operations-and-limitations.md#sms-location-height-and-depth).
 
 The further-information location question set and coordinates are:
 

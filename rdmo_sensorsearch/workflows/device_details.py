@@ -255,6 +255,7 @@ def reconcile_device_details(
         requested_count=sum(plan.needs_refresh for plan in plans) + len(planning_errors),
         refreshed_count=len(fetched_payloads),
         errors=tuple(planning_errors) + fetch_errors,
+        notices=tuple(notice for payload in fetched_payloads.values() for notice in payload.notices),
     )
 
 

@@ -73,6 +73,12 @@ DEVICE_DETAIL_SETTINGS = frozenset(
         "supports_mount_period_lookup",
     }
 )
+SMS_MOUNT_LOCATION_SETTINGS = frozenset(
+    {
+        "static_location_end_tolerance_seconds",
+        "incomplete_mount_chain_policy",
+    }
+)
 CONFIGURATION_MEMBERSHIP_SETTINGS = frozenset(
     {
         "configuration_collection_attribute_uri",
@@ -96,6 +102,7 @@ HANDLER_SETTINGS = {
     },
     "SensorManagementSystemDeviceHandler": COMMON_HANDLER_SETTINGS
     | DEVICE_DETAIL_SETTINGS
+    | SMS_MOUNT_LOCATION_SETTINGS
     | {
         "device_url",
         "contact_url",
@@ -107,6 +114,7 @@ HANDLER_SETTINGS = {
     },
     "SensorManagementSystemConfigurationHandler": COMMON_HANDLER_SETTINGS
     | CONFIGURATION_MEMBERSHIP_SETTINGS
+    | SMS_MOUNT_LOCATION_SETTINGS
     | {
         "configuration_url",
         "device_url",
@@ -174,3 +182,4 @@ POSITIVE_INTEGER_SETTINGS = frozenset(
         "max_collection_pages",
     }
 )
+NON_NEGATIVE_INTEGER_SETTINGS = frozenset({"static_location_end_tolerance_seconds"})

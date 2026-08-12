@@ -15,6 +15,7 @@ from rdmo_sensorsearch.handlers.sms_device_enrichment import (
 )
 from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location, select_latest_device_mount_period
 from rdmo_sensorsearch.services.device_details import parse_external_id
+from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 logger = logging.getLogger(__name__)
 
@@ -93,10 +94,17 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
 
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, data)
         self._set_frontend_device_link(mapped_values, data)
-        mount_metadata_errors = self._set_mount_metadata(mapped_values, backend_id, instance, auth_token=auth_token)
+        notices = []
+        mount_metadata_errors = self._set_mount_metadata(
+            mapped_values,
+            backend_id,
+            instance,
+            auth_token=auth_token,
+            notice_sink=notices,
+        )
         if mount_metadata_errors:
             return {"errors": mount_metadata_errors}
-        return HandlerResult(mapped_values=mapped_values)
+        return HandlerResult(mapped_values=mapped_values, notices=tuple(notices))
 
     def _set_frontend_device_link(self, mapped_values: dict, device_data: dict) -> None:
         raw_self_link = device_data.get("data", {}).get("links", {}).get("self")
@@ -124,6 +132,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         device_id: str,
         instance=None,
         auth_token: str | None = None,
+        notice_sink: list[RefreshNotice] | None = None,
     ) -> list[str]:
         configuration_external_id = self._resolve_configuration_external_id(instance)
         if not configuration_external_id:
@@ -181,7 +190,11 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             configuration_device_actions or mount_actions,
             platform_actions,
             static_location_actions,
+            static_location_end_tolerance_seconds=getattr(self, "static_location_end_tolerance_seconds", 0),
+            incomplete_mount_chain_policy=getattr(self, "incomplete_mount_chain_policy", "strict"),
         )
+        if notice_sink is not None:
+            notice_sink.extend(location.notices)
         mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = (
             location.station_height_amsl if location.station_height_amsl is not None else ""
         )

@@ -228,6 +228,7 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
                         vertical_surface_offset=value.get("vertical_surface_offset"),
                         site_name=value.get("site_name"),
                         mount_location_resolved=True,
+                        mount_location_notices=tuple(value.get("mount_location_notices", ())),
                     )
                     for value in selected_device_values
                     if value.get("external_id")
@@ -400,6 +401,8 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
             device_text_prefix=getattr(self, "device_text_prefix", "SMS Sensor"),
             fetch_device=partial(self._fetch_device, auth_token=auth_token),
             fetch_mount_action=partial(self._fetch_mount_action, auth_token=auth_token),
+            static_location_end_tolerance_seconds=getattr(self, "static_location_end_tolerance_seconds", 0),
+            incomplete_mount_chain_policy=getattr(self, "incomplete_mount_chain_policy", "strict"),
         )
         members, errors = resolver.resolve(
             configuration_data=configuration_data,

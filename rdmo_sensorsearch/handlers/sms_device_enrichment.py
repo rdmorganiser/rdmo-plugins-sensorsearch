@@ -6,11 +6,13 @@ from typing import Any, ClassVar
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.sms_mounting import (
+    ResolvedMountLocation,
     resolve_mount_location,
     select_latest_device_mount_action,
     select_latest_device_mount_period,
 )
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, SelectedDevice, parse_external_id
+from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ class SMSDeviceMetadataEnricher:
         INSTRUMENT_END_ATTRIBUTE_URI,
     )
 
-    def __call__(self, mapped_values: dict[str, Any], plan: DeviceBlockPlan) -> None:
+    def __call__(self, mapped_values: dict[str, Any], plan: DeviceBlockPlan) -> tuple[RefreshNotice, ...]:
         configuration_external_id = plan.configuration_external_id or self.configuration_external_id
         self._merge_mount_period(
             mapped_values,
@@ -42,7 +44,7 @@ class SMSDeviceMetadataEnricher:
             plan.handler_binding,
             configuration_external_id,
         )
-        self._merge_mount_location(
+        return self._merge_mount_location(
             mapped_values,
             plan.device,
             plan.handler_binding,
@@ -79,21 +81,27 @@ class SMSDeviceMetadataEnricher:
         device: SelectedDevice,
         handler_binding: Any,
         configuration_external_id: str | None,
-    ) -> None:
+    ) -> tuple[RefreshNotice, ...]:
         if device.mount_location_resolved:
             station_height_amsl = device.station_height_amsl
             vertical_surface_offset = device.vertical_surface_offset
             site_name = device.site_name
+            notices = device.mount_location_notices
         else:
-            station_height_amsl, vertical_surface_offset, site_name = self._resolve_mount_location(
+            location = self._resolve_mount_location(
                 device,
                 handler_binding,
                 configuration_external_id,
             )
+            station_height_amsl = location.station_height_amsl if location is not None else None
+            vertical_surface_offset = location.vertical_surface_offset if location is not None else None
+            site_name = location.site_name if location is not None else None
+            notices = location.notices if location is not None else ()
 
         mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = station_height_amsl if station_height_amsl is not None else ""
         mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = vertical_surface_offset if vertical_surface_offset is not None else ""
         mapped_values[SITE_NAME_ATTRIBUTE_URI] = site_name if site_name is not None else ""
+        return notices
 
     def _resolve_mount_period(
         self,
@@ -134,18 +142,18 @@ class SMSDeviceMetadataEnricher:
         device: SelectedDevice,
         handler_binding: Any,
         configuration_external_id: str | None,
-    ) -> tuple[float | None, float | None, str | None]:
+    ) -> ResolvedMountLocation | None:
         if not configuration_external_id:
-            return None, None, None
+            return None
 
         handler = handler_binding.handler
         if not getattr(handler, "supports_mount_location_lookup", False):
-            return None, None, None
+            return None
 
         configuration_id = parse_external_id(configuration_external_id)[1]
         device_id = parse_external_id(device.external_id)[1]
         if configuration_id is None or device_id is None:
-            return None, None, None
+            return None
 
         device_actions = self._fetch_configuration_mount_actions(
             handler,
@@ -162,7 +170,7 @@ class SMSDeviceMetadataEnricher:
             device_id,
         )
         if device_action is None:
-            return None, None, None
+            return None
 
         platform_actions = self._fetch_configuration_mount_actions(
             handler,
@@ -181,8 +189,10 @@ class SMSDeviceMetadataEnricher:
             device_actions,
             platform_actions,
             static_location_actions,
+            static_location_end_tolerance_seconds=getattr(handler, "static_location_end_tolerance_seconds", 0),
+            incomplete_mount_chain_policy=getattr(handler, "incomplete_mount_chain_policy", "strict"),
         )
-        return mount_location.station_height_amsl, mount_location.vertical_surface_offset, mount_location.site_name
+        return mount_location
 
     def _fetch_device_mount_actions(self, handler: Any, device_id: str) -> list[dict]:
         template = getattr(

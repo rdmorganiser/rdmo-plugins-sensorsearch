@@ -217,6 +217,8 @@ This handler fetches one SMS device. Multiple `backends` associate SMS
 | `backend_link_marker` | Recognizes and normalizes SMS backend links. |
 | `device_mount_actions_url` | Endpoint template used for device deployment periods and mount context. |
 | `supports_mount_period_lookup` | Enables SMS mount-action enrichment for device detail blocks. |
+| `static_location_end_tolerance_seconds` | Maximum accepted end-time difference between an overlapping static-location action and a device mount. The library default is `0` (strict). |
+| `incomplete_mount_chain_policy` | Controls question 2.53 when a parent action is unavailable: `strict` leaves it empty; `direct_device_offset` uses only the direct device action's numeric `offset_z`. |
 
 SMS mount enrichment can derive a device's active period, site name, and
 vertical position. See [Operations and limitations](operations-and-limitations.md#sms-location-height-and-depth).
@@ -235,9 +237,15 @@ This handler fetches one SMS configuration and its mounted devices.
 | `latitude_attribute_uri`, `longitude_attribute_uri` | Configuration static-location targets. |
 | `period_start_attribute_uri`, `period_end_attribute_uri` | User-entered filtering period inputs. These are not backend output mappings. |
 | `device_id_prefix`, `device_text_prefix` | Converts a mounted SMS device into an option understood by the matching device handler. |
+| `static_location_end_tolerance_seconds` | Same bounded static-location fallback used by the SMS device handler. Configure both handlers identically. |
+| `incomplete_mount_chain_policy` | Same `strict` or `direct_device_offset` policy used by the SMS device handler. |
 
 The configuration provider's `id_prefix` must match the handler backend entry,
 and `device_id_prefix` must match a configured SMS device provider and handler.
+The supplied `sensorsearch.toml` enables a 120-second location tolerance and
+the `direct_device_offset` fallback for both handlers. Invalid policies and
+negative or non-integer tolerance values are rejected while loading the
+configuration.
 
 ### `O2ARegistryMissionHandler`
 

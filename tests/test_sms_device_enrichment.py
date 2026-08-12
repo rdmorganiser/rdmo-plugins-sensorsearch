@@ -18,6 +18,7 @@ from rdmo_sensorsearch.handlers.sms_device_enrichment import (  # noqa: E402
     SURFACE_OFFSET_Z_ATTRIBUTE_URI,
     SMSDeviceMetadataEnricher,
 )
+from rdmo_sensorsearch.handlers.sms_mounting import MountLocationNoticeCode  # noqa: E402
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, SelectedDevice  # noqa: E402
 
 
@@ -33,11 +34,12 @@ def _plan(device: SelectedDevice, handler, configuration_external_id="sms-config
     )
 
 
-def _handler(*, period=True, location=True):
+def _handler(*, period=True, location=True, **settings):
     return SimpleNamespace(
         base_url="https://sms.example/api/v1",
         supports_mount_period_lookup=period,
         supports_mount_location_lookup=location,
+        **settings,
     )
 
 
@@ -168,6 +170,52 @@ def test_sms_mount_period_and_location_are_resolved_from_action_endpoints(monkey
     assert mapped_values[SITE_NAME_ATTRIBUTE_URI] == "Test site"
     assert len(requested_urls) == 4
     assert all(auth_token == "secret-token" for _, auth_token in requested_urls)
+
+
+def test_enrichment_applies_direct_offset_policy_and_returns_nonfatal_notices(monkeypatch):
+    device_action = _device_action(offset_z=-0.1)
+    device_action["relationships"]["parent_platform"] = {"data": {"type": "platform", "id": "55"}}
+
+    def fetch_json(url, auth_token=None):
+        if "/devices/607/device-mount-actions" in url:
+            return {"data": [device_action]}
+        if "/device-mount-actions?" in url:
+            return {"data": [device_action]}
+        if "/platform-mount-actions?" in url:
+            return {"data": []}
+        if "/static-location-actions?" in url:
+            return {
+                "data": [
+                    {
+                        "id": "76",
+                        "attributes": {
+                            "begin_date": "2020-01-01T00:00:00Z",
+                            "end_date": None,
+                            "z": 235,
+                            "label": "TEAMx KITcube main site Bozen/Bolzano",
+                        },
+                    }
+                ]
+            }
+        raise AssertionError(f"Unexpected URL: {url}")
+
+    monkeypatch.setattr(enrichment_module, "fetch_json", fetch_json)
+    mapped_values = {SERIAL_NUMBER_ATTRIBUTE_URI: "ABC-123"}
+    notices = SMSDeviceMetadataEnricher(configuration_external_id="sms-configuration:27")(
+        mapped_values,
+        _plan(
+            SelectedDevice(text="Device 607", external_id="sms-device:607"),
+            _handler(incomplete_mount_chain_policy="direct_device_offset"),
+        ),
+    )
+
+    assert mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] == 235
+    assert mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] == -0.1
+    assert mapped_values[SITE_NAME_ATTRIBUTE_URI] == "TEAMx KITcube main site Bozen/Bolzano"
+    assert {notice.code for notice in notices} >= {
+        MountLocationNoticeCode.PARENT_MOUNT_ACTION_MISSING.value,
+        MountLocationNoticeCode.DIRECT_DEVICE_OFFSET_USED.value,
+    }
 
 
 def test_unsupported_handler_produces_empty_enrichment_without_requests(monkeypatch):

@@ -54,12 +54,22 @@ class RefreshError:
 
 
 @dataclass(frozen=True)
+class RefreshNotice:
+    """Nonfatal synchronization detail suitable for logs and aggregated feedback."""
+
+    code: str
+    external_id: str = ""
+    details: tuple[tuple[str, str], ...] = ()
+
+
+@dataclass(frozen=True)
 class RefreshResult:
     requested_count: int
     refreshed_count: int
     errors: tuple[RefreshError, ...] = ()
     device_requested_count: int = 0
     device_refreshed_count: int = 0
+    notices: tuple[RefreshNotice, ...] = ()
 
     @property
     def status(self) -> str:
@@ -78,6 +88,7 @@ def combine_refresh_results(results: Iterable[RefreshResult]) -> RefreshResult:
         errors=tuple(error for result in results for error in result.errors),
         device_requested_count=sum(result.device_requested_count for result in results),
         device_refreshed_count=sum(result.device_refreshed_count for result in results),
+        notices=tuple(notice for result in results for notice in result.notices),
     )
 
 
@@ -94,13 +105,13 @@ def format_refresh_message(kind: RefreshKind, result: RefreshResult, refreshed_l
             message = f"Success: {refreshed_label} was refreshed."
             if kind is RefreshKind.CONFIGURATION:
                 message = f"{message} {_format_device_refresh_count(result.device_refreshed_count)}"
-            return _truncate_message(message)
+            return _truncate_message(_append_notice_summary(message, result.notices))
         if result.requested_count == 0:
             return f"Success: No {target_name} were available to refresh."
         message = f"Success: {result.refreshed_count} of {result.requested_count} {target_name} refreshed."
         if kind is RefreshKind.ALL_CONFIGURATIONS:
             message = f"{message} {_format_device_refresh_count(result.device_refreshed_count)}"
-        return _truncate_message(message)
+        return _truncate_message(_append_notice_summary(message, result.notices))
 
     prefix = f"{result.status.capitalize()}: {result.refreshed_count} of {result.requested_count} {target_name} refreshed."
     if kind is RefreshKind.ALL_CONFIGURATIONS:
@@ -108,7 +119,7 @@ def format_refresh_message(kind: RefreshKind, result: RefreshResult, refreshed_l
     details = "; ".join(
         f"{error.external_id}: {error.message}" if error.external_id else error.message for error in result.errors
     )
-    return _truncate_message(f"{prefix} {details}")
+    return _truncate_message(_append_notice_summary(f"{prefix} {details}", result.notices))
 
 
 def _truncate_message(message: str, max_length: int = 1000) -> str:
@@ -121,3 +132,39 @@ def _format_device_refresh_count(count: int) -> str:
     if count == 1:
         return "1 device was refreshed."
     return f"{count} devices were refreshed."
+
+
+def _append_notice_summary(message: str, notices: tuple[RefreshNotice, ...]) -> str:
+    summaries = _summarize_notices(notices)
+    if not summaries:
+        return message
+    return f"{message} Location metadata: {'; '.join(summaries)}."
+
+
+def _summarize_notices(notices: tuple[RefreshNotice, ...]) -> list[str]:
+    labels = {
+        "static_location_end_tolerance_used": "static-location time fallback used",
+        "static_location_not_found": "static location unavailable",
+        "static_location_not_active_at_reference_time": "static location unavailable at the selected time",
+        "static_location_height_missing": "station height unavailable",
+        "static_location_label_missing": "site name unavailable",
+        "parent_mount_action_missing": "parent mount unavailable",
+        "mount_chain_cycle": "cyclic mount chain found",
+        "device_offset_missing": "device offset unavailable",
+        "device_offset_invalid": "invalid device offset ignored",
+        "direct_device_offset_fallback_used": "direct device offset fallback used",
+    }
+    unique_notices = {
+        (notice.code, notice.external_id, () if notice.external_id else notice.details)
+        for notice in notices
+        if notice.code in labels
+    }
+    counts: dict[str, int] = {}
+    for code, _external_id, _details in unique_notices:
+        counts[code] = counts.get(code, 0) + 1
+    return [_format_notice_count(label, counts[code]) for code, label in labels.items() if code in counts]
+
+
+def _format_notice_count(label: str, count: int) -> str:
+    device_label = "device" if count == 1 else "devices"
+    return f"{label} for {count} {device_label}"

@@ -162,6 +162,13 @@ def positive_integer(value: Any, path: str) -> int:
     return value
 
 
+def non_negative_integer(value: Any, path: str) -> int:
+    value = integer(value, path)
+    if value < 0:
+        raise ConfigValidationError(path, "must not be negative")
+    return value
+
+
 def merge(base: Mapping[str, Any] | None, override: Mapping[str, Any] | None) -> dict[str, Any]:
     merged = dict(base or {})
     merged.update(override or {})

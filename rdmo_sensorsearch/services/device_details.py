@@ -4,6 +4,8 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from rdmo_sensorsearch.services.refresh import RefreshNotice
+
 
 @dataclass(frozen=True)
 class SelectedDevice:
@@ -17,6 +19,7 @@ class SelectedDevice:
     vertical_surface_offset: float | None = None
     site_name: str | None = None
     mount_location_resolved: bool = False
+    mount_location_notices: tuple[RefreshNotice, ...] = ()
 
 
 @dataclass(frozen=True)

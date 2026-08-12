@@ -4,6 +4,7 @@ from rdmo_sensorsearch.services.refresh import (
     RefreshAction,
     RefreshError,
     RefreshKind,
+    RefreshNotice,
     RefreshResult,
     combine_refresh_results,
     format_refresh_message,
@@ -93,6 +94,15 @@ def test_combine_refresh_results_preserves_counts_and_errors():
     assert result.device_refreshed_count == 4
 
 
+def test_combine_refresh_results_preserves_nonfatal_notices():
+    notice = RefreshNotice("direct_device_offset_fallback_used", "330")
+
+    result = combine_refresh_results((RefreshResult(1, 1, notices=(notice,)), RefreshResult(1, 1)))
+
+    assert result.status == "success"
+    assert result.notices == (notice,)
+
+
 def test_single_configuration_success_uses_its_label():
     message = format_refresh_message(
         RefreshKind.CONFIGURATION,
@@ -111,6 +121,85 @@ def test_single_configuration_success_uses_singular_device_count():
     )
 
     assert message == "Success: KIT Cfg(49): Energy Balance was refreshed. 1 device was refreshed."
+
+
+def test_success_message_aggregates_location_notices_without_changing_status():
+    result = RefreshResult(
+        1,
+        1,
+        device_requested_count=2,
+        device_refreshed_count=2,
+        notices=(
+            RefreshNotice("direct_device_offset_fallback_used", "330"),
+            RefreshNotice("direct_device_offset_fallback_used", "331"),
+            RefreshNotice("parent_mount_action_missing", "330"),
+        ),
+    )
+
+    message = format_refresh_message(RefreshKind.CONFIGURATION, result, "KIT Cfg(47): TEAMx")
+
+    assert result.status == "success"
+    assert message == (
+        "Success: KIT Cfg(47): TEAMx was refreshed. 2 devices were refreshed. "
+        "Location metadata: parent mount unavailable for 1 device; "
+        "direct device offset fallback used for 2 devices."
+    )
+
+
+def test_duplicate_location_notices_are_counted_once_per_device_and_details():
+    notice = RefreshNotice(
+        "static_location_end_tolerance_used",
+        "338",
+        (("configuration_id", "43"),),
+    )
+    result = RefreshResult(1, 1, notices=(notice, notice))
+
+    message = format_refresh_message(RefreshKind.DEVICE, result, "KIT Sensor(338)")
+
+    assert message.endswith("Location metadata: static-location time fallback used for 1 device.")
+
+
+def test_location_notices_are_counted_once_per_device_even_when_details_differ():
+    result = RefreshResult(
+        1,
+        1,
+        notices=(
+            RefreshNotice("parent_mount_action_missing", "330", (("missing_parent_id", "55"),)),
+            RefreshNotice("parent_mount_action_missing", "330", (("missing_parent_id", "56"),)),
+        ),
+    )
+
+    message = format_refresh_message(RefreshKind.DEVICE, result, "KIT Sensor(330)")
+
+    assert message.endswith("Location metadata: parent mount unavailable for 1 device.")
+
+
+def test_partial_message_includes_nonfatal_location_notices():
+    result = RefreshResult(
+        2,
+        1,
+        errors=(RefreshError("device:2", "unavailable"),),
+        notices=(RefreshNotice("static_location_not_found", "device:1"),),
+    )
+
+    message = format_refresh_message(RefreshKind.ALL_DEVICES, result)
+
+    assert result.status == "partial"
+    assert message.endswith("Location metadata: static location unavailable for 1 device.")
+
+
+def test_refresh_message_with_location_notices_remains_bounded():
+    result = RefreshResult(
+        2,
+        1,
+        errors=(RefreshError("device:2", "x" * 1200),),
+        notices=(RefreshNotice("static_location_not_found", "device:1"),),
+    )
+
+    message = format_refresh_message(RefreshKind.ALL_DEVICES, result)
+
+    assert len(message) == 1000
+    assert message.endswith("...")
 
 
 def test_single_device_success_uses_its_label():

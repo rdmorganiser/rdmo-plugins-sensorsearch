@@ -98,19 +98,31 @@ represent, for example, a sensor one or two metres below the local surface.
 Current limitations are important:
 
 - the AMSL result requires a usable static-location `z` at the resolved time;
-- the relative height/depth result requires a complete mount chain and
-  represents its accumulated `offset_z` values;
-- missing or non-numeric offsets are treated as zero, so incomplete backend
-  metadata can make the relative result less accurate without producing an API
-  error;
+- an exact static-location action is preferred. A configured end-time tolerance
+  can accept an overlapping action that ended shortly before the device mount;
+  actions outside that bounded interval remain unavailable;
+- a complete mount chain produces the sum of its `offset_z` values. Under the
+  default `strict` policy, a missing parent leaves the relative height/depth
+  empty;
+- the optional `direct_device_offset` policy uses only the direct device
+  action's numeric `offset_z` when its parent action is missing. It never
+  invents a missing parent offset and is not used for cyclic chains or an
+  invalid direct offset;
+- missing or non-numeric offsets in a complete chain continue to contribute
+  zero, because SMS does not provide a distinct value for the unavailable
+  component. The direct-device fallback is stricter and will not turn such a
+  value into a false zero;
 - no spatial coordinate transformation is applied; the configured SMS
   static-location `z` is used directly as station elevation;
 - the correctness of units and coordinate-system interpretation depends on the
   metadata supplied by SMS.
 
-Catalog help text should describe these fields as backend-derived only when the
-SMS mount information is complete. Users should be able to review the result
-and record explanatory comments for exceptional installations.
+Location-resolution anomalies are nonfatal. Refresh feedback summarizes how
+many devices used a tolerance or direct-offset fallback, or lacked optional
+location data, while application logs retain the affected device/action IDs.
+These notices do not change a successful refresh into a partial or failed one.
+Users should still review the result and record explanatory comments for
+exceptional installations.
 
 ## Ownership and manual answers
 

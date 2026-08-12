@@ -10,6 +10,7 @@ from rdmo_sensorsearch.config_models.contracts import (
     CONFIGURATION_PROVIDER_NAMES,
     DEVICE_PROVIDER_NAMES,
     HANDLER_SETTINGS,
+    NON_NEGATIVE_INTEGER_SETTINGS,
     POSITIVE_INTEGER_SETTINGS,
     PROVIDER_SETTINGS,
     STRING_SEQUENCE_SETTINGS,
@@ -35,6 +36,7 @@ from rdmo_sensorsearch.config_models.validation import (
     freeze,
     integer,
     merge,
+    non_negative_integer,
     nonempty_string,
     optional_nonempty_string,
     positive_integer,
@@ -408,12 +410,16 @@ def _validate_setting_values(settings: Mapping[str, Any], path: str) -> None:
             boolean(value, setting_path)
         elif key in POSITIVE_INTEGER_SETTINGS:
             positive_integer(value, setting_path)
+        elif key in NON_NEGATIVE_INTEGER_SETTINGS:
+            non_negative_integer(value, setting_path)
         elif key == "offset":
             integer(value, setting_path)
         elif key in STRING_SEQUENCE_SETTINGS:
             string_sequence(value, setting_path)
         else:
             string(value, setting_path, allow_empty=key == "sorts")
+        if key == "incomplete_mount_chain_policy" and value not in {"strict", "direct_device_offset"}:
+            raise ConfigValidationError(setting_path, "must be one of: direct_device_offset, strict")
 
 
 def _parse_attribute_mapping(value: Any, path: str) -> Mapping[str, str]:

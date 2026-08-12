@@ -11,6 +11,7 @@ from rdmo_sensorsearch.handlers.sms_mounting import (
 )
 from rdmo_sensorsearch.naming import configuration_short_label
 from rdmo_sensorsearch.services.device_details import SelectedDevice
+from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 DeviceFetcher = Callable[[str], tuple[dict | None, list[str]]]
 MountActionFetcher = Callable[[str], tuple[dict | None, list[str]]]
@@ -25,6 +26,7 @@ class SMSConfigurationMember:
     station_height_amsl: float | None
     vertical_surface_offset: float | None
     site_name: str | None
+    mount_location_notices: tuple[RefreshNotice, ...] = ()
 
     def as_collection_value(self) -> dict[str, object]:
         return {
@@ -35,6 +37,7 @@ class SMSConfigurationMember:
             "station_height_amsl": self.station_height_amsl,
             "vertical_surface_offset": self.vertical_surface_offset,
             "site_name": self.site_name,
+            "mount_location_notices": self.mount_location_notices,
         }
 
     def as_selected_device(self) -> SelectedDevice:
@@ -47,6 +50,7 @@ class SMSConfigurationMember:
             vertical_surface_offset=self.vertical_surface_offset,
             site_name=self.site_name,
             mount_location_resolved=True,
+            mount_location_notices=self.mount_location_notices,
         )
 
 
@@ -57,6 +61,8 @@ class SMSConfigurationMembershipResolver:
     device_text_prefix: str
     fetch_device: DeviceFetcher
     fetch_mount_action: MountActionFetcher
+    static_location_end_tolerance_seconds: int = 0
+    incomplete_mount_chain_policy: str = "strict"
 
     def resolve(
         self,
@@ -103,6 +109,8 @@ class SMSConfigurationMembershipResolver:
                 platform_mount_actions,
                 static_location_actions,
                 reference_time=reference_time,
+                static_location_end_tolerance_seconds=self.static_location_end_tolerance_seconds,
+                incomplete_mount_chain_policy=self.incomplete_mount_chain_policy,
             )
             members.append(
                 SMSConfigurationMember(
@@ -117,6 +125,7 @@ class SMSConfigurationMembershipResolver:
                     station_height_amsl=mount_location.station_height_amsl,
                     vertical_surface_offset=mount_location.vertical_surface_offset,
                     site_name=mount_location.site_name,
+                    mount_location_notices=mount_location.notices,
                 )
             )
         return tuple(members), tuple(errors)

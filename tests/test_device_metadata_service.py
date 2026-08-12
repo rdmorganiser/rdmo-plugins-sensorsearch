@@ -8,6 +8,7 @@ import pytest
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerResult
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, SelectedDevice
 from rdmo_sensorsearch.services.device_metadata import fetch_device_metadata_batch
+from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 START_ATTRIBUTE_URI = "attribute:start"
 END_ATTRIBUTE_URI = "attribute:end"
@@ -84,6 +85,21 @@ def test_fetch_service_invokes_only_refresh_plans_and_extracts_scoped_values():
     assert handler.calls[0]["instance"].attribute_id == 17
     assert handler.calls[0]["instance"].set_index == 4
     assert "auth_token" not in handler.calls[0]
+
+
+def test_fetch_service_combines_handler_and_enrichment_notices():
+    handler_notice = RefreshNotice("static_location_height_missing", "324")
+    enrichment_notice = RefreshNotice("parent_mount_action_missing", "324")
+    handler = RecordingHandler(HandlerResult(notices=(handler_notice,)))
+
+    result = fetch_device_metadata_batch(
+        (_plan("kitsms:324", handler),),
+        root_attribute_id=17,
+        scoped_attribute_uris=(),
+        enrich_payload=lambda _mapped_values, _plan: (enrichment_notice,),
+    )
+
+    assert result.payloads["cfg:1||kitsms:324"].notices == (handler_notice, enrichment_notice)
 
 
 def test_fetch_service_passes_authentication_and_copies_context_into_worker():

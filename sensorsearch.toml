@@ -152,6 +152,8 @@ managed_attribute_uris = [
 [handlers.SensorManagementSystemDeviceHandler.defaults]
 materialize_device_details = true
 supports_mount_period_lookup = true
+static_location_end_tolerance_seconds = 120
+incomplete_mount_chain_policy = "direct_device_offset"
 backend_link_marker = "/backend/api/v1/"
 device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
 device_mount_actions_url = "{base_url}/devices/{id}/device-mount-actions?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration"
@@ -249,6 +251,8 @@ device_id_prefix = "ufzsms"
 device_text_prefix = "UFZ Sensor"
 [handlers.SensorManagementSystemConfigurationHandler.defaults]
 search_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
+static_location_end_tolerance_seconds = 120
+incomplete_mount_chain_policy = "direct_device_offset"
 configuration_collection_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
 selected_devices_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 selected_devices_page_uri = "https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set"

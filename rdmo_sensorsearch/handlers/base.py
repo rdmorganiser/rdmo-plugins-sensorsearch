@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlsplit
 
+from rdmo_sensorsearch.services.refresh import RefreshNotice
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,6 +22,7 @@ class HandlerResult:
     mapped_values: Mapping[str, Any] = field(default_factory=dict)
     collections: tuple[CollectionAssignment, ...] = ()
     post_actions: tuple[Callable[[], Any], ...] = ()
+    notices: tuple[RefreshNotice, ...] = ()
 
 
 @dataclass(frozen=True)

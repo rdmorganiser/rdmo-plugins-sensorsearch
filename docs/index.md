@@ -30,6 +30,9 @@ The plugin supports four connected workflows:
   behavior, authentication, performance, and current backend limitations.
 - [Developer architecture](developer-architecture.md) describes module
   responsibilities and the service boundary used for synchronization logic.
+- [SMS location and configuration-period remediation plan](sms-location-and-configuration-period-plan.md)
+  records the reviewer findings and the planned resolver, diagnostics,
+  configuration, testing, feedback, and catalog-period changes.
 
 The repository-level [`sensorsearch.toml`](../sensorsearch.toml) is the
 authoritative deployment configuration and is packaged into the plugin wheel.

@@ -9,6 +9,7 @@ from typing import Any
 
 from rdmo_sensorsearch.handlers.base import HandlerResult
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, parse_external_id
+from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class DeviceBlockInstance:
 class DeviceFetchResult:
     mapped_values: dict[str, Any]
     scoped_scalar_values: dict[str, Any]
+    notices: tuple[RefreshNotice, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -43,7 +45,7 @@ class DeviceFetchBatchResult:
     errors: tuple[DeviceFetchError, ...] = ()
 
 
-PayloadEnricher = Callable[[dict[str, Any], DeviceBlockPlan], None]
+PayloadEnricher = Callable[[dict[str, Any], DeviceBlockPlan], tuple[RefreshNotice, ...] | None]
 
 
 def fetch_device_metadata_batch(
@@ -151,12 +153,14 @@ def _fetch_device_metadata(
         )
 
     mapped_values = dict(handler_result.mapped_values)
+    notices = list(handler_result.notices)
     if enrich_payload is not None:
-        enrich_payload(mapped_values, plan)
+        notices.extend(enrich_payload(mapped_values, plan) or ())
     scoped_scalar_values = {attribute_uri: mapped_values.pop(attribute_uri, "") for attribute_uri in scoped_attribute_uris}
     return DeviceFetchResult(
         mapped_values=mapped_values,
         scoped_scalar_values=scoped_scalar_values,
+        notices=tuple(notices),
     )
 
 
