@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-07-24T12:03:39.088161+02:00" required="2.1.0" version="2.5.1">
-	<catalog dc:uri="https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature-v1">
+<rdmo xmlns:dc="http://purl.org/dc/elements/1.1/" created="2026-08-12T09:11:42.733136+02:00" required="2.1.0" version="2.5.1">
+	<catalog dc:uri="https://rdmo.nfdi4earth.de/terms/questions/earth-sensor">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>earth-sensor-with-refresh-feature-v1</uri_path>
+		<uri_path>earth-sensor</uri_path>
 		<dc:comment>Katalogentwurf von Sabine Schönau.
 Weiterbearbeitung durch Corinna Rebmann, Matthias Risse und Claudia Schütze
 Weiterentwicklung als Inkubator ab Jan. 2026 durch Bjarne Biskamp (UFZ) und Corinna Rebmann (KIT)</dc:comment>
 		<order>1</order>
-		<title lang="en">V1 Draft: Earth-Sensor Data Management Plan + refresh feature</title>
-		<help lang="en">This is the Earth-Sensor RDMO catalog, developed to collect metadata for sensor based research projects. More information can be found here (help document will be available soon) and also once you have started to fill the catalog with the '&lt;b&gt;Answer questions&lt;/b&gt;' button on the panel to the right  &lt;b&gt; &gt;&gt;&gt; &lt;/b&gt;.
+		<title lang="en">Earth-Sensor Data Management Plan</title>
+		<help lang="en">This is the Earth-Sensor RDMO catalog, developed to collect metadata for sensor based research projects. More information can be found &lt;b&gt;&lt;a href=&quot;https://notes.desy.de/VtbihRpeTJWikp4EQ7UzBQ?view&quot;&gt;here&lt;/a&gt;&lt;/b&gt; and also once you have started to fill the catalog with the '&lt;b&gt;Answer questions&lt;/b&gt;' button on the panel to the right  &lt;b&gt; &gt;&gt;&gt; &lt;/b&gt;.
 
 Please check the instructions there carefully!</help>
-		<title lang="de">V1 Draft:  Earth-Sensor Data Management Plan + refresh feature</title>
+		<title lang="de">Earth-Sensor Data Management Plan</title>
 		<help lang="de">This is the Earth-Sensor RDMO catalog, developed to collect metadata for sensor based research projects. More information can be found here (help document will be available soon) and also once you have started to fill the catalog with the '&lt;b&gt;Answer questions&lt;/b&gt;' button on the panel to the right  &lt;b&gt; &gt;&gt;&gt; &lt;/b&gt;.
 
 Please check the instructions there carefully!</help>
@@ -118,9 +118,9 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>campaign</uri_path>
 		<dc:comment/>
-		<title lang="en">1) Project ＆ Campaign</title>
+		<title lang="en">1) Project ＆ Campaign Information</title>
 		<short_title lang="en">1) Project ＆ Campaign</short_title>
-		<title lang="de">1) Project ＆ Campaign</title>
+		<title lang="de">1) Project ＆ Campaign Information</title>
 		<short_title lang="de">1) Project ＆ Campaign</short_title>
 		<pages>
 			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general" order="1"/>
@@ -133,12 +133,12 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<dc:comment>1.1) General Project or Campaign Information</dc:comment>
 		<attribute/>
 		<is_collection>False</is_collection>
-		<title lang="en">1.1) General Information</title>
-		<short_title lang="en">1.1) General Information</short_title>
+		<title lang="en">1.1 | General Project Information</title>
+		<short_title lang="en">1.1 General Information</short_title>
 		<help lang="en">In this first part you should provide general information on your project. Please describe your targeted campaign or long-term observational measurements according to the following questions:</help>
 		<verbose_name lang="en"/>
-		<title lang="de">1.1) General Information</title>
-		<short_title lang="de">1.1) General Information</short_title>
+		<title lang="de">1.1 | General Project Information</title>
+		<short_title lang="de">1.1 General Information</short_title>
 		<help lang="de">In this first part you should provide general information on your project. Please describe your targeted campaign or long-term observational measurements according to the following questions:</help>
 		<verbose_name lang="de"/>
 		<questionsets>
@@ -187,11 +187,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">1.14a) Start date of project</text>
+		<text lang="en">1.14a) Start date of project:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">Project start</verbose_name>
 		<help lang="de"/>
-		<text lang="de">1.14a) Start date of project</text>
+		<text lang="de">1.14a) Start date of project:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de">Project start</verbose_name>
 		<default_option/>
@@ -221,11 +221,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">1.14b) End date of project</text>
+		<text lang="en">1.14b) End date of project:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">Project end date</verbose_name>
 		<help lang="de"/>
-		<text lang="de">1.14b) End date of project</text>
+		<text lang="de">1.14b) End date of project:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -253,7 +253,7 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<dc:comment>description of research area area/ bounding box by coordinates</dc:comment>
 		<attribute/>
 		<is_collection>False</is_collection>
-		<title lang="en">1.16) Define your project area:</title>
+		<title lang="en">1.15) Define your project area:</title>
 		<help lang="en">Please provide coordinates of either your measurement location or the bounding box of the research area. The bounding box rectangle has to be defined by the latitude and longitude coordinates for the upper left and the lower right corner.
 
 &lt;b&gt; Important&lt;/b&gt;:
@@ -266,7 +266,7 @@ In case of questions, suggestions or any other issues discovered, please use the
 
 - example: upper left corner [50.02, 8.65], lower right corner [49.27, 9.38]</help>
 		<verbose_name lang="en">Project Area</verbose_name>
-		<title lang="de">1.16) Define your measurement area:</title>
+		<title lang="de">1.15) Define your measurement area:</title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">Project Area</verbose_name>
 		<questionsets>
@@ -338,12 +338,12 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Latitude (e.g. 50.02)</default_text>
+		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Latitude (e.g. 50.02)</default_text>
+		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -372,12 +372,12 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Longitude (e.g. 8.65)</default_text>
+		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Longitude (e.g. 8.65)</default_text>
+		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -450,12 +450,12 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Latitude (e.g. 50.02)</default_text>
+		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Latitude (e.g. 50.02)</default_text>
+		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -477,12 +477,12 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Longitude (e.g. 8.65)</default_text>
+		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Longitude (e.g. 8.65)</default_text>
+		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -525,12 +525,12 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Latitude (e.g. 49.27)</default_text>
+		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 49.27 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Latitude (e.g. 49.27)</default_text>
+		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 49.27 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -559,12 +559,12 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Longitude (e.g. 9.38)</default_text>
+		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g.  9.38 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Longitude (e.g. 9.38)</default_text>
+		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g.  9.38 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -631,10 +631,10 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<dc:comment>question for possibilty of multiple entries of contacts with several information</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-lead"/>
 		<is_collection>False</is_collection>
-		<title lang="en">1.17) Project lead:</title>
+		<title lang="en">1.16) Project lead:</title>
 		<help lang="en"/>
 		<verbose_name lang="en">Project lead</verbose_name>
-		<title lang="de">1.17) Project lead:</title>
+		<title lang="de">1.16) Project lead:</title>
 		<help lang="de"/>
 		<verbose_name lang="de">Projektleitung</verbose_name>
 		<questionsets>
@@ -724,11 +724,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Name:</text>
-		<default_text lang="en">Jane Doe</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Name:</text>
-		<default_text lang="de">Jane Doe</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -758,11 +758,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Institution or Affiliation:</text>
-		<default_text lang="en">Awesome University</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Institution or Affiliation:</text>
-		<default_text lang="de">Awesome University</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -792,11 +792,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_optional>False</is_optional>
 		<help lang="en">Mail address must be public in your ORCiD account to be fetched.</help>
 		<text lang="en">Reach out:</text>
-		<default_text lang="en">jane.doe@awesome-university.com</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Reach out:</text>
-		<default_text lang="de">jane.doe@awesome-university.com</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -825,11 +825,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Please provide a descriptive name for your project, sub-project or campaign. Make sure to comply with your community-specific naming conventions.</help>
-		<text lang="en">1.11) Name of the project:</text>
+		<text lang="en">1.1.1 | Name of the project:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">1.11) Name of the project:</text>
+		<text lang="de">1.1.1 | Name of the project:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -955,13 +955,16 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<attribute dc:uri="https://rdmo.nfdi4energy.org/terms/domain/project/research_question/title"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">The description should serve as a brief overview for your project or campaign and could be used for the abstract in a data repository.</help>
+		<help lang="en">The description should serve as a brief overview for your project or campaign and could be used for the abstract in a data repository.
+&lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;
+max. 200 words
+&lt;/span&gt;</help>
 		<text lang="en">1.13) Description of your project, your campaign, or the research infrastructure:</text>
-		<default_text lang="en">(max. 200 words)</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
 		<text lang="de">1.13) Description of your project, your campaign, or the research infrastructure</text>
-		<default_text lang="de">(max. 200 words)</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -1002,11 +1005,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<dc:comment/>
 		<attribute/>
 		<is_collection>False</is_collection>
-		<title lang="en">1.2 Project Organisation</title>
+		<title lang="en">1.2) Project Organisation</title>
 		<short_title lang="en"/>
 		<help lang="en"/>
 		<verbose_name lang="en">Project Organisation</verbose_name>
-		<title lang="de">1.2 Project Organisation</title>
+		<title lang="de">1.2) Project Organisation</title>
 		<short_title lang="de"/>
 		<help lang="de"/>
 		<verbose_name lang="de">Project Organisation</verbose_name>
@@ -1014,7 +1017,7 @@ In case of questions, suggestions or any other issues discovered, please use the
 			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/dm-lead" order="1"/>
 		</questionsets>
 		<questions>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign_partners" order="2"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign-partners" order="2"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign_docu" order="3"/>
 		</questions>
 		<conditions/>
@@ -1110,11 +1113,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Name:</text>
-		<default_text lang="en">Jane Doe</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Name:</text>
-		<default_text lang="de">Jane Doe</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -1144,11 +1147,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Institution or Affiliation:</text>
-		<default_text lang="en">Awesome University</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Institution or Affiliation:</text>
-		<default_text lang="de">Awesome University</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -1178,11 +1181,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_optional>False</is_optional>
 		<help lang="en">Mail address must be public in your ORCiD account to be fetched.</help>
 		<text lang="en">Reach out:</text>
-		<default_text lang="en">jane.doe@awesome-university.com</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Reach out:</text>
-		<default_text lang="de">jane.doe@awesome-university.com</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -1203,31 +1206,33 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dm-lead"/>
 	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign_partners">
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign-partners">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>campaign_partners</uri_path>
+		<uri_path>campaign-partners</uri_path>
 		<dc:comment/>
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/partner"/>
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">1.23) Collaborating Agencies / Organizations / Institutes:</text>
+		<text lang="en">1.22) Collaborating Agencies / Organizations / Institutes:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">Organization</verbose_name>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">1.23) Collaborating Agencies / Organizations / Institutes:</text>
+		<text lang="de">1.22) Collaborating Agencies / Organizations / Institutes:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de">Organization</verbose_name>
 		<default_option/>
 		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
+		<widget_type>select</widget_type>
+		<value_type>option</value_type>
 		<maximum/>
 		<minimum/>
 		<step/>
 		<unit/>
 		<width/>
-		<optionsets/>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/campaign-partners-options"/>
+		</optionsets>
 		<conditions/>
 	</question>
 	<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/partner">
@@ -1237,6 +1242,14 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<dc:comment/>
 		<parent dc:uri="https://rdmorganiser.github.io/terms/domain/project"/>
 	</attribute>
+	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/campaign-partners-options">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>campaign-partners-options</uri_path>
+		<dc:comment/>
+		<provider_key>ror</provider_key>
+		<options/>
+		<conditions/>
+	</optionset>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign_docu">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>campaign_docu</uri_path>
@@ -1245,11 +1258,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en">e.g. links to project, documentation, ...</help>
-		<text lang="en">1.24) Additional documents relevant for this project:</text>
+		<text lang="en">1.23) Additional documents relevant for this project:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">1.24) Additional documents relevant for this project:</text>
+		<text lang="de">1.23) Additional documents relevant for this project:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -1282,10 +1295,10 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instruments</uri_path>
 		<dc:comment/>
-		<title lang="en">2) Sensors ＆ Instruments</title>
-		<short_title lang="en"/>
-		<title lang="de">2) Sensors and Instruments</title>
-		<short_title lang="de"/>
+		<title lang="en">2) Sensors ＆ Instruments used in your project</title>
+		<short_title lang="en">2) Sensors ＆ Instruments</short_title>
+		<title lang="de">2) Sensors ＆ Instruments used in your project</title>
+		<short_title lang="de">2) Sensors ＆ Instruments</short_title>
 		<pages>
 			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general" order="1"/>
 			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set" order="2"/>
@@ -1300,12 +1313,12 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<dc:comment>this page shall enable to import complete configuration or missions from SMS and O2A</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 		<is_collection>True</is_collection>
-		<title lang="en">2.01) Configurations/Missions</title>
+		<title lang="en">2.01) Harvest of Configurations/Missions from SMS and O2A Registry</title>
 		<short_title lang="en">2.01) Configurations/Missions</short_title>
-		<help lang="en">This section allows you to provide metadata on all the devices that form the basis of your research data for your project. If you use  &lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt; or &lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;, you can load complete device configurations from these sensor management systems. Information about your configurations or missions will be filled automatically in case they are listed in a sensor management system (&lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt; or &lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;). Please enter a name in the first field and select your configuration / mission from the list. The form will be automatically filled and you just need to check.
-The configuration or mission time period is always entered by you. After editing it, use the Apply date range action to rebuild the selected device assignments. In case you did not use campaigns or missions in your sensor management system just proceed to the next page and enter or harvest your devices from there.</help>
+		<help lang="en">This section allows you to provide metadata on all the devices that form the basis of your research data for your project. If you use  &lt;b&gt;&lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt;&lt;/b&gt; or &lt;b&gt;&lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;&lt;/b&gt;, you can load complete device configurations from these sensor management systems. Information about your configurations or missions will be filled automatically in case they are listed in a sensor management system (&lt;b&gt;&lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt;&lt;/b&gt; or &lt;b&gt;&lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;&lt;/b&gt;). Please enter a name in the first field and select your configuration / mission from the list. The form will be automatically filled and you just need to check.
+In case you did not use campaigns or missions in your sensor management system just proceed to the next page and enter or harvest your devices from there.</help>
 		<verbose_name lang="en">Configuration/Mission</verbose_name>
-		<title lang="de">2.01) Configurations/Missions</title>
+		<title lang="de">2.01) Harvest of Configurations/Missions from SMS and O2A Registry</title>
 		<short_title lang="de">2.01) Configurations/Missions</short_title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">Configuration/Mission</verbose_name>
@@ -1359,12 +1372,12 @@ Question: which parent attribute would we need here?</dc:comment>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Latitude (e.g. 50.02)</default_text>
+		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Latitude (e.g. 50.02)</default_text>
+		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -1393,12 +1406,12 @@ Question: which parent attribute would we need here?</dc:comment>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Longitude (e.g. 8.65)</default_text>
+		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Longitude (e.g. 8.65)</default_text>
+		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -1435,7 +1448,6 @@ Question: which parent attribute would we need here?</dc:comment>
 		<questions>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/start" order="1"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/end" order="2"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply" order="3"/>
 		</questions>
 		<conditions/>
 	</questionset>
@@ -1453,13 +1465,13 @@ Question: which parent attribute would we need here?</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">Enter this value yourself. It is used when you apply the date range to the selected configuration or mission.</help>
-		<text lang="en">Start date and time of configuration or mission:</text>
-		<default_text lang="en">YYYY-MM-DD hh:mm</default_text>
+		<help lang="en"/>
+		<text lang="en">Start date and time of configuration &lt;br&gt; or mission: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;YYYY-MM-DD hh:mm&lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Start date and time of configuration or mission (YYYY-MM-DD hh:mm).</text>
-		<default_text lang="de">YYYY-MM-DD hh:mm</default_text>
+		<text lang="de">Start date and time of configuration &lt;br&gt; or mission: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;YYYY-MM-DD hh:mm&lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -1487,13 +1499,13 @@ Question: which parent attribute would we need here?</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Enter this value yourself, or leave it empty for an open-ended configuration or mission.</help>
-		<text lang="en">End date and time of configuration or mission:</text>
-		<default_text lang="en">YYYY-MM-DD hh:mm</default_text>
+		<help lang="en"/>
+		<text lang="en">End date and time of configuration&lt;br&gt;or mission: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;YYYY-MM-DD hh:mm&lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">End date and time of configuration or mission (YYYY-MM-DD hh:mm):</text>
-		<default_text lang="de">YYYY-MM-DD hh:mm</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -1514,44 +1526,6 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>configurations/time-period/apply</uri_path>
-		<dc:comment>Validates the user-entered period and rebuilds the backend device assignments for this configuration or mission.</dc:comment>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en">Select Yes after editing the dates. The start is required; the end can remain empty. Applying replaces the selected device assignments with those resolved for this period.</help>
-		<text lang="en">Apply this date range to the device assignments:</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie nach dem Bearbeiten der Datumsangaben Ja. Der Beginn ist erforderlich; das Ende kann leer bleiben. Beim Anwenden werden die ausgewählten Gerätezuordnungen für diesen Zeitraum neu aufgebaut.</help>
-		<text lang="de">Diesen Zeitraum auf die Gerätezuordnungen anwenden:</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>yesno</widget_type>
-		<value_type>boolean</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets>
-			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
-		</optionsets>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>apply-date-range</key>
-		<path>configuration-set/apply-date-range</path>
-		<dc:comment>Boolean action trigger for applying the user-entered configuration period.</dc:comment>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
-	</attribute>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configuration_ident_api">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>configuration_ident_api</uri_path>
@@ -1559,7 +1533,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">If your configuration / mission is listed in any of the above listed databases, please enter here the name or any identifier for the search. Then you should be able to select your configuration from the list and its backend metadata will be filled automatically. The time period remains user-entered.
+		<help lang="en">If your configuration / mission is listed in any of the above listed databases, please enter here the name or any identifier for the search. Then you should be able to select your configuration from the list and the following fields will be filled automatically.
 
 &lt;b&gt; Nevertheless, please check the entries below for correctness in case of automatic entries.&lt;/b&gt;</help>
 		<text lang="en">2.011) Configuration / Mission identification for API search</text>
@@ -1673,11 +1647,11 @@ Question: which parent attribute would we need here?</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Select Yes to reload configuration metadata and refresh details for the existing device assignments without changing the assignment list.</help>
+		<help lang="en">Select Yes to reload this configuration and its device assignments from the original backend.</help>
 		<text lang="en">Refresh this configuration from backend:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie Ja, um die Konfigurationsmetadaten und Details der vorhandenen Gerätezuordnungen zu aktualisieren, ohne die Zuordnungsliste zu ändern.</help>
+		<help lang="de">Wählen Sie Ja, um diese Konfiguration und ihre Gerätezuordnungen erneut aus dem ursprünglichen Backend zu laden.</help>
 		<text lang="de">Diese Konfiguration aus dem Backend aktualisieren:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
@@ -1757,42 +1731,6 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>configurations-general/refresh-message</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last refresh message</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Meldung der letzten Aktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>textarea</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-message</key>
-		<path>configuration-set/refresh-message</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
-	</attribute>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-timestamp">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>configurations-general/refresh-timestamp</uri_path>
@@ -1829,18 +1767,54 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>configurations-general/refresh-message</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last refresh message</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Meldung der letzten Aktualisierung</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>textarea</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-message</key>
+		<path>configuration-set/refresh-message</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
 	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instruments/configuration-set</uri_path>
 		<dc:comment/>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 		<is_collection>True</is_collection>
-		<title lang="en">2.02) Device set</title>
-		<short_title lang="en"/>
-		<help lang="en"/>
+		<title lang="en">2.02) Device selection of each configuration or misson</title>
+		<short_title lang="en">2.02) Device selection</short_title>
+		<help lang="en">All individual devices of the fetched configurations or missions are listed below. Here you can either deselect unnecessary devices or add devices which are not part of the configuration by now.</help>
 		<verbose_name lang="en">Configuration/Mission</verbose_name>
-		<title lang="de">2.02) Configuration set</title>
-		<short_title lang="de"/>
+		<title lang="de">2.02) Device selection of each configuration or misson</title>
+		<short_title lang="de">2.02) Device selection</short_title>
 		<help lang="de"/>
 		<verbose_name lang="de">Configuration/Mission</verbose_name>
 		<questionsets/>
@@ -1852,7 +1826,7 @@ Question: which parent attribute would we need here?</dc:comment>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set/selected">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instruments/configuration-set/selected</uri_path>
-		<dc:comment>Configuration-scoped device selection populated by configuration handlers and editable through DeviceSearchProvider.
+		<dc:comment>Configuration-scoped device selection populated by configuration handlers and editable through SensorsProvider.
 Devices imported from the configuration backend or added individually through sensor search.</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"/>
 		<is_collection>True</is_collection>
@@ -1977,12 +1951,12 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">Start date and time of the sensor implementation:</text>
-		<default_text lang="en">YYYY-MM-DD hh:mm</default_text>
+		<text lang="en">Start date and time of the sensor&lt;br&gt;implementation: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;YYYY-MM-DD hh:mm&lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Start date and time of the sensor implementation:</text>
-		<default_text lang="de">YYYY-MM-DD hh:mm</default_text>
+		<text lang="de">Start date and time of the sensor&lt;br&gt;implementation: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;YYYY-MM-DD hh:mm&lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -2025,12 +1999,12 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">End date and time of the sensor implementation:</text>
-		<default_text lang="en">YYYY-MM-DD hh:mm</default_text>
+		<text lang="en">End date and time of the sensor&lt;br&gt;implementation: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;YYYY-MM-DD hh:mm&lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">End date and time of the sensor implementation:</text>
-		<default_text lang="de">YYYY-MM-DD hh:mm</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -2199,7 +2173,7 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">Use a common name (similar to long name in SMS).</help>
+		<help lang="en">Use a common name (similar to &lt;span style=&quot;font-style: italic&quot;&gt;long name&lt;/span&gt; in SMS).</help>
 		<text lang="en">2.2) Name of instrument:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
@@ -2397,13 +2371,13 @@ https://glossary.ametsoc.org/wiki/Welcome</help>
 		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">If no PID is available, provide another Unique Persistent Identifier (URN or UUID) for the instrument or type in 'NA' if none exists.</help>
+		<help lang="en">If no PID is available, provide another Unique Persistent Identifier (URN or UUID) for the instrument or leave it as &lt;span style=&quot;font-family: monospace; letter-spacing: 0.04em;&quot;&gt;NA&lt;/span&gt; if none exists.</help>
 		<text lang="en">2.26) Unique Persistent Instrument Identification (PID):</text>
-		<default_text lang="en"/>
+		<default_text lang="en">NA</default_text>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
 		<text lang="de">2.26) Unique Persistent Instrument Identification (PID):</text>
-		<default_text lang="de"/>
+		<default_text lang="de">NA</default_text>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -2672,12 +2646,12 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Latitude (e.g. 50.02)</default_text>
+		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Latitude (e.g. 50.02)</default_text>
+		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -2713,12 +2687,12 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en"/>
-		<default_text lang="en">Longitude (e.g. 8.65)</default_text>
+		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de"/>
-		<default_text lang="de">Longitude (e.g. 8.65)</default_text>
+		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -2899,14 +2873,16 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
+		<widget_type>select</widget_type>
+		<value_type>option</value_type>
 		<maximum/>
 		<minimum/>
 		<step/>
 		<unit/>
 		<width/>
-		<optionsets/>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/instrument_owner-options"/>
+		</optionsets>
 		<conditions/>
 	</question>
 	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner">
@@ -2916,6 +2892,14 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
 	</attribute>
+	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/instrument_owner-options">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instrument_owner-options</uri_path>
+		<dc:comment/>
+		<provider_key>ror</provider_key>
+		<options/>
+		<conditions/>
+	</optionset>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_responsible_person">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instruments_responsible_person</uri_path>
@@ -3455,11 +3439,11 @@ Please provide a description for each of your data collection types. A data coll
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Name:</text>
-		<default_text lang="en">Jane Doe</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Name:</text>
-		<default_text lang="de">Jane Doe</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -3489,11 +3473,11 @@ Please provide a description for each of your data collection types. A data coll
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Institution or Affiliation:</text>
-		<default_text lang="en">Awesome University</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Institution or Affiliation:</text>
-		<default_text lang="de">Awesome University</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -3523,11 +3507,11 @@ Please provide a description for each of your data collection types. A data coll
 		<is_optional>False</is_optional>
 		<help lang="en">Mail address must be public in your ORCiD account to be fetched.</help>
 		<text lang="en">Reach out:</text>
-		<default_text lang="en">jane.doe@awesome-university.com</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Reach out:</text>
-		<default_text lang="de">jane.doe@awesome-university.com</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -3554,10 +3538,10 @@ Please provide a description for each of your data collection types. A data coll
 		<dc:comment>questionset for variables and units in dataset</dc:comment>
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/metadata"/>
 		<is_collection>True</is_collection>
-		<title lang="en">3.15 Which variables will be contained in the data collection from your devices?</title>
+		<title lang="en">3.15) Which variables will be contained in the data collection from your devices?</title>
 		<help lang="en">Is filled automatically by selecting the devices for this data collection in the question above. Deselect all parameters or variables which shall not be included in your published data collection.</help>
 		<verbose_name lang="en">variable</verbose_name>
-		<title lang="de">3.15 Which variables will be contained in the data collection from your devices?</title>
+		<title lang="de">3.15) Which variables will be contained in the data collection from your devices?</title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">variable</verbose_name>
 		<questionsets/>
@@ -3652,11 +3636,11 @@ Please provide a description for each of your data collection types. A data coll
 		<help lang="en">Preferably with project, campaign name, location, time, etc..
 This might be the naming of your data collection and improves the findability of your collection for example in data repositories. Therefore, keep machine-readability in mind (use underscores instead of spaces, etc.).</help>
 		<text lang="en">3.11) Descriptive (but brief) name for this data collection:</text>
-		<default_text lang="en">Title of data collection</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
 		<text lang="de">3.11) Descriptive (but brief) name for this data collection:</text>
-		<default_text lang="de">Title of data collection</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -3684,13 +3668,14 @@ This might be the naming of your data collection and improves the findability of
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/description"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">The description should serve as an overview for the data collections gathered in your project and could be used for the abstract in a data repository.</help>
+		<help lang="en">The description should serve as an overview for the data collections gathered in your project and could be used for the abstract in a data repository.
+&lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;max. 200 words &lt;/span&gt;</help>
 		<text lang="en">3.12) Description of the data collection:</text>
-		<default_text lang="en">max. 200 words</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
 		<text lang="de">3.12) Description of the data collection:</text>
-		<default_text lang="de">max. 200 words</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -3718,14 +3703,12 @@ This might be the naming of your data collection and improves the findability of
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/collaboration_tools"/>
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">Which devices were used for this data collection? You can select one, multiple or no instrument depending on the context of the data collection to be described.
-
-WORK IN PROGRESS: Will be selectable from instruments entered in section 2)</help>
+		<help lang="en">Which devices were used for this data collection? You can select devices entered in section 2, remove or add instruments depending on the context of the data collection to be described.</help>
 		<text lang="en">3.14) Devices contributing to the data collection:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">Device</verbose_name>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.14) Instruments contributing to the data set:</text>
+		<text lang="de">3.14) Devices contributing to the data collection:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de">Device</verbose_name>
 		<default_option/>
@@ -3763,12 +3746,12 @@ WORK IN PROGRESS: Will be selectable from instruments entered in section 2)</hel
 		<dc:comment/>
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/id"/>
 		<is_collection>True</is_collection>
-		<title lang="en">3.2) Details</title>
-		<short_title lang="en"/>
+		<title lang="en">3.2) Data collection details</title>
+		<short_title lang="en">3.2) Details</short_title>
 		<help lang="en"/>
 		<verbose_name lang="en">Data collection</verbose_name>
-		<title lang="de">3.2) Details</title>
-		<short_title lang="de"/>
+		<title lang="de">3.2) Data collection details</title>
+		<short_title lang="de">3.2) Details</short_title>
 		<help lang="de"/>
 		<verbose_name lang="de">Data collection</verbose_name>
 		<questionsets>
@@ -5659,11 +5642,11 @@ WORK IN PROGRESS: Will be selectable from instruments entered in section 2)</hel
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Name:</text>
-		<default_text lang="en">Jane Doe</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Name:</text>
-		<default_text lang="de">Jane Doe</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -5686,11 +5669,11 @@ WORK IN PROGRESS: Will be selectable from instruments entered in section 2)</hel
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Institution or Affiliation:</text>
-		<default_text lang="en">Awesome University</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Institution or Affiliation:</text>
-		<default_text lang="de">Awesome University</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -5713,11 +5696,11 @@ WORK IN PROGRESS: Will be selectable from instruments entered in section 2)</hel
 		<is_optional>False</is_optional>
 		<help lang="en">Mail address must be public in your ORCiD account to be fetched.</help>
 		<text lang="en">Reach out:</text>
-		<default_text lang="en">jane.doe@awesome-university.com</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Reach out:</text>
-		<default_text lang="de">jane.doe@awesome-university.com</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -5808,11 +5791,11 @@ WORK IN PROGRESS: Will be selectable from instruments entered in section 2)</hel
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Name:</text>
-		<default_text lang="en">Jane Doe</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Name:</text>
-		<default_text lang="de">Jane Doe</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -5842,11 +5825,11 @@ WORK IN PROGRESS: Will be selectable from instruments entered in section 2)</hel
 		<is_optional>False</is_optional>
 		<help lang="en"/>
 		<text lang="en">Institution or Affiliation:</text>
-		<default_text lang="en">Awesome University</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Institution or Affiliation:</text>
-		<default_text lang="de">Awesome University</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
@@ -5876,11 +5859,11 @@ WORK IN PROGRESS: Will be selectable from instruments entered in section 2)</hel
 		<is_optional>False</is_optional>
 		<help lang="en">Mail address must be public in your ORCiD account to be fetched.</help>
 		<text lang="en">Reach out:</text>
-		<default_text lang="en">jane.doe@awesome-university.com</default_text>
+		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
 		<text lang="de">Reach out:</text>
-		<default_text lang="de">jane.doe@awesome-university.com</default_text>
+		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
 		<default_external_id/>
