@@ -23,7 +23,7 @@ keys, and collection indexes.
 | Device collection attribute | `device_collection_attribute_uri` | Identifies one repeated device-detail block. |
 | Selected devices attribute | `selected_devices_attribute_uri` and project-local provider source | Stores the devices assigned to a configuration. |
 | Refresh question attribute | `MetadataRefresh.actions[].trigger_attribute_uri` | Executes one refresh action. |
-| Date input attributes | `period_start_attribute_uri`, `period_end_attribute_uri`, and `input_attribute_uris` | Supply a user-entered period for device assignment. |
+| Optional membership-filter attributes | `membership_filter_enabled`, `membership_filter_start_attribute_uri`, `membership_filter_end_attribute_uri`, and action `input_attribute_uris` | Opt an SMS catalog extension into explicit historical membership filtering. |
 | Optionset provider key | Django `OPTIONSET_PROVIDERS` entry | Connects an RDMO optionset to the plugin provider. |
 
 ## Search and metadata synchronization
@@ -52,8 +52,10 @@ Mapping values are exact RDMO attribute URIs. A simple mapping is:
 
 Only add a target to `managed_attribute_uris` when the backend is authoritative
 for that field. Managed fields may be cleared when the backend stops returning
-a value. User-owned fields, especially the configuration start and end inputs,
-must not be managed or mapped from backend dates.
+a value. In the original Earth Sensor catalog, question set 2.013 describes the
+selected backend configuration or mission, so its start and end attributes are
+managed outputs. Separate attributes introduced by a future membership-filter
+extension remain user-owned inputs.
 
 ## Configuration and mission device sets
 
@@ -85,24 +87,25 @@ The selected-devices page and device collection attribute are configured on
 the configuration or mission handler. Do not change only the catalog side of
 this relationship.
 
-## Optional date-range workflow
+## Optional SMS membership-filter extension
 
-Date filtering is enabled by catalog structure. If the catalog contains the
-Earth Sensor apply trigger attribute
-`https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range`,
-selecting a configuration or mission still synchronizes its metadata, but
-device assignment is finalized by the explicit apply action. Editing either
-free-text date field alone does not make a backend request.
+The original Earth Sensor catalog does not contain or activate a date-based
+membership filter. Configuration and mission selection immediately
+synchronizes all backend members, while question set 2.013 receives the
+backend configuration or mission period.
 
-The workflow is:
+A future catalog can add a distinct SMS-only workflow. It needs three new
+attributes for filter start, filter end, and an explicit apply trigger. Do not
+reuse the established 2.013 attributes. The SMS handler catalog mapping must
+then opt in with:
 
-1. the user selects a configuration or mission;
-2. the user enters a start datetime and, optionally, an end datetime;
-3. the user activates **Apply date range**;
-4. the plugin validates the period and rebuilds the selected device set;
-5. the interview page is refetched so synchronized answers are visible.
+```toml
+membership_filter_enabled = true
+membership_filter_start_attribute_uri = "<filter start attribute URI>"
+membership_filter_end_attribute_uri = "<filter end attribute URI>"
+```
 
-The action should use:
+The matching refresh action should use:
 
 ```toml
 replace_existing_collections = true
@@ -110,21 +113,15 @@ require_configuration_period = true
 input_attribute_uris = ["<start attribute URI>", "<end attribute URI>"]
 ```
 
-The same URIs must be configured as `period_start_attribute_uri` and `period_end_attribute_uri` on both
-the SMS configuration and O2A mission catalog mappings that use this feature.
-The start field is required when applying a range; a missing end is open-ended.
-An end earlier than the start is invalid.
+Editing the free-text filter questions alone makes no backend request. The
+action validates the start, accepts an optional open end, and replaces SMS
+device membership using mount-action overlap. Normal selection never waits for
+the filter fields, even when an extension catalog contains them.
 
-If the apply trigger attribute is absent from a catalog, configuration and
-mission selection keeps the immediate behavior: all member devices are
-synchronized without applying interview date filters. This makes the feature
-backward-compatible with catalogs that do not expose date-range controls.
-
-The plugin currently checks for that exact trigger attribute anywhere in the
-active catalog, not by its visible label or page position. If a derived catalog
-changes this URI, the catalog-presence check in the plugin must be adapted as
-well. Catalog editors should nevertheless keep the trigger beside the two date
-inputs so its meaning is clear to interview users.
+O2A Registry has no equivalent historical mount model. The handler rejects
+membership-filter actions until an accurately defined O2A policy exists. See
+[the reassessment](configuration-period-reassessment.md) for a complete catalog
+and TOML extension sketch.
 
 ## Metadata refresh controls
 
@@ -163,7 +160,7 @@ Use this order when introducing the plugin into another catalog:
 4. test selection, replacement, and clearing of the search answer;
 5. configure the configuration collection and selected-devices relationship;
 6. add repeated device details and project-local optionsets;
-7. add explicit refresh actions and optional date-range controls;
+7. add explicit refresh actions and, if approved, separate SMS membership-filter controls;
 8. add data-collection variable synchronization last;
 9. test with a new project and with an existing project containing manual data.
 

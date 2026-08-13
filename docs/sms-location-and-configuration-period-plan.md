@@ -386,6 +386,12 @@ Ask the reviewer to repeat at least these checks:
 
 ## Configuration-period finding
 
+> **Superseded:** The period recommendation below records the earlier design.
+> After adopting `earth-sensor+original.xml` as the source of truth, question
+> 2.013 again represents the backend configuration or mission period. See
+> [Configuration-period baseline and optional membership filtering](configuration-period-reassessment.md)
+> for the current plan.
+
 The reviewer catalog contains the start and end questions but no action that
 applies those values to synchronization.
 

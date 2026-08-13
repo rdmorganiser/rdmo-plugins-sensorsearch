@@ -13,7 +13,6 @@ EXPECTED_PROVIDER_KEYS = {
     "sensorsearch_project_configuration_devices",
 }
 EXPECTED_REFRESH_TRIGGER_ATTRIBUTES = {
-    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range",
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration",
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device",
     "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger",

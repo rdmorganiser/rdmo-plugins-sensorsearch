@@ -44,7 +44,7 @@ Validation currently covers:
 - required SMS URLs, labels, prefixes, and handler backends;
 - unique option ID prefixes and provider-to-handler prefix relationships;
 - SMS configuration-to-device and O2A mission-to-item prefix relationships;
-- paired configuration period start/end attributes;
+- paired and explicitly enabled SMS membership-filter start/end attributes;
 - required search and configuration-membership attributes;
 - explicit catalog scope for data-collection variable synchronization.
 
@@ -147,18 +147,15 @@ Each `[[MetadataRefresh.actions]]` supports:
 | `status_attribute_uri` | Optional target for machine-readable or concise status text. |
 | `message_attribute_uri` | Optional target for user-facing details and errors. |
 | `timestamp_attribute_uri` | Optional target for the refresh time. |
-| `replace_existing_collections` | Rebuild configuration device membership instead of preserving existing collections. Used by explicit period application. |
-| `require_configuration_period` | Reject the action unless the configured start/end inputs form a valid period. |
+| `replace_existing_collections` | Rebuild configuration device membership instead of preserving existing collections. Used by an optional explicit SMS membership-filter action. |
+| `require_configuration_period` | Request a validated period from a handler that supports optional membership filtering. |
 | `input_attribute_uris` | User-owned input fields that affect this action. Changes clear stale feedback but do not execute the action. |
 
-The date-range action is a second `kind = "configuration"` action. The presence
-of the exact Earth Sensor trigger attribute
-`https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range` in
-the current catalog activates the explicit date-range workflow for
-configuration and mission selection. Therefore, removing the question from a
-catalog changes behavior even when the TOML action remains configured. A
-different custom trigger URI can configure an action, but it does not currently
-replace this URI in the catalog-presence check.
+The authoritative deployment configuration has no period-filter action. A
+future SMS catalog extension must define a separate apply trigger, list its
+separate filter input attributes in `input_attribute_uris`, set both flags
+above, and explicitly enable the matching handler settings. Catalog presence
+alone never changes selection behavior.
 
 ## Handler structure
 
@@ -235,7 +232,8 @@ This handler fetches one SMS configuration and its mounted devices.
 | `device_collection_attribute_uri` | Repeated device-detail collection root. |
 | `frontend_link_attribute_uri` | Configuration link target. |
 | `latitude_attribute_uri`, `longitude_attribute_uri` | Configuration static-location targets. |
-| `period_start_attribute_uri`, `period_end_attribute_uri` | User-entered filtering period inputs. These are not backend output mappings. |
+| `membership_filter_enabled` | Explicit opt-in for a future SMS-only historical membership-filter extension. Omit for baseline catalogs. |
+| `membership_filter_start_attribute_uri`, `membership_filter_end_attribute_uri` | Separate user-owned filter inputs. They must be configured together when the extension is enabled and must not reuse question set 2.013. |
 | `device_id_prefix`, `device_text_prefix` | Converts a mounted SMS device into an option understood by the matching device handler. |
 | `static_location_end_tolerance_seconds` | Same bounded static-location fallback used by the SMS device handler. Configure both handlers identically. |
 | `incomplete_mount_chain_policy` | Same `strict` or `direct_device_offset` policy used by the SMS device handler. |
@@ -251,14 +249,16 @@ configuration.
 
 This handler treats an O2A mission as a configuration and its items as member
 devices. The configuration collection, selected-devices attribute and page,
-device collection, frontend link, and `period_start_attribute_uri`/`period_end_attribute_uri` settings
-have the same catalog meaning as for SMS.
+device collection, and frontend link settings have the same catalog meaning as
+for SMS.
 
 `mission_url`, `mission_items_url`, and `item_url` control API requests.
 `mission_item_page_size` limits the page size. `item_id_prefix` must match the
 O2A device provider. `mission_start_date_path`, `mission_end_date_path`, and
-`date_mapping_paths` describe dates present in the mission API; they do not
-make the catalog's user-entered start/end attributes backend-managed outputs.
+`date_mapping_paths` describe dates present in the mission API. Their mapped
+targets are the backend-owned question set 2.013 answers, and materialized
+mission items inherit that mission period. O2A membership-filter settings are
+rejected because the Registry has no comparable historical mount model.
 
 ### `GIPPInstrumentHandler`
 

@@ -14,7 +14,6 @@ from rdmo_sensorsearch.handlers.base import (
 )
 from rdmo_sensorsearch.handlers.configuration_period import (
     ConfigurationPeriod,
-    catalog_has_date_range_trigger,
     read_configuration_period,
 )
 from rdmo_sensorsearch.handlers.jsonapi import fetch_paginated_jsonapi_collection
@@ -84,39 +83,27 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
         selected_devices_attribute_uri = getattr(self, "selected_devices_attribute_uri", None)
         preserve_existing_collections = bool(context and context.preserve_existing_collections)
         require_configuration_period = bool(context and context.require_configuration_period)
-        period_start_attribute_uri = getattr(self, "period_start_attribute_uri", None)
-        period_end_attribute_uri = getattr(self, "period_end_attribute_uri", None)
-        use_configuration_period = require_configuration_period or (
-            instance is not None and catalog_has_date_range_trigger(instance)
-        )
-        period_inputs_are_configured = instance is not None and bool(period_start_attribute_uri and period_end_attribute_uri)
+        membership_filter_enabled = bool(getattr(self, "membership_filter_enabled", False))
+        filter_start_attribute_uri = getattr(self, "membership_filter_start_attribute_uri", None)
+        filter_end_attribute_uri = getattr(self, "membership_filter_end_attribute_uri", None)
 
         configuration_period = None
-        period_error = None
-        if use_configuration_period and not period_inputs_are_configured:
-            period_error = "The configuration or mission date-range inputs are not configured for this catalog."
-        elif use_configuration_period:
+        if require_configuration_period and not membership_filter_enabled:
+            return {"errors": ["SMS membership filtering is not enabled for this catalog."]}
+        if require_configuration_period and (instance is None or not filter_start_attribute_uri or not filter_end_attribute_uri):
+            return {"errors": ["The SMS membership filter inputs are not configured for this catalog."]}
+        if require_configuration_period:
             configuration_period, period_error = read_configuration_period(
                 instance,
-                period_start_attribute_uri,
-                period_end_attribute_uri,
+                filter_start_attribute_uri,
+                filter_end_attribute_uri,
             )
-        if require_configuration_period and period_error:
-            return {"errors": [period_error]}
-
-        defer_member_collection = bool(
-            selected_devices_attribute_uri and not preserve_existing_collections and use_configuration_period and period_error
-        )
-        if defer_member_collection:
-            logger.info(
-                "Deferring SMS device assignments for configuration %s until its date range is applied: %s",
-                backend_id,
-                period_error,
-            )
+            if period_error:
+                return {"errors": [period_error]}
 
         mount_action_data = None
         platform_mount_action_data = None
-        if selected_devices_attribute_uri and not preserve_existing_collections and not defer_member_collection:
+        if selected_devices_attribute_uri and not preserve_existing_collections:
             mount_action_data = self._fetch_jsonapi_collection(
                 self.device_mount_actions_url,
                 backend_id,
@@ -170,10 +157,10 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
                 }
 
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, configuration_data)
-        if period_start_attribute_uri:
-            mapped_values.pop(period_start_attribute_uri, None)
-        if period_end_attribute_uri:
-            mapped_values.pop(period_end_attribute_uri, None)
+        if filter_start_attribute_uri:
+            mapped_values.pop(filter_start_attribute_uri, None)
+        if filter_end_attribute_uri:
+            mapped_values.pop(filter_end_attribute_uri, None)
         self._set_configuration_links(mapped_values, configuration_data)
         self._normalize_configuration_datetimes(mapped_values)
         location_errors = self._set_configuration_location(
@@ -187,15 +174,6 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
 
         collections = []
         post_actions = []
-
-        if defer_member_collection:
-            collections.append(
-                CollectionAssignment(
-                    attribute_uri=selected_devices_attribute_uri,
-                    page_uri=self.selected_devices_page_uri,
-                    values=(),
-                )
-            )
 
         if selected_devices_attribute_uri and mount_action_data is not None:
             selected_device_values, member_errors = self._build_selected_device_values(

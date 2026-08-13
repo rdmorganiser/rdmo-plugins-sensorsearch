@@ -8,11 +8,11 @@ SPDX-License-Identifier: Apache-2.0
 [Documentation index](index.md) · [Catalog editor guide](catalog-editor-guide.md) · [Configuration reference](configuration-reference.md) · [Operations and limitations](operations-and-limitations.md)
 
 This map describes the concrete elements in
-[`xml/earth-sensor+refresh.xml`](../xml/earth-sensor+refresh.xml). Copy the URIs
+[`xml/earth-sensor+original.xml`](../xml/earth-sensor+original.xml). Copy the URIs
 exactly when searching the RDMO editor or the XML. The catalog URI is:
 
 ```text
-https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature-v1
+https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
 ```
 
 ## Configuration and mission selection
@@ -54,10 +54,10 @@ The condition controlling configuration-only controls is:
 | Source attribute | `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search` |
 | Relation | `notempty` |
 
-## User-entered configuration period
+## Backend configuration or mission period
 
-These fields are synchronization inputs. They must not be populated from SMS
-configuration dates or O2A mission dates.
+Question set 2.013 records the period of the selected configuration or mission.
+The synchronization owns these fields when a backend record is selected.
 
 | Role | URI |
 | --- | --- |
@@ -66,31 +66,17 @@ configuration dates or O2A mission dates.
 | Start attribute | `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime` |
 | End question | `https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/end` |
 | End attribute | `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime` |
-| Apply question | `https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply` |
-| Apply trigger attribute | `https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range` |
-| Apply optionset | `https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh` |
-| Optionset provider key | `sensorsearch_interview_page_refresh` |
 
-The accepted interview format is `YYYY-MM-DD hh:mm`; values with timezone
-information are also normalized when supported by the parser. Start is required
-for **Apply date range**, while end is optional. Editing either text field clears
-old refresh feedback but does not synchronize. This prevents a remote request
-on every keystroke.
+The SMS handler maps `data.attributes.start_date` and
+`data.attributes.end_date`; the O2A mission handler maps `startDate` and
+`endDate`. Both targets are also listed in `managed_attribute_uris`. Datetimes
+are normalized to `YYYY-MM-DD hh:mm`. The end remains empty for an active,
+open-ended backend record.
 
-The same start and end attributes appear as `period_start_attribute_uri` and `period_end_attribute_uri`
-under both:
-
-- `handlers.SensorManagementSystemConfigurationHandler.catalogs`;
-- `handlers.O2ARegistryMissionHandler.catalogs`.
-
-The apply action repeats them in `MetadataRefresh.actions[].input_attribute_uris`
-and sets `require_configuration_period = true` and
-`replace_existing_collections = true`.
-
-If the apply trigger attribute is removed from a derived catalog, selecting a
-configuration or mission immediately synchronizes all its devices without
-interview date filtering. Keeping the TOML action alone does not activate the
-workflow; the trigger must be part of the active catalog.
+The original catalog has no apply question and these two attributes do not
+filter device membership. A future SMS-only membership filter needs separate
+catalog attributes and explicit TOML activation; see
+[Configuration-period baseline and optional membership filtering](configuration-period-reassessment.md).
 
 ## Configuration-local refresh
 
@@ -107,8 +93,7 @@ workflow; the trigger must be part of the active catalog.
 | Trigger optionset | `https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh` |
 
 This normal refresh updates backend-owned metadata while preserving the current
-configuration device collections. Applying the date range is the action that
-authoritatively rebuilds the filtered device set.
+configuration device collections.
 
 ## Selected Device Set page
 
@@ -128,8 +113,9 @@ The selected devices attribute is used by:
 - `ProjectDataCollectionDevicesProvider.catalogs[].source_attribute_uri`.
 
 The page URI is configured as `selected_devices_page_uri`. The remote
-`sensorsearch_devices` optionset also permits manual additions. A later authoritative
-date-range application can replace membership with the backend-derived set.
+`sensorsearch_devices` optionset also permits manual additions. Selecting a
+configuration initially synchronizes its backend-derived member set; a normal
+configuration refresh preserves the current collection.
 
 ## Device detail pages
 

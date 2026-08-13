@@ -52,7 +52,6 @@ SPDX-License-Identifier: Apache-2.0
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/link" order="2"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/start" order="3"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/end" order="4"/>
-			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/apply-date-range" order="5"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/latitude" order="6"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/longitude" order="7"/>
 			<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/devices" order="8"/>
@@ -112,11 +111,11 @@ SPDX-License-Identifier: Apache-2.0
 	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/start">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>sensorsearch/configurations/start</uri_path>
-		<dc:comment>User-entered input for resolving configuration or mission devices.</dc:comment>
+		<dc:comment>Backend configuration or mission start time.</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"/>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
-		<help lang="en">Enter YYYY-MM-DD hh:mm. The backend synchronization does not overwrite this value.</help>
+		<help lang="en">Filled from the selected backend configuration or mission. Enter manually when no backend record is selected.</help>
 		<text lang="en">Start date and time</text>
 		<widget_type>text</widget_type>
 		<value_type>text</value_type>
@@ -128,37 +127,17 @@ SPDX-License-Identifier: Apache-2.0
 	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/end">
 		<uri_prefix>http://example.com/terms</uri_prefix>
 		<uri_path>sensorsearch/configurations/end</uri_path>
-		<dc:comment>Optional user-entered input for resolving configuration or mission devices.</dc:comment>
+		<dc:comment>Optional backend configuration or mission end time.</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Enter YYYY-MM-DD hh:mm, or leave empty for an open-ended period.</help>
+		<help lang="en">Filled from the selected backend configuration or mission. An empty value means that it is still active.</help>
 		<text lang="en">End date and time</text>
 		<widget_type>text</widget_type>
 		<value_type>text</value_type>
 		<width>6</width>
 		<optionsets/>
 		<conditions/>
-	</question>
-
-	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/apply-date-range">
-		<uri_prefix>http://example.com/terms</uri_prefix>
-		<uri_path>sensorsearch/configurations/apply-date-range</uri_path>
-		<dc:comment>Explicitly rebuilds assignments after the user edits the date inputs.</dc:comment>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en">Yes validates the dates and replaces the assigned devices for this SMS configuration or O2A mission. The plugin resets the value to No.</help>
-		<text lang="en">Apply date range to device assignments</text>
-		<widget_type>yesno</widget_type>
-		<value_type>boolean</value_type>
-		<width>4</width>
-		<optionsets>
-			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
-		</optionsets>
-		<conditions>
-			<condition dc:uri="http://example.com/terms/conditions/sensorsearch/has-backend-configuration"/>
-		</conditions>
 	</question>
 
 	<question dc:uri="http://example.com/terms/questions/sensorsearch/configurations/latitude">
@@ -862,9 +841,6 @@ SPDX-License-Identifier: Apache-2.0
 	</attribute>
 	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>configurations-end-datetime</key><path>configuration-set/configurations-end-datetime</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
-	</attribute>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>apply-date-range</key><path>configuration-set/apply-date-range</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
 	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lat">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix><key>static-location-lat</key><path>configuration-set/static-location-lat</path><dc:comment/><parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>

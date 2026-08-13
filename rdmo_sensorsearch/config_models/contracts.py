@@ -60,8 +60,6 @@ COMMON_HANDLER_SETTINGS = frozenset(
         "base_url",
         "search_attribute_uri",
         "managed_attribute_uris",
-        "period_start_attribute_uri",
-        "period_end_attribute_uri",
     }
 )
 DEVICE_DETAIL_SETTINGS = frozenset(
@@ -89,6 +87,13 @@ CONFIGURATION_MEMBERSHIP_SETTINGS = frozenset(
         "api_link_attribute_uri",
     }
 )
+MEMBERSHIP_FILTER_SETTINGS = frozenset(
+    {
+        "membership_filter_enabled",
+        "membership_filter_start_attribute_uri",
+        "membership_filter_end_attribute_uri",
+    }
+)
 HANDLER_SETTINGS = {
     "O2ARegistryItemHandler": COMMON_HANDLER_SETTINGS
     | DEVICE_DETAIL_SETTINGS
@@ -114,6 +119,7 @@ HANDLER_SETTINGS = {
     },
     "SensorManagementSystemConfigurationHandler": COMMON_HANDLER_SETTINGS
     | CONFIGURATION_MEMBERSHIP_SETTINGS
+    | MEMBERSHIP_FILTER_SETTINGS
     | SMS_MOUNT_LOCATION_SETTINGS
     | {
         "configuration_url",
@@ -169,6 +175,7 @@ BOOLEAN_SETTINGS = frozenset(
         "supports_mount_period_lookup",
         "replace_existing_collections",
         "require_configuration_period",
+        "membership_filter_enabled",
     }
 )
 POSITIVE_INTEGER_SETTINGS = frozenset(

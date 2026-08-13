@@ -31,7 +31,7 @@ def test_configuration_model_exposes_typed_sections_and_read_only_raw_data():
 
     assert config.device_search.minimum_search_length == 3
     assert config.device_search.filter_sms_devices_by_selected_configuration is False
-    assert config.metadata_refresh.actions[1].require_configuration_period is True
+    assert not any(action.require_configuration_period for action in config.metadata_refresh.actions)
     assert config.handlers["SensorManagementSystemConfigurationHandler"].id_prefixes == (
         "gfzcfg",
         "kitcfg",
@@ -132,15 +132,42 @@ def test_sms_provider_requires_routing_and_request_settings():
         PluginConfig.from_mapping(data)
 
 
-def test_configuration_period_attributes_must_be_configured_as_a_pair():
+def test_membership_filter_attributes_must_be_configured_as_a_pair():
     data = _config_data()
-    catalog = data["handlers"]["O2ARegistryMissionHandler"]["catalogs"][0]
-    del catalog["period_end_attribute_uri"]
+    catalog = data["handlers"]["SensorManagementSystemConfigurationHandler"]["catalogs"][0]
+    catalog["membership_filter_enabled"] = True
+    catalog["membership_filter_start_attribute_uri"] = "https://example.com/member-filter-start"
 
     with pytest.raises(
         ConfigValidationError,
-        match=r"handlers\.O2ARegistryMissionHandler\.catalogs\[0\]: "
-        r"period_start_attribute_uri and period_end_attribute_uri must be configured together",
+        match=r"handlers\.SensorManagementSystemConfigurationHandler\.catalogs\[0\]: "
+        r"membership_filter_start_attribute_uri and membership_filter_end_attribute_uri "
+        r"must be configured together",
+    ):
+        PluginConfig.from_mapping(data)
+
+
+def test_membership_filter_attributes_require_explicit_enablement():
+    data = _config_data()
+    catalog = data["handlers"]["SensorManagementSystemConfigurationHandler"]["catalogs"][0]
+    catalog["membership_filter_start_attribute_uri"] = "https://example.com/member-filter-start"
+    catalog["membership_filter_end_attribute_uri"] = "https://example.com/member-filter-end"
+
+    with pytest.raises(
+        ConfigValidationError,
+        match=r"membership filter attribute URIs require membership_filter_enabled = true",
+    ):
+        PluginConfig.from_mapping(data)
+
+
+def test_o2a_membership_filter_settings_are_rejected_until_supported():
+    data = _config_data()
+    catalog = data["handlers"]["O2ARegistryMissionHandler"]["catalogs"][0]
+    catalog["membership_filter_enabled"] = True
+
+    with pytest.raises(
+        ConfigValidationError,
+        match=r"O2ARegistryMissionHandler\.catalogs\[0\]: unknown setting\(s\): membership_filter_enabled",
     ):
         PluginConfig.from_mapping(data)
 

@@ -462,24 +462,6 @@ def test_configuration_period_validation_fails_closed():
     assert "end date must not be earlier" in error
 
 
-def test_configuration_period_workflow_depends_on_the_catalog_trigger():
-    trigger = SimpleNamespace(
-        attribute=SimpleNamespace(uri=configuration_period.APPLY_DATE_RANGE_ATTRIBUTE_URI),
-        elements=[],
-    )
-    nested_questionset = SimpleNamespace(attribute=None, elements=[trigger])
-    catalog = SimpleNamespace(
-        pages=[SimpleNamespace(attribute=None, elements=[nested_questionset])],
-        prefetch_elements=lambda: None,
-    )
-    instance = SimpleNamespace(project=SimpleNamespace(catalog=catalog))
-
-    assert configuration_period.catalog_has_date_range_trigger(instance) is True
-
-    catalog.pages = [SimpleNamespace(attribute=None, elements=[])]
-    assert configuration_period.catalog_has_date_range_trigger(instance) is False
-
-
 def test_sms_configuration_range_selects_latest_mount_and_location_within_range():
     handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={},
@@ -645,8 +627,6 @@ def test_sms_configuration_refresh_can_preserve_the_current_device_set(monkeypat
         base_url="https://sms.example/api",
         selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        period_start_attribute_uri="configuration:start",
-        period_end_attribute_uri="configuration:end",
     )
 
     result = handler.handle(
@@ -655,54 +635,16 @@ def test_sms_configuration_refresh_can_preserve_the_current_device_set(monkeypat
     )
 
     assert result == handler_base.HandlerResult(
-        mapped_values={"configuration:description": "Updated"},
+        mapped_values={
+            "configuration:description": "Updated",
+            "configuration:start": "2020-01-01 00:00",
+            "configuration:end": "2030-01-01 00:00",
+        },
     )
     assert requested_urls == ["https://sms.example/api/configurations/49"]
 
 
-def test_sms_configuration_defers_device_assignments_until_the_period_is_applied(monkeypatch):
-    requested_urls = []
-
-    def fetch_json(url, auth_token=None):
-        requested_urls.append(url)
-        return {"data": {"id": "49", "attributes": {"description": "Configuration"}, "links": {}}}
-
-    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
-    monkeypatch.setattr(
-        sms_configuration_handler_module,
-        "catalog_has_date_range_trigger",
-        lambda instance: True,
-    )
-    monkeypatch.setattr(
-        sms_configuration_handler_module,
-        "read_configuration_period",
-        lambda instance, start_uri, end_uri: (None, "Enter a configuration start date."),
-    )
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
-        attribute_mapping={"data.attributes.description": "configuration:description"},
-        base_url="https://sms.example/api",
-        selected_devices_attribute_uri="selected-devices",
-        selected_devices_page_uri="device-page",
-        period_start_attribute_uri="configuration:start",
-        period_end_attribute_uri="configuration:end",
-    )
-
-    result = handler.handle("49", instance=SimpleNamespace())
-
-    assert result == handler_base.HandlerResult(
-        mapped_values={"configuration:description": "Configuration"},
-        collections=(
-            handler_base.CollectionAssignment(
-                attribute_uri="selected-devices",
-                page_uri="device-page",
-                values=(),
-            ),
-        ),
-    )
-    assert requested_urls == ["https://sms.example/api/configurations/49"]
-
-
-def test_sms_configuration_without_apply_trigger_syncs_immediately_without_a_period(monkeypatch):
+def test_sms_configuration_selection_syncs_immediately_without_a_membership_filter(monkeypatch):
     requested_urls = []
 
     def fetch_json(url, auth_token=None):
@@ -721,25 +663,14 @@ def test_sms_configuration_without_apply_trigger_syncs_immediately_without_a_per
         raise AssertionError(f"Unexpected request: {url}")
 
     monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
-    monkeypatch.setattr(
-        sms_configuration_handler_module,
-        "read_configuration_period",
-        lambda *args: (_ for _ in ()).throw(AssertionError("The period must not be read")),
-    )
     handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
         attribute_mapping={"data.attributes.description": "configuration:description"},
         base_url="https://sms.example/api",
         selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        period_start_attribute_uri="configuration:start",
-        period_end_attribute_uri="configuration:end",
     )
-    catalog = SimpleNamespace(pages=[], prefetch_elements=lambda: None)
 
-    result = handler.handle(
-        "49",
-        instance=SimpleNamespace(project=SimpleNamespace(catalog=catalog)),
-    )
+    result = handler.handle("49")
 
     assert result == handler_base.HandlerResult(
         mapped_values={"configuration:description": "Configuration"},
@@ -754,7 +685,7 @@ def test_sms_configuration_without_apply_trigger_syncs_immediately_without_a_per
     assert any("/device-mount-actions?" in url for url in requested_urls)
 
 
-def test_sms_apply_date_range_fails_closed_when_the_period_is_invalid(monkeypatch):
+def test_sms_membership_filter_fails_closed_when_the_period_is_invalid(monkeypatch):
     monkeypatch.setattr(
         sms_configuration_handler_module,
         "fetch_json",
@@ -770,8 +701,9 @@ def test_sms_apply_date_range_fails_closed_when_the_period_is_invalid(monkeypatc
         base_url="https://sms.example/api",
         selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        period_start_attribute_uri="configuration:start",
-        period_end_attribute_uri="configuration:end",
+        membership_filter_enabled=True,
+        membership_filter_start_attribute_uri="configuration:member-filter-start",
+        membership_filter_end_attribute_uri="configuration:member-filter-end",
     )
 
     result = handler.handle(
@@ -781,6 +713,28 @@ def test_sms_apply_date_range_fails_closed_when_the_period_is_invalid(monkeypatc
     )
 
     assert result == {"errors": ["The end date must not be earlier than the start date."]}
+
+
+def test_sms_membership_filter_action_requires_explicit_enablement(monkeypatch):
+    monkeypatch.setattr(
+        sms_configuration_handler_module,
+        "fetch_json",
+        lambda url, auth_token=None: {"data": {"id": "49", "attributes": {}, "links": {}}},
+    )
+    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
+        attribute_mapping={},
+        base_url="https://sms.example/api",
+        selected_devices_attribute_uri="selected-devices",
+        selected_devices_page_uri="device-page",
+    )
+
+    result = handler.handle(
+        "49",
+        instance=SimpleNamespace(),
+        context=handler_base.HandlerExecutionContext(require_configuration_period=True),
+    )
+
+    assert result == {"errors": ["SMS membership filtering is not enabled for this catalog."]}
 
 
 def test_o2a_mission_collection_fetches_every_page(monkeypatch):
@@ -866,8 +820,6 @@ def test_o2a_mission_refresh_can_preserve_the_current_device_set(monkeypatch):
         },
         selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        period_start_attribute_uri="configuration:start",
-        period_end_attribute_uri="configuration:end",
     )
 
     result = handler.handle(
@@ -876,53 +828,16 @@ def test_o2a_mission_refresh_can_preserve_the_current_device_set(monkeypatch):
     )
 
     assert result == handler_base.HandlerResult(
-        mapped_values={"configuration:name": "Updated mission"},
+        mapped_values={
+            "configuration:name": "Updated mission",
+            "configuration:start": "2020-01-01 00:00",
+            "configuration:end": "2030-01-01 00:00",
+        },
     )
     assert requested_urls == ["https://registry.o2a-data.de/rest/v2/missions/30"]
 
 
-def test_o2a_mission_defers_device_assignments_until_the_period_is_applied(monkeypatch):
-    requested_urls = []
-
-    def fetch_json(url):
-        requested_urls.append(url)
-        return {"name": "Mission"}
-
-    monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
-    monkeypatch.setattr(
-        o2a_mission_handler_module,
-        "catalog_has_date_range_trigger",
-        lambda instance: True,
-    )
-    monkeypatch.setattr(
-        o2a_mission_handler_module,
-        "read_configuration_period",
-        lambda instance, start_uri, end_uri: (None, "Enter a mission start date."),
-    )
-    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
-        attribute_mapping={"name": "configuration:name"},
-        selected_devices_attribute_uri="selected-devices",
-        selected_devices_page_uri="device-page",
-        period_start_attribute_uri="configuration:start",
-        period_end_attribute_uri="configuration:end",
-    )
-
-    result = handler.handle("30", instance=SimpleNamespace())
-
-    assert result == handler_base.HandlerResult(
-        mapped_values={"configuration:name": "Mission"},
-        collections=(
-            handler_base.CollectionAssignment(
-                attribute_uri="selected-devices",
-                page_uri="device-page",
-                values=(),
-            ),
-        ),
-    )
-    assert requested_urls == ["https://registry.o2a-data.de/rest/v2/missions/30"]
-
-
-def test_o2a_mission_without_apply_trigger_syncs_immediately_without_a_period(monkeypatch):
+def test_o2a_mission_selection_syncs_immediately(monkeypatch):
     requested_urls = []
 
     def fetch_json(url):
@@ -934,24 +849,13 @@ def test_o2a_mission_without_apply_trigger_syncs_immediately_without_a_period(mo
         raise AssertionError(f"Unexpected request: {url}")
 
     monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
-    monkeypatch.setattr(
-        o2a_mission_handler_module,
-        "read_configuration_period",
-        lambda *args: (_ for _ in ()).throw(AssertionError("The period must not be read")),
-    )
     handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={"name": "configuration:name"},
         selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        period_start_attribute_uri="configuration:start",
-        period_end_attribute_uri="configuration:end",
     )
-    catalog = SimpleNamespace(pages=[], prefetch_elements=lambda: None)
 
-    result = handler.handle(
-        "30",
-        instance=SimpleNamespace(project=SimpleNamespace(catalog=catalog)),
-    )
+    result = handler.handle("30")
 
     assert result == handler_base.HandlerResult(
         mapped_values={"configuration:name": "Mission"},
@@ -966,16 +870,14 @@ def test_o2a_mission_without_apply_trigger_syncs_immediately_without_a_period(mo
     assert any("/missions/30/items" in url for url in requested_urls)
 
 
-def test_o2a_mission_applies_the_user_period_to_its_devices(monkeypatch):
-    period, error = configuration_period.parse_configuration_period(
-        "2026-07-01 10:00",
-        "2026-07-02 12:00",
-    )
-    assert error is None
-
+def test_o2a_mission_items_inherit_the_backend_mission_period(monkeypatch):
     def fetch_json(url):
         if url.endswith("/missions/30"):
-            return {"name": "Mission"}
+            return {
+                "name": "Mission",
+                "startDate": "2026-07-01T10:00:00Z",
+                "endDate": "2026-07-02T12:00:00Z",
+            }
         if "/missions/30/items" in url:
             return {"records": [{"id": "1", "itemId": 4152}]}
         if url.endswith("/items/4152"):
@@ -983,17 +885,32 @@ def test_o2a_mission_applies_the_user_period_to_its_devices(monkeypatch):
         raise AssertionError(f"Unexpected request: {url}")
 
     monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
+        attribute_mapping={
+            "startDate": "configuration:start",
+            "endDate": "configuration:end",
+        },
+        selected_devices_attribute_uri="selected-devices",
+        selected_devices_page_uri="device-page",
+    )
+
+    result = handler.handle("30")
+
+    member = result.collections[0].values[0]
+    assert member["instrument_start"] == "2026-07-01 10:00"
+    assert member["instrument_end"] == "2026-07-02 12:00"
+
+
+def test_o2a_mission_rejects_historical_membership_filtering(monkeypatch):
     monkeypatch.setattr(
         o2a_mission_handler_module,
-        "read_configuration_period",
-        lambda instance, start_uri, end_uri: (period, None),
+        "fetch_json",
+        lambda url: {"name": "Mission"},
     )
     handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={},
         selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
-        period_start_attribute_uri="configuration:start",
-        period_end_attribute_uri="configuration:end",
     )
 
     result = handler.handle(
@@ -1002,35 +919,23 @@ def test_o2a_mission_applies_the_user_period_to_its_devices(monkeypatch):
         context=handler_base.HandlerExecutionContext(require_configuration_period=True),
     )
 
-    assert result.collections[0].values[0]["instrument_start"] == "2026-07-01 10:00"
-    assert result.collections[0].values[0]["instrument_end"] == "2026-07-02 12:00"
+    assert result == {"errors": ["O2A Registry does not support historical mission-membership filtering."]}
 
 
-def test_o2a_mission_exposes_the_user_period_for_preserved_devices(monkeypatch):
-    period, error = configuration_period.parse_configuration_period(
-        "2026-07-01 10:00",
-        "2026-07-02 12:00",
-    )
-    assert error is None
-    monkeypatch.setattr(
-        o2a_mission_handler_module,
-        "read_configuration_period",
-        lambda instance, start_uri, end_uri: (period, None),
-    )
-    monkeypatch.setattr(
-        o2a_mission_handler_module,
-        "catalog_has_date_range_trigger",
-        lambda instance: True,
-    )
+def test_o2a_mission_exposes_the_backend_period_for_preserved_devices():
     handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
-        attribute_mapping={},
-        period_start_attribute_uri="configuration:start",
-        period_end_attribute_uri="configuration:end",
+        attribute_mapping={
+            "startDate": "configuration:start",
+            "endDate": "configuration:end",
+        },
     )
 
     period = handler.get_member_device_period(
-        SimpleNamespace(),
-        {},
+        None,
+        {
+            "configuration:start": "2026-07-01 10:00",
+            "configuration:end": "2026-07-02 12:00",
+        },
     )
 
     assert period == ("2026-07-01 10:00", "2026-07-02 12:00")

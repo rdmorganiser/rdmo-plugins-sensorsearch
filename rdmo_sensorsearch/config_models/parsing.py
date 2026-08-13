@@ -47,8 +47,8 @@ from rdmo_sensorsearch.config_models.validation import (
     string_sequence,
     table_sequence,
     validate_id_prefix,
+    validate_membership_filter_settings,
     validate_membership_settings,
-    validate_period_pair,
     validate_prefix_contract,
     validate_provider_name,
 )
@@ -361,13 +361,13 @@ def _parse_handlers(value: Any) -> dict[str, HandlerConfig]:
         if not catalogs and not default_search_uri:
             raise ConfigValidationError(path, "at least one catalog or a default search_attribute_uri is required")
         if not catalogs:
-            validate_period_pair(defaults, f"{path}.defaults")
+            validate_membership_filter_settings(defaults, f"{path}.defaults")
             validate_membership_settings(defaults, f"{path}.defaults")
         for index, catalog in enumerate(catalogs):
             if not catalog.search_attribute_uri and not default_search_uri:
                 raise ConfigValidationError(f"{path}.catalogs[{index}]", "search_attribute_uri is required")
             merged_catalog = merge(defaults, catalog.settings)
-            validate_period_pair(merged_catalog, f"{path}.catalogs[{index}]")
+            validate_membership_filter_settings(merged_catalog, f"{path}.catalogs[{index}]")
             validate_membership_settings(merged_catalog, f"{path}.catalogs[{index}]")
         if handler_name.startswith("SensorManagementSystem") and not backends:
             raise ConfigValidationError(path, "at least one backend is required for an SMS handler")

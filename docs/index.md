@@ -25,7 +25,7 @@ The plugin supports four connected workflows:
   sections and how each setting relates to catalog elements.
 - [Earth Sensor catalog map](earth-sensor-catalog.md) lists the concrete page,
   question, attribute, option-set, provider, and condition URIs from
-  `xml/earth-sensor+refresh.xml`.
+  `xml/earth-sensor+original.xml`.
 - [Operations and limitations](operations-and-limitations.md) describes runtime
   behavior, authentication, performance, and current backend limitations.
 - [Developer architecture](developer-architecture.md) describes module
@@ -33,11 +33,14 @@ The plugin supports four connected workflows:
 - [SMS location and configuration-period remediation plan](sms-location-and-configuration-period-plan.md)
   records the reviewer findings and the planned resolver, diagnostics,
   configuration, testing, feedback, and catalog-period changes.
+- [Configuration-period baseline and optional membership filtering](configuration-period-reassessment.md)
+  supersedes the earlier period recommendation and treats the current Earth
+  Sensor catalog as the compatibility baseline.
 
 The repository-level [`sensorsearch.toml`](../sensorsearch.toml) is the
 authoritative deployment configuration and is packaged into the plugin wheel.
 The Earth Sensor catalog used by this guide is
-[`xml/earth-sensor+refresh.xml`](../xml/earth-sensor+refresh.xml).
+[`xml/earth-sensor+original.xml`](../xml/earth-sensor+original.xml).
 
 ## The central editing rule
 

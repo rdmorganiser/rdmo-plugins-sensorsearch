@@ -13,10 +13,6 @@ from rdmo_sensorsearch.handlers.base import (
     HandlerExecutionContext,
     HandlerResult,
 )
-from rdmo_sensorsearch.handlers.configuration_period import (
-    catalog_has_date_range_trigger,
-    read_configuration_period,
-)
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping, parse_datetime
 from rdmo_sensorsearch.naming import configuration_short_label
 from rdmo_sensorsearch.services.device_details import SelectedDevice
@@ -67,13 +63,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         if not mission_data:
             return {"errors": [f"O2A mission request for ID {backend_id} returned no mission data."]}
 
-        period_start_attribute_uri = getattr(self, "period_start_attribute_uri", None)
-        period_end_attribute_uri = getattr(self, "period_end_attribute_uri", None)
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, mission_data)
-        if period_start_attribute_uri:
-            mapped_values.pop(period_start_attribute_uri, None)
-        if period_end_attribute_uri:
-            mapped_values.pop(period_end_attribute_uri, None)
         self._set_mission_links(mapped_values, backend_id)
         self._normalize_datetimes(mapped_values)
 
@@ -85,39 +75,8 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         if not selected_devices_attribute_uri or preserve_existing_collections:
             return HandlerResult(mapped_values=mapped_values)
 
-        use_configuration_period = require_configuration_period or (
-            instance is not None and catalog_has_date_range_trigger(instance)
-        )
-        period_inputs_are_configured = instance is not None and bool(period_start_attribute_uri and period_end_attribute_uri)
-
-        configuration_period = None
-        period_error = None
-        if use_configuration_period and not period_inputs_are_configured:
-            period_error = "The configuration or mission date-range inputs are not configured for this catalog."
-        elif use_configuration_period:
-            configuration_period, period_error = read_configuration_period(
-                instance,
-                period_start_attribute_uri,
-                period_end_attribute_uri,
-            )
-        if require_configuration_period and period_error:
-            return {"errors": [period_error]}
-        if use_configuration_period and period_error:
-            logger.info(
-                "Deferring O2A mission device assignments for mission %s until its date range is applied: %s",
-                backend_id,
-                period_error,
-            )
-            return HandlerResult(
-                mapped_values=mapped_values,
-                collections=(
-                    CollectionAssignment(
-                        attribute_uri=selected_devices_attribute_uri,
-                        page_uri=self.selected_devices_page_uri,
-                        values=(),
-                    ),
-                ),
-            )
+        if require_configuration_period:
+            return {"errors": ["O2A Registry does not support historical mission-membership filtering."]}
 
         mission_items_data = self._fetch_mission_items(backend_id)
         if isinstance(mission_items_data, dict) and "errors" in mission_items_data:
@@ -128,7 +87,10 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
             )
             return mission_items_data
 
-        mission_period = configuration_period.formatted if configuration_period is not None else (None, None)
+        mission_period = (
+            self._format_timepoint(mission_data.get(self.mission_start_date_path)),
+            self._format_timepoint(mission_data.get(self.mission_end_date_path)),
+        )
         selected_device_values, member_errors = self._build_selected_device_values(
             mission_id=backend_id,
             mission_data=mission_data,
@@ -210,18 +172,14 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
             if formatted is not None:
                 mapped_values[attribute_uri] = formatted
 
-    def get_member_device_period(self, instance, _mapped_values=None) -> tuple[str | None, str | None]:
-        period_start_attribute_uri = getattr(self, "period_start_attribute_uri", None)
-        period_end_attribute_uri = getattr(self, "period_end_attribute_uri", None)
-        if (
-            instance is None
-            or not period_start_attribute_uri
-            or not period_end_attribute_uri
-            or not catalog_has_date_range_trigger(instance)
-        ):
-            return None, None
-        configuration_period, error = read_configuration_period(instance, period_start_attribute_uri, period_end_attribute_uri)
-        return configuration_period.formatted if configuration_period is not None and error is None else (None, None)
+    def get_member_device_period(self, _instance, mapped_values=None) -> tuple[str | None, str | None]:
+        mapped_values = mapped_values or {}
+        start_attribute_uri = self.attribute_mapping.get(self.mission_start_date_path)
+        end_attribute_uri = self.attribute_mapping.get(self.mission_end_date_path)
+        return (
+            mapped_values.get(start_attribute_uri) if start_attribute_uri else None,
+            mapped_values.get(end_attribute_uri) if end_attribute_uri else None,
+        )
 
     def _build_selected_device_values(
         self,

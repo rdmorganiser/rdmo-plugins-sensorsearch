@@ -131,47 +131,65 @@ def test_configuration_handlers_define_the_shared_tab_collection_attribute():
         assert handlers["O2ARegistryMissionHandler"]["defaults"]["configuration_collection_attribute_uri"] == expected_uri
 
 
-def test_configuration_date_range_inputs_are_enabled_for_sms_and_o2a():
+def test_configuration_period_is_backend_owned_for_sms_and_o2a():
     expected_start_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
     expected_end_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
+    source_paths = {
+        "SensorManagementSystemConfigurationHandler": (
+            "data.attributes.start_date",
+            "data.attributes.end_date",
+        ),
+        "O2ARegistryMissionHandler": ("startDate", "endDate"),
+    }
 
     for path in CONFIG_PATHS:
         config = _load_config(path)
         handlers = config["handlers"]
 
-        for handler_name in (
-            "SensorManagementSystemConfigurationHandler",
-            "O2ARegistryMissionHandler",
-        ):
-            catalog_config = handlers[handler_name]["catalogs"][0]
+        for handler_name, (start_path, end_path) in source_paths.items():
             defaults = handlers[handler_name]["defaults"]
 
-            assert catalog_config["period_start_attribute_uri"] == expected_start_uri
-            assert catalog_config["period_end_attribute_uri"] == expected_end_uri
-            assert expected_start_uri not in defaults["managed_attribute_uris"]
-            assert expected_end_uri not in defaults["managed_attribute_uris"]
-            assert expected_start_uri not in defaults["attribute_mapping"].values()
-            assert expected_end_uri not in defaults["attribute_mapping"].values()
+            assert expected_start_uri in defaults["managed_attribute_uris"]
+            assert expected_end_uri in defaults["managed_attribute_uris"]
+            assert defaults["attribute_mapping"][start_path] == expected_start_uri
+            assert defaults["attribute_mapping"][end_path] == expected_end_uri
 
 
-def test_apply_date_range_action_is_explicit_and_replaces_collections():
-    expected_inputs = {
-        "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
-        "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime",
-    }
-
+def test_baseline_has_no_membership_filter_action():
     for path in CONFIG_PATHS:
         config = _load_config(path)
-        action = next(
-            action
+        assert not any(action.get("require_configuration_period", False) for action in config["MetadataRefresh"]["actions"])
+        assert not any(
+            action["trigger_attribute_uri"].endswith(("/apply-date-range", "/apply-member-filter"))
             for action in config["MetadataRefresh"]["actions"]
-            if action["trigger_attribute_uri"].endswith("/apply-date-range")
         )
 
-        assert action["kind"] == "configuration"
-        assert action["replace_existing_collections"] is True
-        assert action["require_configuration_period"] is True
-        assert set(action["input_attribute_uris"]) == expected_inputs
+
+def test_sms_membership_filter_can_be_enabled_as_an_explicit_extension():
+    config = deepcopy(_load_config(CONFIG_PATHS[0]))
+    start_uri = "https://example.com/member-filter-start"
+    end_uri = "https://example.com/member-filter-end"
+    catalog = config["handlers"]["SensorManagementSystemConfigurationHandler"]["catalogs"][0]
+    catalog.update(
+        membership_filter_enabled=True,
+        membership_filter_start_attribute_uri=start_uri,
+        membership_filter_end_attribute_uri=end_uri,
+    )
+    config["MetadataRefresh"]["actions"].append(
+        {
+            "kind": "configuration",
+            "trigger_attribute_uri": "https://example.com/apply-member-filter",
+            "replace_existing_collections": True,
+            "require_configuration_period": True,
+            "input_attribute_uris": [start_uri, end_uri],
+        }
+    )
+
+    parsed = PluginConfig.from_mapping(config)
+
+    sms_catalog = parsed.handlers["SensorManagementSystemConfigurationHandler"].catalogs[0]
+    assert sms_catalog.settings["membership_filter_enabled"] is True
+    assert parsed.metadata_refresh.actions[-1].require_configuration_period is True
 
 
 def test_sms_handlers_share_mount_location_resolution_settings():

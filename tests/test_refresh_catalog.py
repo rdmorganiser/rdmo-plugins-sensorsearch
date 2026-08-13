@@ -2,11 +2,10 @@ from collections import Counter
 from pathlib import Path
 from xml.etree import ElementTree
 
-CATALOG_PATH = Path(__file__).parents[1] / "xml" / "earth-sensor+refresh.xml"
+CATALOG_PATH = Path(__file__).parents[1] / "xml" / "earth-sensor+original.xml"
 DC_URI = "{http://purl.org/dc/elements/1.1/}uri"
 INTERVIEW_PAGE_REFRESH_OPTIONSET_URI = "https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"
 REFRESH_TRIGGER_QUESTION_URIS = {
-    "https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply",
     "https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh",
     "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh",
     "https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/trigger",
@@ -16,7 +15,6 @@ LOCAL_REFRESH_CONDITIONS = {
     "https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration": {
         "source": "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search",
         "questions": {
-            "https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply",
             "https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh",
             "https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-status",
             "https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-message",
@@ -112,15 +110,17 @@ def test_local_refresh_questions_require_a_backend_source_in_their_scope():
         assert questions == expected["questions"]
 
 
-def test_configuration_period_is_user_input_with_an_explicit_apply_action():
+def test_configuration_period_is_the_backend_period_without_an_apply_action():
     root = _catalog_root()
     questions = {question.attrib[DC_URI]: question for question in root.findall("question")}
 
     start = questions["https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/start"]
     end = questions["https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/end"]
-    apply = questions["https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply"]
-
     assert start.findtext("is_optional") == "False"
     assert end.findtext("is_optional") == "True"
-    assert apply.find("attribute").attrib[DC_URI].endswith("/apply-date-range")
-    assert apply.findtext("widget_type") == "yesno"
+    assert "https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period/apply" not in questions
+    assert not any(
+        question.find("attribute").attrib[DC_URI].endswith("/apply-date-range")
+        for question in questions.values()
+        if question.find("attribute") is not None
+    )

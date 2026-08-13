@@ -55,13 +55,24 @@ def validate_prefix_contract(config: PluginConfig) -> None:
             )
 
 
-def validate_period_pair(settings: Mapping[str, Any], path: str) -> None:
-    start_uri = settings.get("period_start_attribute_uri")
-    end_uri = settings.get("period_end_attribute_uri")
+def validate_membership_filter_settings(settings: Mapping[str, Any], path: str) -> None:
+    enabled = settings.get("membership_filter_enabled", False)
+    start_uri = settings.get("membership_filter_start_attribute_uri")
+    end_uri = settings.get("membership_filter_end_attribute_uri")
     if bool(start_uri) != bool(end_uri):
         raise ConfigValidationError(
             path,
-            "period_start_attribute_uri and period_end_attribute_uri must be configured together",
+            "membership_filter_start_attribute_uri and membership_filter_end_attribute_uri must be configured together",
+        )
+    if enabled and not start_uri:
+        raise ConfigValidationError(
+            path,
+            "membership_filter_enabled requires membership filter start and end attribute URIs",
+        )
+    if start_uri and not enabled:
+        raise ConfigValidationError(
+            path,
+            "membership filter attribute URIs require membership_filter_enabled = true",
         )
 
 

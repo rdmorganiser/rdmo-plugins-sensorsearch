@@ -57,29 +57,22 @@ Authentication failures are reported as refresh errors where feedback fields
 exist. Do not put access tokens into catalog XML or TOML configuration committed
 to the repository.
 
-## Date-range behavior
+## Configuration periods and optional membership filtering
 
-The configuration start and end fields are user inputs. Backend configuration
-or mission dates do not overwrite them. Free-text editing does not trigger
-synchronization; the explicit apply question does.
+In the original Earth Sensor catalog, question set 2.013 is backend-owned when
+a configuration or mission is selected. SMS `start_date`/`end_date` or O2A
+`startDate`/`endDate` populate the two answers. Selection synchronizes all
+current backend members; the catalog contains no apply-filter action.
 
-The presence of the exact Earth Sensor apply trigger attribute
-`https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range` in
-the current catalog determines the behavior:
+O2A mission items inherit the backend mission period for their synchronized
+instrument start and end answers. The Registry does not expose a historical
+mount model.
 
-| Catalog contains apply trigger | Selection behavior |
-| --- | --- |
-| Yes | Metadata is synchronized, while period-dependent device assignment is deferred to **Apply date range**. |
-| No | All configuration or mission members are synchronized immediately without interview date filtering. |
-
-For SMS, mount actions are tested for overlap with the requested period, so a
-device can be included only when it was mounted during that range. An omitted
-end is open-ended.
-
-For O2A missions, the Registry API does not provide an equivalent historical
-mount-action model. Mission items remain the source of membership. The
-interview period is propagated to the synchronized mission-item deployment
-periods, but it cannot reconstruct changing physical mounts in the way SMS can.
+SMS retains code for an optional, separately modeled membership filter. It is
+inactive in the deployment TOML. A future catalog must add distinct filter
+start/end attributes and an apply trigger, and its SMS mapping must explicitly
+set `membership_filter_enabled = true`. Only that explicit action filters mount
+actions by period overlap; ordinary configuration selection never defers.
 
 ## SMS location, height, and depth
 
@@ -128,13 +121,12 @@ exceptional installations.
 
 Fields in `attribute_mapping` are written when a backend response supplies a
 value. Fields in `managed_attribute_uris` are explicitly owned by the handler
-and may be cleared when no current value exists. Do not mark user-entered
-interpretations, planning dates, or comments as managed.
+and may be cleared when no current value exists. Question set 2.013 is managed
+for selected backend configurations and missions. Do not mark interpretations,
+planning dates, comments, or future membership-filter inputs as managed.
 
-Normal configuration refresh preserves existing device collections. Applying
-the date range uses authoritative replacement of configuration membership.
-Catalog editors should explain this difference if users can manually add
-devices to the selected set.
+Normal configuration refresh preserves existing device collections. Selecting
+a backend configuration initially creates its backend-derived membership.
 
 Generated data-collection variable rows are tracked separately from manual
 rows. Cleanup removes generated rows that are no longer supported by selected
@@ -145,12 +137,11 @@ devices, while manually entered rows are retained.
 Remote timeouts, invalid records, expired authentication, and partial backend
 data can produce incomplete synchronization. Where possible, include status,
 message, and timestamp questions next to each refresh control. The user can
-correct an invalid date range or authentication problem and invoke the same
-action again.
+correct an authentication or backend problem and invoke the same action again.
 
-An invalid explicit period does not apply a new device assignment. Typical
-validation failures are a missing start, an unparsable datetime, or an end
-before the start.
+For a future SMS membership-filter extension, an invalid explicit period does
+not apply a new device assignment. Typical validation failures are a missing
+start, an unparsable datetime, or an end before the start.
 
 Before changing mappings in a production catalog:
 
@@ -158,7 +149,7 @@ Before changing mappings in a production catalog:
 2. test against a separate RDMO project with representative configurations;
 3. include devices with no mount history, open-ended mounts, and nested platform
    mounts;
-4. verify both catalogs with and without the apply trigger if both are supported;
+4. verify the baseline and any separately approved membership-filter extension;
 5. test repeated refreshes to confirm user-owned answers remain unchanged.
 
 ## Logging and diagnosis

@@ -69,8 +69,8 @@ def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
     input_attribute_uris = {
         attribute_uri
         for attribute_uri in (
-            getattr(handler, "period_start_attribute_uri", None),
-            getattr(handler, "period_end_attribute_uri", None),
+            getattr(handler, "membership_filter_start_attribute_uri", None),
+            getattr(handler, "membership_filter_end_attribute_uri", None),
         )
         if attribute_uri
     }

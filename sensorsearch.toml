@@ -43,19 +43,6 @@ message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-s
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
 
 [[MetadataRefresh.actions]]
-kind = "configuration"
-trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/apply-date-range"
-status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-status"
-message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-message"
-timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-timestamp"
-replace_existing_collections = true
-require_configuration_period = true
-input_attribute_uris = [
-    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
-    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime",
-]
-
-[[MetadataRefresh.actions]]
 kind = "device"
 trigger_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"
 status_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"
@@ -265,17 +252,17 @@ managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/static-location-lon",
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description",
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime",
 ]
 [handlers.SensorManagementSystemConfigurationHandler.defaults.attribute_mapping]
 "data.attributes.description" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description"
+"data.attributes.start_date" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
+"data.attributes.end_date" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
 
 # Earth-Sensor configuration catalog mapping
 [[handlers.SensorManagementSystemConfigurationHandler.catalogs]]
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
-# Only materialize mounted devices overlapping with the configured period
-# from the interview. A missing end date is treated as open-ended.
-period_start_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
-period_end_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
 
 
 [handlers.O2ARegistryMissionHandler]
@@ -301,14 +288,16 @@ frontend_link_template = "{base_url_origin}/missions/{id}"
 managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description",
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime",
+    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime",
 ]
 [handlers.O2ARegistryMissionHandler.defaults.attribute_mapping]
 "description" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description"
+"startDate" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
+"endDate" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
 
 [[handlers.O2ARegistryMissionHandler.catalogs]]
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
-period_start_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-datetime"
-period_end_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
 
 
 [handlers.GIPPInstrumentHandler]
