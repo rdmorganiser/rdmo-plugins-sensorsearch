@@ -25,7 +25,7 @@ The plugin supports four connected workflows:
   sections and how each setting relates to catalog elements.
 - [Earth Sensor catalog map](earth-sensor-catalog.md) lists the concrete page,
   question, attribute, option-set, provider, and condition URIs from
-  `xml/earth-sensor+original.xml`.
+  `testing/catalogs/earth-sensor+original.xml`.
 - [Operations and limitations](operations-and-limitations.md) describes runtime
   behavior, authentication, performance, and current backend limitations.
 - [Developer architecture](developer-architecture.md) describes module
@@ -40,11 +40,11 @@ The plugin supports four connected workflows:
 The repository-level [`sensorsearch.toml`](../sensorsearch.toml) is the
 authoritative deployment configuration and is packaged into the plugin wheel.
 The Earth Sensor catalog used by this guide is
-[`xml/earth-sensor+original.xml`](../xml/earth-sensor+original.xml).
+[`testing/catalogs/earth-sensor+original.xml`](../testing/catalogs/earth-sensor+original.xml).
 The independently namespaced development mirror is
-[`xml/example_catalog_sensorsearch.xml`](../xml/example_catalog_sensorsearch.xml);
+[`testing/catalogs/example_catalog_sensorsearch.xml`](../testing/catalogs/example_catalog_sensorsearch.xml);
 its test-only profile is
-[`tests/fixtures/sensorsearch-plugin-dev.toml`](../tests/fixtures/sensorsearch-plugin-dev.toml).
+[`testing/fixtures/sensorsearch-plugin-dev.toml`](../testing/fixtures/sensorsearch-plugin-dev.toml).
 
 ## The central editing rule
 

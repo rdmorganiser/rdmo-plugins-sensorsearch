@@ -2,10 +2,11 @@
 
 import sys
 from importlib import import_module
-from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
 import pytest
+
+from testing.paths import REPOSITORY_ROOT
 
 
 def _install_host_application_stubs():
@@ -43,7 +44,7 @@ def _install_host_application_stubs():
         "rdmo_sensorsearch.providers",
         ModuleType("rdmo_sensorsearch.providers"),
     )
-    sensorsearch_providers.__path__ = [str(Path(__file__).parents[1] / "rdmo_sensorsearch" / "providers")]
+    sensorsearch_providers.__path__ = [str(REPOSITORY_ROOT / "rdmo_sensorsearch" / "providers")]
 
 
 _install_host_application_stubs()

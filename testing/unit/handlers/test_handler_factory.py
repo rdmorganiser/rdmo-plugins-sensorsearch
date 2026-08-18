@@ -1,11 +1,11 @@
 import importlib
 import sys
-from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest.mock import patch
 
 from rdmo_sensorsearch.config_models import PluginConfig
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
+from testing.paths import PRODUCTION_CONFIG_PATH
 
 try:
     import tomllib
@@ -13,7 +13,7 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 
-CONFIG_PATH = Path(__file__).parents[1] / "sensorsearch.toml"
+CONFIG_PATH = PRODUCTION_CONFIG_PATH
 
 
 class FactoryHandler(BackendRecordHandler):

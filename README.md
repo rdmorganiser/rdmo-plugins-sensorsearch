@@ -33,7 +33,7 @@ The [`docs`](docs/index.md) directory documents how RDMO catalog elements and
 [configuration reference](docs/configuration-reference.md) for TOML settings,
 and consult the [Earth Sensor URI map](docs/earth-sensor-catalog.md) to find the
 exact pages, questions, attributes, optionsets, and conditions in
-`xml/earth-sensor+original.xml`. Runtime costs and backend constraints are
+`testing/catalogs/earth-sensor+original.xml`. Runtime costs and backend constraints are
 covered in [operations and limitations](docs/operations-and-limitations.md).
 The [developer architecture](docs/developer-architecture.md) explains the
 internal service, handler, and RDMO signal boundaries.
@@ -58,7 +58,7 @@ For development, install the test dependencies and run pytest with:
 
 ```bash
 pip install -e ".[dev]"
-pytest
+pytest -c testing/pytest-unit.ini
 ```
 
 The focused Django signal tests use RDMO's real models and transaction hooks in
@@ -108,10 +108,10 @@ for data collection instrument selection questions. The no-op `Interview Page
 Refresh` provider can be attached to metadata refresh trigger questions so
 RDMO refetches the current interview page after saving the trigger.
 
-The importable [`xml/example_catalog_sensorsearch.xml`](xml/example_catalog_sensorsearch.xml)
+The importable [`testing/catalogs/example_catalog_sensorsearch.xml`](testing/catalogs/example_catalog_sensorsearch.xml)
 is a complete, independently namespaced (`example.com` / `plugin-dev`) mirror
 of the Earth Sensor catalog. Its matching test/example-only profile lives at
-[`tests/fixtures/sensorsearch-plugin-dev.toml`](tests/fixtures/sensorsearch-plugin-dev.toml);
+[`testing/fixtures/sensorsearch-plugin-dev.toml`](testing/fixtures/sensorsearch-plugin-dev.toml);
 do not copy those entries into the packaged production configuration.
 
 ## Configuration

@@ -2,8 +2,9 @@
 
 import sys
 from importlib import import_module
-from pathlib import Path
 from types import ModuleType
+
+from testing.paths import REPOSITORY_ROOT
 
 
 def _install_rdmo_provider_stub():
@@ -15,7 +16,7 @@ def _install_rdmo_provider_stub():
     rdmo.options = rdmo_options
 
     providers = sys.modules.setdefault("rdmo_sensorsearch.providers", ModuleType("rdmo_sensorsearch.providers"))
-    providers.__path__ = [str(Path(__file__).parents[1] / "rdmo_sensorsearch" / "providers")]
+    providers.__path__ = [str(REPOSITORY_ROOT / "rdmo_sensorsearch" / "providers")]
 
 
 _install_rdmo_provider_stub()

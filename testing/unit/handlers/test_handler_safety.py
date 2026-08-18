@@ -2,10 +2,11 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
 from importlib import import_module
-from pathlib import Path
 from threading import Lock
 from time import sleep
 from types import ModuleType, SimpleNamespace
+
+from testing.paths import REPOSITORY_ROOT
 
 
 def _install_host_application_stubs():
@@ -29,7 +30,7 @@ def _install_host_application_stubs():
     rdmo.projects = rdmo_projects
 
     workflows = sys.modules.setdefault("rdmo_sensorsearch.workflows", ModuleType("rdmo_sensorsearch.workflows"))
-    workflows.__path__ = [str(Path(__file__).parents[1] / "rdmo_sensorsearch" / "workflows")]
+    workflows.__path__ = [str(REPOSITORY_ROOT / "rdmo_sensorsearch" / "workflows")]
     device_details = ModuleType("rdmo_sensorsearch.workflows.device_details")
 
     device_details.reconcile_device_details_from_selected_devices = lambda **kwargs: None
@@ -40,12 +41,13 @@ def _install_host_application_stubs():
     sys.modules.setdefault("rdmo_sensorsearch.project_values", project_values)
 
     handlers = sys.modules.setdefault("rdmo_sensorsearch.handlers", ModuleType("rdmo_sensorsearch.handlers"))
-    handlers.__path__ = [str(Path(__file__).parents[1] / "rdmo_sensorsearch" / "handlers")]
+    handlers.__path__ = [str(REPOSITORY_ROOT / "rdmo_sensorsearch" / "handlers")]
 
 
 _install_host_application_stubs()
 
 client = import_module("rdmo_sensorsearch.client")
+config_module = import_module("rdmo_sensorsearch.config")
 handler_base = import_module("rdmo_sensorsearch.handlers.base")
 catalog_registry_module = import_module("rdmo_sensorsearch.handlers.catalog_registry")
 configuration_period = import_module("rdmo_sensorsearch.handlers.configuration_period")
@@ -54,6 +56,13 @@ o2a_mission_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_missi
 sms_device_handler_module = import_module("rdmo_sensorsearch.handlers.sms_device")
 sms_configuration_handler_module = import_module("rdmo_sensorsearch.handlers.sms_configuration")
 sms_configuration_membership_module = import_module("rdmo_sensorsearch.handlers.sms_configuration_membership")
+
+# Other unit-test modules can import Django before this isolated module is
+# collected. Keep these tests independent from Django's global LazySettings in
+# either collection order.
+settings = SimpleNamespace()
+client.settings = settings
+config_module.settings = settings
 
 
 class FakeResponse:

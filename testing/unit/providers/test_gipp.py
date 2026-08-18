@@ -2,8 +2,9 @@
 
 import sys
 from importlib import import_module
-from pathlib import Path
 from types import ModuleType, SimpleNamespace
+
+from testing.paths import REPOSITORY_ROOT
 
 
 def _install_host_application_stubs():
@@ -21,7 +22,7 @@ def _install_host_application_stubs():
     rdmo.options = rdmo_options
 
     sensorsearch_providers = ModuleType("rdmo_sensorsearch.providers")
-    sensorsearch_providers.__path__ = [str(Path(__file__).parents[1] / "rdmo_sensorsearch" / "providers")]
+    sensorsearch_providers.__path__ = [str(REPOSITORY_ROOT / "rdmo_sensorsearch" / "providers")]
 
     sys.modules.setdefault("django", django)
     sys.modules.setdefault("django.conf", django_conf)

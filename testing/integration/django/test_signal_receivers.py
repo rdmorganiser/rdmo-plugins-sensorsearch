@@ -3,10 +3,19 @@ from unittest.mock import Mock
 
 import pytest
 
+from rdmo.core.imports import ImportElementFields
+from rdmo.core.xml import parse_xml_to_elements
+from rdmo.domain.models import Attribute
+from rdmo.management.imports import import_elements
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.signals import receivers
 from rdmo_sensorsearch.workflows import value_events
+from testing.paths import CATALOGS_ROOT
+
+MIRROR_CATALOG_PATH = CATALOGS_ROOT / "example_catalog_sensorsearch.xml"
+PLUGIN_DEV_ATTRIBUTE_URI = "https://example.com/terms/domain/plugin-dev"
+PROJECT_LEAD_ATTRIBUTE_URI = "https://example.com/terms/domain/plugin-dev/project-lead"
 
 
 def _value(**overrides):
@@ -89,3 +98,15 @@ def test_workflow_failures_are_isolated(caplog):
 
     assert completed == ["configuration-tab"]
     assert "Sensorsearch save stage backend-value failed for value=17 project=23" in caplog.text
+
+
+@pytest.mark.django_db
+def test_mirror_catalog_imports_with_plugin_dev_attribute_root():
+    elements, errors = parse_xml_to_elements(MIRROR_CATALOG_PATH)
+
+    assert errors == []
+    imported_elements = import_elements(elements)
+    assert all(not element[ImportElementFields.ERRORS] for element in imported_elements)
+
+    plugin_dev_root = Attribute.objects.get(uri=PLUGIN_DEV_ATTRIBUTE_URI)
+    assert Attribute.objects.get(uri=PROJECT_LEAD_ATTRIBUTE_URI).parent == plugin_dev_root

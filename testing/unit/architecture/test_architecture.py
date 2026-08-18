@@ -3,7 +3,9 @@ from pathlib import Path
 
 import pytest
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[1] / "rdmo_sensorsearch"
+from testing.paths import REPOSITORY_ROOT
+
+PACKAGE_ROOT = REPOSITORY_ROOT / "rdmo_sensorsearch"
 
 
 def _signal_imports(path: Path) -> list[str]:

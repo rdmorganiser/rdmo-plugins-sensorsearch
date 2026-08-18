@@ -1,6 +1,5 @@
 import sys
 from copy import deepcopy
-from pathlib import Path
 from urllib.parse import urlsplit
 from xml.etree import ElementTree
 
@@ -9,6 +8,7 @@ import pytest
 from rdmo_sensorsearch.config import catalog_matches, merge_config
 from rdmo_sensorsearch.config_models import PluginConfig
 from rdmo_sensorsearch.services.device_detail_profile import get_device_detail_settings
+from testing.paths import CATALOGS_ROOT, FIXTURES_ROOT, PRODUCTION_CONFIG_PATH, REPOSITORY_ROOT
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -16,13 +16,12 @@ else:
     import tomli as tomllib
 
 
-ROOT = Path(__file__).parents[1]
-CONFIG_PATHS = (ROOT / "sensorsearch.toml",)
-MIRROR_CONFIG_PATH = ROOT / "tests" / "fixtures" / "sensorsearch-plugin-dev.toml"
-MIRROR_CATALOG_PATH = ROOT / "xml" / "example_catalog_sensorsearch.xml"
+CONFIG_PATHS = (PRODUCTION_CONFIG_PATH,)
+MIRROR_CONFIG_PATH = FIXTURES_ROOT / "sensorsearch-plugin-dev.toml"
+MIRROR_CATALOG_PATH = CATALOGS_ROOT / "example_catalog_sensorsearch.xml"
 MIRROR_CATALOG_URI = "https://example.com/terms/questions/plugin-dev/sensorsearch"
 EARTH_SENSOR_CATALOG_URI = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature-v1"
-ORIGINAL_EARTH_SENSOR_CATALOG_PATH = ROOT / "xml" / "earth-sensor+original.xml"
+ORIGINAL_EARTH_SENSOR_CATALOG_PATH = CATALOGS_ROOT / "earth-sensor+original.xml"
 DC_URI = "{http://purl.org/dc/elements/1.1/}uri"
 
 
@@ -91,7 +90,7 @@ def test_plugin_development_catalog_has_an_isolated_complete_test_profile():
 
 
 def test_wheel_build_packages_the_authoritative_deployment_configuration():
-    build_config = _load_config(ROOT / "pyproject.toml")
+    build_config = _load_config(REPOSITORY_ROOT / "pyproject.toml")
 
     assert build_config["tool"]["hatch"]["build"]["targets"]["wheel"]["force-include"] == {
         "sensorsearch.toml": "rdmo_sensorsearch/sensorsearch.toml"

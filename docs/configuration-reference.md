@@ -57,11 +57,11 @@ Only the repository-level `sensorsearch.toml` is maintained. The wheel build
 copies that exact file to `rdmo_sensorsearch/sensorsearch.toml`; do not maintain
 a second package-local source copy.
 
-`tests/fixtures/sensorsearch-plugin-dev.toml` is deliberately different: it is
+`testing/fixtures/sensorsearch-plugin-dev.toml` is deliberately different: it is
 a complete, generated **test/example-only** profile for the independently
-namespaced `xml/example_catalog_sensorsearch.xml`. It is not packaged or loaded
+namespaced `testing/catalogs/example_catalog_sensorsearch.xml`. It is not packaged or loaded
 by production. Regenerate both assets with
-`python scripts/generate_plugin_dev_assets.py` after changing the original
+`python testing/tools/generate_plugin_dev_assets.py` after changing the original
 catalog or the production baseline.
 
 ## Provider aggregators

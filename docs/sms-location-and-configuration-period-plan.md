@@ -27,7 +27,7 @@ membership synchronization.
 
 The findings are based on:
 
-- [`xml/earth-sensor+original.xml`](../xml/earth-sensor+original.xml), the
+- [`testing/catalogs/earth-sensor+original.xml`](../testing/catalogs/earth-sensor+original.xml), the
   catalog used for the review;
 - `rdmo.log-20260811`, a local diagnostic log that is intentionally not part of
   the documentation or package;
@@ -45,7 +45,7 @@ The catalog maps the three questions to the expected attributes:
 | 2.54, site name | `https://rdmo.nfdi4earth.de/terms/questions/instrument_location-name` | `https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location` |
 
 The definitions can be found in
-[`xml/earth-sensor+original.xml`](../xml/earth-sensor+original.xml) around the
+[`testing/catalogs/earth-sensor+original.xml`](../testing/catalogs/earth-sensor+original.xml) around the
 questions `instrument_location_above-sealevel`,
 `instrument_location_above-ground`, and `instrument_location-name`. The
 inconsistent answers therefore do not originate from incorrect question-to-
@@ -417,7 +417,7 @@ https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-start-da
 https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime
 ```
 
-In [`earth-sensor+original.xml`](../xml/earth-sensor+original.xml), the start
+In [`earth-sensor+original.xml`](../testing/catalogs/earth-sensor+original.xml), the start
 question has `is_optional=False`, while the end question has
 `is_optional=True`.
 

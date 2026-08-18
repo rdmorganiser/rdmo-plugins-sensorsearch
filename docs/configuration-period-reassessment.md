@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 This document supersedes the configuration-period recommendation in
 [`sms-location-and-configuration-period-plan.md`](sms-location-and-configuration-period-plan.md).
 It records the reassessment made after adopting
-[`xml/earth-sensor+original.xml`](../xml/earth-sensor+original.xml) as the
+[`testing/catalogs/earth-sensor+original.xml`](../testing/catalogs/earth-sensor+original.xml) as the
 authoritative Earth Sensor catalog.
 
 ## Baseline catalog meaning

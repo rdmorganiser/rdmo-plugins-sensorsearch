@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 [Documentation index](index.md) · [Catalog editor guide](catalog-editor-guide.md) · [Configuration reference](configuration-reference.md) · [Operations and limitations](operations-and-limitations.md)
 
 This map describes the concrete elements in
-[`xml/earth-sensor+original.xml`](../xml/earth-sensor+original.xml). Copy the URIs
+[`testing/catalogs/earth-sensor+original.xml`](../testing/catalogs/earth-sensor+original.xml). Copy the URIs
 exactly when searching the RDMO editor or the XML. The catalog URI is:
 
 ```text

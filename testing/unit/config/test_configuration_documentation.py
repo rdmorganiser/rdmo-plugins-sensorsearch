@@ -1,15 +1,14 @@
-from pathlib import Path
-
 from rdmo_sensorsearch.config_models.contracts import (
     CATALOG_SCOPE_KEYS,
     DEVICE_DETAIL_SYNC_SETTINGS,
     HANDLER_SETTINGS,
     PROVIDER_SETTINGS,
 )
+from testing.paths import REPOSITORY_ROOT
 
 
 def test_configuration_reference_mentions_every_validated_toml_setting():
-    reference = (Path(__file__).parents[1] / "docs" / "configuration-reference.md").read_text(encoding="utf-8")
+    reference = (REPOSITORY_ROOT / "docs" / "configuration-reference.md").read_text(encoding="utf-8")
     settings = (
         set(CATALOG_SCOPE_KEYS)
         | set(DEVICE_DETAIL_SYNC_SETTINGS)

@@ -22,6 +22,13 @@ Please check the instructions there carefully!</help>
       <section dc:uri="https://example.com/terms/questions/plugin-dev/data_collection" order="5" />
     </sections>
   </catalog>
+  <attribute dc:uri="https://example.com/terms/domain/plugin-dev">
+    <uri_prefix>https://example.com/terms</uri_prefix>
+    <key>plugin-dev</key>
+    <path>plugin-dev</path>
+    <dc:comment />
+    <parent />
+  </attribute>
   <section dc:uri="https://example.com/terms/questions/plugin-dev/intro">
     <uri_prefix>https://example.com/terms</uri_prefix>
     <uri_path>plugin-dev/intro</uri_path>
@@ -177,7 +184,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>project-timerange</key>
     <path>plugin-dev/project-timerange</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <question dc:uri="https://example.com/terms/questions/plugin-dev/general/project-duration/project_start">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -211,7 +218,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>project-start-date</key>
     <path>plugin-dev/project-start-date</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <question dc:uri="https://example.com/terms/questions/plugin-dev/general/project-duration/project_end">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -245,7 +252,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>project-end-date</key>
     <path>plugin-dev/project-end-date</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <questionset dc:uri="https://example.com/terms/questions/plugin-dev/general/research-area">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -314,7 +321,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>area-type</key>
     <path>plugin-dev/area-type</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <option dc:uri="https://example.com/terms/options/plugin-dev/area-type/singe-location">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -362,7 +369,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>research-area-coords-ul-lat</key>
     <path>plugin-dev/research-area-coords-ul-lat</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <question dc:uri="https://example.com/terms/questions/plugin-dev/general/research-area/single-location/lon">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -396,7 +403,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>research-area-coords-ul-lon</key>
     <path>plugin-dev/research-area-coords-ul-lon</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <questionset dc:uri="https://example.com/terms/questions/plugin-dev/general/research-area/upper-left">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -549,7 +556,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>research-area-coords-lr-lat</key>
     <path>plugin-dev/research-area-coords-lr-lat</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <question dc:uri="https://example.com/terms/questions/plugin-dev/general/research-area/lower-right/lon">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -583,7 +590,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>research-area-coords-lr-lon</key>
     <path>plugin-dev/research-area-coords-lr-lon</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <question dc:uri="https://example.com/terms/questions/plugin-dev/general/research-area/area-type">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -648,7 +655,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>project-lead</key>
     <path>plugin-dev/project-lead</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <questionset dc:uri="https://example.com/terms/questions/plugin-dev/general/project-lead/contact-form">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -856,7 +863,7 @@ In case of questions, suggestions or any other issues discovered, please use the
     <key>project</key>
     <path>plugin-dev/project</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <question dc:uri="https://example.com/terms/questions/plugin-dev/campaign_keyword">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -997,7 +1004,7 @@ max. 200 words
     <key>project</key>
     <path>plugin-dev/project</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <page dc:uri="https://example.com/terms/questions/plugin-dev/organisation">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -1045,7 +1052,7 @@ max. 200 words
     <key>dm-lead</key>
     <path>plugin-dev/dm-lead</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <questionset dc:uri="https://example.com/terms/questions/plugin-dev/general/dm-lead/contact-form">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -1289,7 +1296,7 @@ max. 200 words
     <key>dmp</key>
     <path>plugin-dev/dmp</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <section dc:uri="https://example.com/terms/questions/plugin-dev/instruments">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -1343,7 +1350,7 @@ In case you did not use campaigns or missions in your sensor management system j
     <path>plugin-dev/configuration-set</path>
     <dc:comment>this field shall be checked by API for configuration / mission name. Users might enter here the given name of their configuration.
 Question: which parent attribute would we need here?</dc:comment>
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <questionset dc:uri="https://example.com/terms/questions/plugin-dev/configurations-general/static-location">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -1922,7 +1929,7 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
     <key>moses</key>
     <path>plugin-dev/moses</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <questionset dc:uri="https://example.com/terms/questions/plugin-dev/instruments_general/time-range">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -1989,7 +1996,7 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
     <key>dataset</key>
     <path>plugin-dev/dataset</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <question dc:uri="https://example.com/terms/questions/plugin-dev/instruments_general/time-range/end">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -3050,7 +3057,7 @@ If you used the configuration/mission pipeline, individual device locations are 
     <key>metadata-refresh</key>
     <path>plugin-dev/metadata-refresh</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <question dc:uri="https://example.com/terms/questions/plugin-dev/metadata-refresh/configurations/status">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -3371,7 +3378,7 @@ Please provide a description for each of your data collection types. A data coll
     <key>dc-lead</key>
     <path>plugin-dev/dc-lead</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <questionset dc:uri="https://example.com/terms/questions/plugin-dev/dc-lead/contact-form">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -3791,7 +3798,7 @@ This might be the naming of your data collection and improves the findability of
     <key>dc-temporal-resolution</key>
     <path>plugin-dev/dc-temporal-resolution</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <question dc:uri="https://example.com/terms/questions/plugin-dev/dc_details/temporal-resolution/value">
     <uri_prefix>https://example.com/terms</uri_prefix>
@@ -5563,7 +5570,7 @@ This might be the naming of your data collection and improves the findability of
     <key>metadata-lead</key>
     <path>plugin-dev/metadata-lead</path>
     <dc:comment />
-    <parent />
+    <parent dc:uri="https://example.com/terms/domain/plugin-dev" />
   </attribute>
   <questionset dc:uri="https://example.com/terms/questions/plugin-dev/metadata/lead/same-as-dc/contact-form">
     <uri_prefix>https://example.com/terms</uri_prefix>
