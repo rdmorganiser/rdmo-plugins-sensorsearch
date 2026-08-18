@@ -6,14 +6,8 @@ from rdmo.projects.models import Value
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler, HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
-from rdmo_sensorsearch.handlers.sms_device_enrichment import (
-    INSTRUMENT_END_ATTRIBUTE_URI,
-    INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI,
-    INSTRUMENT_START_ATTRIBUTE_URI,
-    SITE_NAME_ATTRIBUTE_URI,
-    SURFACE_OFFSET_Z_ATTRIBUTE_URI,
-)
 from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location, select_latest_device_mount_period
+from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
 from rdmo_sensorsearch.services.device_details import parse_external_id
 from rdmo_sensorsearch.services.refresh import RefreshNotice
 
@@ -21,6 +15,11 @@ logger = logging.getLogger(__name__)
 
 DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
+INSTRUMENT_START_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_start_attribute_uri
+INSTRUMENT_END_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_end_attribute_uri
+INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_location_amsl_attribute_uri
+SURFACE_OFFSET_Z_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.surface_offset_z_attribute_uri
+SITE_NAME_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.site_name_attribute_uri
 
 
 class SensorManagementSystemDeviceHandler(BackendRecordHandler):
@@ -48,7 +47,6 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]=10000"
     )
     backend_link_marker = "/backend/api/v1/"
-    device_link_attribute_uri = DEVICE_LINK_ATTRIBUTE_URI
     uses_auth_token = True
 
     def handle(
@@ -93,7 +91,12 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             logger.debug("Empty data returned for ID %s", backend_id)
 
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, data)
-        self._set_frontend_device_link(mapped_values, data)
+        detail_settings = (context.device_detail_settings if context is not None else None) or DEFAULT_DEVICE_DETAIL_SETTINGS
+        self._set_frontend_device_link(
+            mapped_values,
+            data,
+            getattr(self, "device_link_attribute_uri", detail_settings.device_link_attribute_uri),
+        )
         notices = []
         mount_metadata_errors = self._set_mount_metadata(
             mapped_values,
@@ -101,18 +104,18 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             instance,
             auth_token=auth_token,
             notice_sink=notices,
+            detail_settings=detail_settings,
         )
         if mount_metadata_errors:
             return {"errors": mount_metadata_errors}
         return HandlerResult(mapped_values=mapped_values, notices=tuple(notices))
 
-    def _set_frontend_device_link(self, mapped_values: dict, device_data: dict) -> None:
+    def _set_frontend_device_link(self, mapped_values: dict, device_data: dict, device_link_attribute_uri: str) -> None:
         raw_self_link = device_data.get("data", {}).get("links", {}).get("self")
         if not isinstance(raw_self_link, str) or not raw_self_link:
             return
 
         api_link = urljoin(self._base_origin(), raw_self_link)
-        device_link_attribute_uri = getattr(self, "device_link_attribute_uri", DEVICE_LINK_ATTRIBUTE_URI)
         if device_link_attribute_uri:
             mapped_values[device_link_attribute_uri] = self._to_frontend_link(api_link)
 
@@ -133,6 +136,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         instance=None,
         auth_token: str | None = None,
         notice_sink: list[RefreshNotice] | None = None,
+        detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
     ) -> list[str]:
         configuration_external_id = self._resolve_configuration_external_id(instance)
         if not configuration_external_id:
@@ -157,8 +161,8 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             return []
 
         start_value, end_value = mount_period.formatted()
-        mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = start_value
-        mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = end_value or ""
+        mapped_values[detail_settings.instrument_start_attribute_uri] = start_value
+        mapped_values[detail_settings.instrument_end_attribute_uri] = end_value or ""
 
         configuration_device_actions, errors = self._fetch_configuration_actions(
             self.configuration_device_mount_actions_url,
@@ -195,13 +199,13 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         )
         if notice_sink is not None:
             notice_sink.extend(location.notices)
-        mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = (
+        mapped_values[detail_settings.instrument_location_amsl_attribute_uri] = (
             location.station_height_amsl if location.station_height_amsl is not None else ""
         )
-        mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = (
+        mapped_values[detail_settings.surface_offset_z_attribute_uri] = (
             location.vertical_surface_offset if location.vertical_surface_offset is not None else ""
         )
-        mapped_values[SITE_NAME_ATTRIBUTE_URI] = location.site_name if location.site_name is not None else ""
+        mapped_values[detail_settings.site_name_attribute_uri] = location.site_name if location.site_name is not None else ""
         return []
 
     def _resolve_configuration_external_id(self, instance) -> str | None:
@@ -212,7 +216,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             Value.objects.filter(
                 project=instance.project,
                 snapshot=None,
-                attribute__uri=DEVICE_COLLECTION_ATTRIBUTE_URI,
+                attribute__uri=getattr(self, "device_collection_attribute_uri", DEVICE_COLLECTION_ATTRIBUTE_URI),
                 set_prefix=instance.set_prefix or "",
                 set_index=instance.set_index,
                 set_collection=True,

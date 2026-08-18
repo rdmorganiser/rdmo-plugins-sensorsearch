@@ -15,7 +15,7 @@ from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBindingError,
     scope_from_value,
 )
-from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
+from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ def update_scalar_value_across_scopes(
     if extra_scopes:
         scopes = _unique_scopes(scopes + extra_scopes, (_normalize_set_prefix(instance.set_prefix), instance.set_index))
 
-    with transaction.atomic(), mute_value_post_save():
+    with transaction.atomic(), mute_value_sync():
         if _is_blank_scalar(value):
             deleted_total = 0
             for set_prefix, set_index in scopes:
@@ -165,7 +165,7 @@ def replace_scalar_value_in_scopes(
     normalized_scopes_to_set = list(dict.fromkeys(scopes_to_set))
     normalized_scopes_to_clear = list(dict.fromkeys(scopes_to_clear or []))
 
-    with transaction.atomic(), mute_value_post_save():
+    with transaction.atomic(), mute_value_sync():
         for set_prefix, set_index in normalized_scopes_to_clear:
             deleted, _ = _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).delete()
             if deleted:
@@ -246,7 +246,7 @@ def apply_mapped_values(instance, mapped_values: dict):
     if not mapped_values:
         return
 
-    with transaction.atomic(), mute_value_post_save():
+    with transaction.atomic(), mute_value_sync():
         scope_cache: dict[int, list[tuple[str, int]]] = {}
         for attribute_uri, value in mapped_values.items():
             try:
@@ -415,7 +415,7 @@ def reconcile_handler_result(
     )
 
     if result.collections:
-        with transaction.atomic(), mute_value_post_save():
+        with transaction.atomic(), mute_value_sync():
             for collection in result.collections:
                 _update_collection_assignment(instance, collection)
 

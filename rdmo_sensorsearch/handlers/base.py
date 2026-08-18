@@ -29,6 +29,7 @@ class HandlerResult:
 class HandlerExecutionContext:
     preserve_existing_collections: bool = False
     require_configuration_period: bool = False
+    device_detail_settings: Any | None = None
 
 
 def deduplicate_collection_values(values: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...]:

@@ -1,3 +1,5 @@
+"""Synchronize committed RDMO values with configured metadata backends."""
+
 import logging
 from dataclasses import replace
 
@@ -10,16 +12,13 @@ from rdmo_sensorsearch.handlers.catalog_registry import (
     get_handler_bindings_for_catalog,
     handler_bindings_by_catalog,
 )
-from rdmo_sensorsearch.handlers.sms_device_enrichment import (
-    INSTRUMENT_END_ATTRIBUTE_URI,
-    INSTRUMENT_START_ATTRIBUTE_URI,
-)
 from rdmo_sensorsearch.naming import canonical_device_label
 from rdmo_sensorsearch.persistence.collection_binding import CollectionBinding, CollectionBindingError, CollectionScope
 from rdmo_sensorsearch.persistence.value_reconciliation import (
     reconcile_handler_result,
     replace_scalar_value_in_scopes,
 )
+from rdmo_sensorsearch.services.device_detail_profile import get_device_detail_settings
 from rdmo_sensorsearch.services.refresh import (
     RefreshError,
     RefreshResult,
@@ -61,9 +60,13 @@ def _device_nested_questionset_scope(instance) -> tuple[str, int]:
 
 
 def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
+    detail_settings = get_device_detail_settings(instance.project.catalog.uri)
     scoped_attribute_uris = {
         attribute_uri
-        for attribute_uri in (INSTRUMENT_START_ATTRIBUTE_URI, INSTRUMENT_END_ATTRIBUTE_URI)
+        for attribute_uri in (
+            detail_settings.instrument_start_attribute_uri,
+            detail_settings.instrument_end_attribute_uri,
+        )
         if attribute_uri in handler.managed_attribute_uris or attribute_uri in result.mapped_values
     }
     input_attribute_uris = {
@@ -177,6 +180,7 @@ def refresh_value_from_backend(
     context = HandlerExecutionContext(
         preserve_existing_collections=preserve_existing_collections,
         require_configuration_period=require_configuration_period,
+        device_detail_settings=get_device_detail_settings(catalog.uri),
     )
     try:
         if getattr(binding.handler, "uses_auth_token", False):

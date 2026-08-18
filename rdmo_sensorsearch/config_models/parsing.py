@@ -8,6 +8,7 @@ from rdmo_sensorsearch.config_models.contracts import (
     BOOLEAN_SETTINGS,
     CATALOG_SCOPE_KEYS,
     CONFIGURATION_PROVIDER_NAMES,
+    DEVICE_DETAIL_SYNC_SETTINGS,
     DEVICE_PROVIDER_NAMES,
     HANDLER_SETTINGS,
     NON_NEGATIVE_INTEGER_SETTINGS,
@@ -20,6 +21,8 @@ from rdmo_sensorsearch.config_models.models import (
     CatalogScopeConfig,
     DataCollectionSyncCatalogConfig,
     DataCollectionVariableSyncConfig,
+    DeviceDetailSyncCatalogConfig,
+    DeviceDetailSyncConfig,
     HandlerCatalogConfig,
     HandlerConfig,
     MetadataRefreshActionConfig,
@@ -79,6 +82,7 @@ def parse_plugin_config(data: Mapping[str, Any]) -> PluginConfig:
         "ProjectDataCollectionDevicesProvider",
     )
     data_collection_variable_sync = _parse_data_collection_sync(root.get("DataCollectionVariableSync", {}))
+    device_detail_sync = _parse_device_detail_sync(root.get("DeviceDetailSync", {}))
     metadata_refresh = _parse_metadata_refresh(root.get("MetadataRefresh", {}))
     handlers = _parse_handlers(root.get("handlers", {}))
 
@@ -88,6 +92,7 @@ def parse_plugin_config(data: Mapping[str, Any]) -> PluginConfig:
         project_configuration_devices=project_configuration_devices,
         project_data_collection_devices=project_data_collection_devices,
         data_collection_variable_sync=data_collection_variable_sync,
+        device_detail_sync=device_detail_sync,
         metadata_refresh=metadata_refresh,
         handlers=MappingProxyType(handlers),
         raw=freeze(root),
@@ -198,6 +203,25 @@ def _parse_data_collection_sync(value: Any) -> DataCollectionVariableSyncConfig:
         settings = {key: nonempty_string(entry[key], f"{entry_path}.{key}") for key in setting_keys if key in entry}
         catalogs.append(DataCollectionSyncCatalogConfig(scope=scope, settings=freeze(settings)))
     return DataCollectionVariableSyncConfig(catalogs=tuple(catalogs))
+
+
+def _parse_device_detail_sync(value: Any) -> DeviceDetailSyncConfig:
+    path = "DeviceDetailSync"
+    data = require_mapping(value, path)
+    reject_unknown_keys(data, {"catalogs"}, path)
+    setting_keys = DEVICE_DETAIL_SYNC_SETTINGS
+    catalogs = []
+    for index, entry in enumerate(table_sequence(data.get("catalogs", ()), f"{path}.catalogs")):
+        entry_path = f"{path}.catalogs[{index}]"
+        reject_unknown_keys(entry, CATALOG_SCOPE_KEYS | setting_keys, entry_path)
+        settings = {key: nonempty_string(entry.get(key), f"{entry_path}.{key}") for key in setting_keys}
+        catalogs.append(
+            DeviceDetailSyncCatalogConfig(
+                scope=_parse_catalog_scope(entry, entry_path),
+                settings=freeze(settings),
+            )
+        )
+    return DeviceDetailSyncConfig(catalogs=tuple(catalogs))
 
 
 def _parse_metadata_refresh(value: Any) -> MetadataRefreshConfig:

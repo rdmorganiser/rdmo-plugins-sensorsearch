@@ -7,6 +7,7 @@ TOP_LEVEL_SECTIONS = frozenset(
         "ProjectConfigurationDevicesProvider",
         "ProjectDataCollectionDevicesProvider",
         "DataCollectionVariableSync",
+        "DeviceDetailSync",
         "MetadataRefresh",
         "handlers",
     }
@@ -69,6 +70,21 @@ DEVICE_DETAIL_SETTINGS = frozenset(
         "device_link_attribute_uri",
         "supports_mount_location_lookup",
         "supports_mount_period_lookup",
+    }
+)
+DEVICE_DETAIL_SYNC_SETTINGS = frozenset(
+    {
+        "device_details_page_uri",
+        "device_optional_info_page_uri",
+        "configuration_collection_attribute_uri",
+        "device_link_attribute_uri",
+        "usage_technology_attribute_uri",
+        "instrument_start_attribute_uri",
+        "instrument_end_attribute_uri",
+        "instrument_location_amsl_attribute_uri",
+        "surface_offset_z_attribute_uri",
+        "site_name_attribute_uri",
+        "serial_number_attribute_uri",
     }
 )
 SMS_MOUNT_LOCATION_SETTINGS = frozenset(

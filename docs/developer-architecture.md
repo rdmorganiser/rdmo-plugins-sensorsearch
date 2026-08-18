@@ -112,14 +112,23 @@ list, and handler collection results. It uses
 collection QuestionSets and to calculate their RDMO value scopes.
 
 `services/synchronization_context.py` owns the `ContextVar` that temporarily
-mutes recursive value post-save handling. It is safe to nest the context
-manager, and the previous state is restored even when a persistence operation
-raises an exception. Persistence modules and workflow orchestrators may use
-this context; they must not implement separate process-global mute flags.
+mutes recursive value save/delete synchronization. It is safe to nest the
+context manager, and the previous state is restored even when a persistence
+operation raises an exception. Persistence modules and workflow orchestrators
+may use this context; they must not implement separate process-global mute
+flags.
 
 Modules under `signals/` should represent event receivers and transaction
 scheduling. Reusable workflows, collection layout, value mutation, and
 context-state helpers do not belong there.
+
+`signals/receivers.py` registers one `post_save` and one `post_delete` adapter
+for RDMO `Value`. Save events ignore Django's raw fixture-loading mode and pass
+only the value ID into one post-commit callback; the workflow then reloads the
+committed row. Delete events pass an immutable field snapshot because the row
+no longer exists after commit. `workflows/value_events.py` routes each event
+through the applicable synchronization concerns in a stable order. An
+unexpected failure is logged per concern and does not suppress later concerns.
 
 Configured handler bindings are owned by `handlers/catalog_registry.py`.
 Signals, handlers, and workflows use that registry directly; lower-level
@@ -156,8 +165,9 @@ them without depending on signal registration or Django save hooks.
 ## Current refactoring boundary
 
 Device planning, bounded metadata fetching, SMS mount enrichment, device-block
-persistence, device-detail orchestration, and data-collection variable
-reconciliation have been extracted from the signal package. The SMS
+persistence, backend-value synchronization, metadata refresh,
+configuration-tab updates, device-detail orchestration, and data-collection
+variable reconciliation have been extracted from the signal package. The SMS
 configuration handler delegates pagination and membership resolution to focused
 handler components. Signal receivers retain event adaptation and transaction
 scheduling. Shared handler registration, refresh result types, collection

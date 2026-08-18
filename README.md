@@ -33,7 +33,7 @@ The [`docs`](docs/index.md) directory documents how RDMO catalog elements and
 [configuration reference](docs/configuration-reference.md) for TOML settings,
 and consult the [Earth Sensor URI map](docs/earth-sensor-catalog.md) to find the
 exact pages, questions, attributes, optionsets, and conditions in
-`xml/earth-sensor+refresh.xml`. Runtime costs and backend constraints are
+`xml/earth-sensor+original.xml`. Runtime costs and backend constraints are
 covered in [operations and limitations](docs/operations-and-limitations.md).
 The [developer architecture](docs/developer-architecture.md) explains the
 internal service, handler, and RDMO signal boundaries.
@@ -59,6 +59,15 @@ For development, install the test dependencies and run pytest with:
 ```bash
 pip install -e ".[dev]"
 pytest
+```
+
+The focused Django signal tests use RDMO's real models and transaction hooks in
+a separate test environment so the lightweight unit suite can continue to run
+without a host installation:
+
+```bash
+pip install -e ".[django-test]"
+pytest -c testing/pytest-django.ini
 ```
 
 Add the plugin to the `OPTIONSET_PROVIDERS` in `config/settings/local.py`:
@@ -100,10 +109,10 @@ Refresh` provider can be attached to metadata refresh trigger questions so
 RDMO refetches the current interview page after saving the trigger.
 
 The importable [`xml/example_catalog_sensorsearch.xml`](xml/example_catalog_sensorsearch.xml)
-combines all plugin workflows in one compact catalog: configuration and device
-search, automatic device detail materialization, both project-local optionset
-providers, individual and bulk metadata refresh actions, interview page
-refetching, and data collection parameter synchronization.
+is a complete, independently namespaced (`example.com` / `plugin-dev`) mirror
+of the Earth Sensor catalog. Its matching test/example-only profile lives at
+[`tests/fixtures/sensorsearch-plugin-dev.toml`](tests/fixtures/sensorsearch-plugin-dev.toml);
+do not copy those entries into the packaged production configuration.
 
 ## Configuration
 

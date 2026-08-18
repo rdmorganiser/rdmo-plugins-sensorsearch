@@ -57,6 +57,13 @@ Only the repository-level `sensorsearch.toml` is maintained. The wheel build
 copies that exact file to `rdmo_sensorsearch/sensorsearch.toml`; do not maintain
 a second package-local source copy.
 
+`tests/fixtures/sensorsearch-plugin-dev.toml` is deliberately different: it is
+a complete, generated **test/example-only** profile for the independently
+namespaced `xml/example_catalog_sensorsearch.xml`. It is not packaged or loaded
+by production. Regenerate both assets with
+`python scripts/generate_plugin_dev_assets.py` after changing the original
+catalog or the production baseline.
+
 ## Provider aggregators
 
 ### `[DeviceSearchProvider]`
@@ -133,6 +140,23 @@ Sensor defaults are used:
 The concrete Earth Sensor elements are listed in the
 [catalog map](earth-sensor-catalog.md#data-collection-device-and-variable-sync).
 
+## `[DeviceDetailSync]`
+
+`[[DeviceDetailSync.catalogs]]` controls the URIs that identify repeated device
+detail blocks and SMS mount metadata. It uses `catalog_uri`/`catalog_uris` like
+other scoped tables; an exact match wins over a wildcard entry. The packaged
+profile is the Earth Sensor baseline, whose concrete elements are in the
+[catalog map](earth-sensor-catalog.md). All fields are required per profile:
+
+| Setting | Purpose |
+| --- | --- |
+| `device_details_page_uri`, `device_optional_info_page_uri` | Pages whose values make up a device detail collection and its optional detail page. |
+| `configuration_collection_attribute_uri` | Repeated configuration root used to associate device blocks with their configuration. |
+| `device_link_attribute_uri`, `usage_technology_attribute_uri` | Fields used to detect stale device metadata. |
+| `instrument_start_attribute_uri`, `instrument_end_attribute_uri` | Scoped deployment-period fields. |
+| `instrument_location_amsl_attribute_uri`, `surface_offset_z_attribute_uri`, `site_name_attribute_uri` | SMS-derived mount-location fields. |
+| `serial_number_attribute_uri` | Device serial-number field used when selecting an SMS mount action. |
+
 ## `[MetadataRefresh]`
 
 `configuration_search_attribute_uri` and `device_search_attribute_uri` tell
@@ -185,6 +209,11 @@ managed_attribute_uris = ["https://example.org/attributes/output"]
 default. Omitting `catalog_uri` and `catalog_uris` creates a wildcard catalog
 mapping. Prefer explicit scope when two catalogs use different attribute
 semantics.
+
+The optional `backend_defaults` table is merged into every entry in the
+handler's `backends` array. Likewise, provider `provider_defaults` is merged
+into its `providers` entries. Both avoid repeating shared backend URL or label
+settings while still allowing a later entry to override a value.
 
 Common handler settings are:
 
@@ -276,3 +305,41 @@ handler and project-local provider mapping.
 
 When two matching catalog entries could apply, avoid relying on file order.
 Give each catalog one unambiguous mapping for a handler.
+
+## Complete setting index
+
+This index is exhaustive for the validated TOML schema. `catalog_uri` and
+`catalog_uris` are allowed on every `catalogs` entry. `attribute_mapping` is a
+table of JMESPath source expressions to RDMO attribute URI strings. URL fields
+are templates where documented placeholders such as `{base_url}` and `{id}`
+are substituted by the handler.
+
+| Settings | Accepted by | Purpose |
+| --- | --- | --- |
+| `id_prefix`, `text_prefix`, `base_url`, `max_hits` | provider entries | Stable option ID namespace, displayed backend label, backend origin, and optional result cap. |
+| `query_url`, `option_id`, `option_text` | O2A/SMS search providers | Search endpoint and expressions selecting an option's ID and label. |
+| `where_template`, `sorts`, `offset` | O2A mission provider | Registry query filter, ordering, and result offset. |
+| `instruments_url` | GIPP provider | GIPP instruments endpoint. |
+| `item_url`, `contacts_url`, `parameters_url`, `units_url` | O2A item handler | Endpoints used to enrich one Registry item. |
+| `item_api_link_template`, `item_frontend_link_template` | O2A item handler | API and browser link templates for an item. |
+| `device_url`, `contact_url` | SMS device handler | Endpoints for one SMS device and its contacts. |
+| `device_mount_actions_url` | SMS device handler | Device mount-action endpoint used for period enrichment. |
+| `configuration_device_mount_actions_url`, `configuration_platform_mount_actions_url`, `configuration_static_location_actions_url` | SMS device handler | Configuration-scoped endpoints used to resolve mount location. |
+| `backend_link_marker` | SMS device/configuration handler | API path fragment replaced when forming a browser link. |
+| `configuration_url`, `device_mount_action_url`, `platform_mount_actions_url`, `mounting_action_timepoints_url`, `static_location_actions_url` | SMS configuration handler | Endpoints used to fetch a configuration, members, time points, and locations. |
+| `device_mount_actions_url` | SMS configuration handler | Endpoint for a configuration's device mount actions. |
+| `device_mount_action_page_size`, `platform_mount_action_page_size`, `static_location_action_page_size`, `max_collection_pages` | SMS configuration handler | Remote pagination limits. |
+| `configuration_self_link_path`, `configuration_start_date_path`, `configuration_end_date_path`, `frontend_link_suffix` | SMS configuration handler | Response paths and browser-link suffix used to map configuration metadata. |
+| `device_id_prefix`, `device_text_prefix` | SMS configuration handler backend | Device option namespace and label when materializing configuration members. |
+| `location_attribute_uri`, `latitude_attribute_uri`, `longitude_attribute_uri` | SMS configuration handler | Optional location target and latitude/longitude targets. |
+| `mission_url`, `mission_items_url`, `item_url` | O2A mission handler | Endpoints for a mission, its items, and one item. |
+| `mission_item_page_size`, `max_collection_pages` | O2A mission handler | Mission-member page size and maximum pages. |
+| `item_id_prefix`, `item_text_prefix`, `item_text_template` | O2A mission handler | Namespace and display text for mission-member options. |
+| `mission_start_date_path`, `mission_end_date_path`, `date_mapping_paths`, `datetime_output_format` | O2A mission handler | Mission period source paths, alternate date paths, and output formatting. |
+| `api_link_template`, `frontend_link_template` | O2A mission handler | API and browser link templates for a mission. |
+| `json_url` | GIPP handler | Endpoint returning an instrument record. |
+| `materialize_device_details`, `device_collection_attribute_uri`, `device_link_attribute_uri` | device handlers | Enable repeated device blocks, choose their root attribute, and choose the link output. |
+| `supports_mount_location_lookup`, `supports_mount_period_lookup` | device handlers | Explicitly enable SMS mount-location or deployment-period enrichment. |
+| `static_location_end_tolerance_seconds`, `incomplete_mount_chain_policy` | SMS device/configuration handlers | Bound static-location matching; use `strict` or `direct_device_offset` for incomplete mount chains. |
+| `configuration_collection_attribute_uri`, `selected_devices_attribute_uri`, `selected_devices_page_uri`, `frontend_link_attribute_uri`, `api_link_attribute_uri` | configuration/mission handlers | Repeated configuration root, member devices, their page, and configuration link targets. |
+| `membership_filter_enabled`, `membership_filter_start_attribute_uri`, `membership_filter_end_attribute_uri` | SMS configuration handler | Explicit opt-in and paired user-owned historical-membership inputs. |

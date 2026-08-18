@@ -41,6 +41,10 @@ The repository-level [`sensorsearch.toml`](../sensorsearch.toml) is the
 authoritative deployment configuration and is packaged into the plugin wheel.
 The Earth Sensor catalog used by this guide is
 [`xml/earth-sensor+original.xml`](../xml/earth-sensor+original.xml).
+The independently namespaced development mirror is
+[`xml/example_catalog_sensorsearch.xml`](../xml/example_catalog_sensorsearch.xml);
+its test-only profile is
+[`tests/fixtures/sensorsearch-plugin-dev.toml`](../tests/fixtures/sensorsearch-plugin-dev.toml).
 
 ## The central editing rule
 

@@ -6,6 +6,7 @@ from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
 from rdmo_sensorsearch.config import get_config_file_path, load_config
+from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog
 from rdmo_sensorsearch.naming import canonical_configuration_label, canonical_device_label
 from rdmo_sensorsearch.providers.factory import build_provider_instances
 
@@ -13,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 DEVICE_SEARCH_CONFIG_SECTION = "DeviceSearchProvider"
 CONFIGURATION_SEARCH_CONFIG_SECTION = "ConfigurationSearchProvider"
-CONFIGURATION_SEARCH_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
 
 
 class AggregatingSearchProvider(Provider):
@@ -208,9 +208,20 @@ class AggregatingSearchProvider(Provider):
         return filtered
 
     def _allowed_sms_prefixes(self, project) -> set[str]:
+        catalog = getattr(project, "catalog", None)
+        catalog_uri = getattr(catalog, "uri", None)
+        if not catalog_uri:
+            return set()
+        configuration_search_attribute_uris = {
+            binding.search_attribute_uri
+            for binding in get_handler_bindings_for_catalog(catalog_uri)
+            if type(binding.handler).__name__ == "SensorManagementSystemConfigurationHandler"
+        }
+        if not configuration_search_attribute_uris:
+            return set()
         prefixes: set[str] = set()
         values = (
-            Value.objects.filter(project=project, attribute__uri=CONFIGURATION_SEARCH_ATTRIBUTE_URI)
+            Value.objects.filter(project=project, attribute__uri__in=configuration_search_attribute_uris)
             .filter(snapshot=None)
             .exclude(external_id__isnull=True)
             .exclude(external_id__exact="")

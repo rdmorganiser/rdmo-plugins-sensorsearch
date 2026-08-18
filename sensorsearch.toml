@@ -25,11 +25,25 @@ source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-se
 [DataCollectionVariableSync]
 [[DataCollectionVariableSync.catalogs]]
 catalog_uris = [
-    "http://example.com/terms/questions/sensorsearch",
     "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses",
     "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor",
     "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature-v1",
 ]
+
+[DeviceDetailSync]
+# The default profile serves the Earth Sensor catalog and compatible deployments.
+[[DeviceDetailSync.catalogs]]
+device_details_page_uri = "https://rdmo.nfdi4earth.de/terms/questions/instruments_general"
+device_optional_info_page_uri = "https://rdmo.nfdi4earth.de/terms/questions/instruments/further-info"
+configuration_collection_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
+device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
+usage_technology_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
+instrument_start_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
+instrument_end_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
+instrument_location_amsl_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height"
+surface_offset_z_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth"
+site_name_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
+serial_number_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
 
 [MetadataRefresh]
 configuration_search_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
@@ -64,51 +78,7 @@ message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refres
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp"
 
 [handlers.O2ARegistryItemHandler]
-# Use defaults
-#[[handlers.O2ARegistryItemHandler.backends]]
-#id_prefix = "o2aregistry"
-[handlers.O2ARegistryItemHandler.defaults]
-materialize_device_details = true
-device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
-item_api_link_template = "{base_url}/items/{id}"
-item_frontend_link_template = "{base_url_origin}/items/{id}"
-# Example Catalog
-[[handlers.O2ARegistryItemHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/sensorsearch"
-search_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
-[handlers.O2ARegistryItemHandler.catalogs.attribute_mapping]
-"longName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
-"shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
-"serialNumber" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
-"parameters[].name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
-"parameters[].unit" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
-# MOSES Catalog mapping
-[[handlers.O2ARegistryItemHandler.catalogs]]
-catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
-search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-managed_attribute_uris = [
-    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
-    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
-    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/sop",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner",
-]
-[handlers.O2ARegistryItemHandler.catalogs.attribute_mapping]
-"longName || shortName" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
-"type.generalName" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/title"
-"manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
-"model" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/name"
-"serialNumber" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
-"citation && join('', ['https://hdl.handle.net/', citation]) || 'NA'" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
-"parameters[].name" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/name"
-"parameters[].unit" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter/unit"
-"contacts[].join(', ', [lastName, firstName][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
-
-# Earth-Sensor catalog https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
+# Earth-Sensor-compatible mapping, also used by MOSES.
 [[handlers.O2ARegistryItemHandler.catalogs]]
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
@@ -137,13 +107,8 @@ managed_attribute_uris = [
 
 [handlers.SensorManagementSystemDeviceHandler]
 [handlers.SensorManagementSystemDeviceHandler.defaults]
-materialize_device_details = true
-supports_mount_period_lookup = true
 static_location_end_tolerance_seconds = 120
 incomplete_mount_chain_policy = "direct_device_offset"
-backend_link_marker = "/backend/api/v1/"
-device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
-device_mount_actions_url = "{base_url}/devices/{id}/device-mount-actions?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration"
 
 [[handlers.SensorManagementSystemDeviceHandler.backends]]
 id_prefix = "gfzsms"
@@ -154,17 +119,6 @@ base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
 [[handlers.SensorManagementSystemDeviceHandler.backends]]
 id_prefix = "ufzsms"
 base_url = "https://web.app.ufz.de/sms/backend/api/v1"
-
-[[handlers.SensorManagementSystemDeviceHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/sensorsearch"
-search_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
-[handlers.SensorManagementSystemDeviceHandler.catalogs.attribute_mapping]
-"data.attributes.long_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
-"data.attributes.short_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/documentation"
-"data.attributes.serial_number" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
-# Advanced usage of JMESPath
-"included[?type==`device_property`].attributes.property_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_description"
-"included[].attributes.unit_name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_frequency"
 
 # MOSES Catalog mapping
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
@@ -273,18 +227,7 @@ selected_devices_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/config
 selected_devices_page_uri = "https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set"
 device_collection_attribute_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 frontend_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link"
-mission_url = "{base_url}/missions/{id}"
-mission_items_url = "{base_url}/missions/{id}/items?offset=0&hits={page_size}"
-item_url = "{base_url}/items/{id}"
-mission_item_page_size = 100
 item_id_prefix = "o2aregistry"
-item_text_prefix = "O2A Item"
-item_text_template = "{configuration} {prefix}({item_id}): {name}{serial}"
-mission_start_date_path = "startDate"
-mission_end_date_path = "endDate"
-date_mapping_paths = ["startDate", "endDate"]
-api_link_template = "{base_url}/missions/{id}"
-frontend_link_template = "{base_url_origin}/missions/{id}"
 managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description",
     "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link",
@@ -301,37 +244,7 @@ managed_attribute_uris = [
 
 
 [handlers.GIPPInstrumentHandler]
-# Example Catalog
-[[handlers.GIPPInstrumentHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/sensorsearch"
-search_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/dataset/title"
-[handlers.GIPPInstrumentHandler.catalogs.attribute_mapping]
-"Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
-"Instrumentcategory.name" = "https://rdmorganiser.github.io/terms/domain/project/dataset/description"
-"Instrument.serialNo" = "https://rdmorganiser.github.io/terms/domain/project/dataset/id"
-# MOSES Catalog mapping
-[[handlers.GIPPInstrumentHandler.catalogs]]
-catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
-search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-managed_attribute_uris = [
-    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
-    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime",
-    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/sop",
-    "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner",
-]
-[handlers.GIPPInstrumentHandler.catalogs.attribute_mapping]
-"Instrument.code" = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
-"Instrumentcategory.manufacturer" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/manufacturer"
-"Instrument.serialNo" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
-"Instrument.pid" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/type/pid"
-"join(', ', Person.[surname, givenname][?@ != null])" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/responsible_person/name"
-
-# Earth-Sensor catalog https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
+# Earth-Sensor-compatible mapping, also used by MOSES.
 [[handlers.GIPPInstrumentHandler.catalogs]]
 # Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"

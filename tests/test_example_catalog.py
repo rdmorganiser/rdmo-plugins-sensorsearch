@@ -2,99 +2,61 @@ from collections import Counter
 from pathlib import Path
 from xml.etree import ElementTree
 
-CATALOG_PATH = Path(__file__).parents[1] / "xml" / "example_catalog_sensorsearch.xml"
+from scripts.generate_plugin_dev_assets import TARGET_CATALOG_URI, generate_catalog, mirror_uri
+
+ROOT = Path(__file__).parents[1]
+SOURCE_PATH = ROOT / "xml" / "earth-sensor+original.xml"
+CATALOG_PATH = ROOT / "xml" / "example_catalog_sensorsearch.xml"
 DC_URI = "{http://purl.org/dc/elements/1.1/}uri"
-INTERVIEW_PAGE_REFRESH_OPTIONSET_URI = "https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"
-EXPECTED_PROVIDER_KEYS = {
-    "sensorsearch_devices",
-    "sensorsearch_configurations",
-    "sensorsearch_interview_page_refresh",
-    "sensorsearch_project_data_collection_devices",
-    "sensorsearch_project_configuration_devices",
-}
-EXPECTED_REFRESH_TRIGGER_ATTRIBUTES = {
-    "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration",
-    "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device",
-    "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger",
-    "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger",
-}
 
 
-def _catalog_root():
-    return ElementTree.parse(CATALOG_PATH).getroot()
+def _root(path: Path):
+    return ElementTree.parse(path).getroot()
 
 
-def test_example_catalog_uris_are_unique_and_references_resolve():
-    root = _catalog_root()
-    defined_uris = [element.attrib[DC_URI] for element in root if DC_URI in element.attrib]
-    referenced_uris = {
+def _defined_uris(root):
+    return [element.attrib[DC_URI] for element in root if DC_URI in element.attrib]
+
+
+def _referenced_uris(root):
+    return [
         descendant.attrib[DC_URI]
         for element in root
         for descendant in element.iter()
         if descendant is not element and DC_URI in descendant.attrib
-    }
-
-    assert [uri for uri, count in Counter(defined_uris).items() if count > 1] == []
-    assert referenced_uris <= set(defined_uris)
+    ]
 
 
-def test_example_catalog_contains_every_plugin_optionset_provider():
-    provider_keys = {optionset.findtext("provider_key") for optionset in _catalog_root().findall("optionset")}
+def test_example_catalog_is_a_complete_independent_mirror():
+    source = _root(SOURCE_PATH)
+    mirror = _root(CATALOG_PATH)
+    source_definitions = _defined_uris(source)
+    mirror_definitions = _defined_uris(mirror)
 
-    assert provider_keys == EXPECTED_PROVIDER_KEYS
-
-
-def test_example_catalog_attaches_page_refresh_to_every_metadata_trigger():
-    trigger_attributes = {
-        question.find("attribute").attrib[DC_URI]
-        for question in _catalog_root().findall("question")
-        if question.find(f"./optionsets/optionset[@{DC_URI}='{INTERVIEW_PAGE_REFRESH_OPTIONSET_URI}']") is not None
-    }
-
-    assert trigger_attributes == EXPECTED_REFRESH_TRIGGER_ATTRIBUTES
-
-
-def test_example_catalog_uses_canonical_device_collection_page():
-    device_page = next(
-        page
-        for page in _catalog_root().findall("page")
-        if page.attrib[DC_URI] == "https://rdmo.nfdi4earth.de/terms/questions/instruments_general"
-    )
-
-    assert device_page.findtext("is_collection") == "True"
-    assert device_page.find("attribute").attrib[DC_URI] == (
-        "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
-    )
+    assert mirror.find("catalog").attrib[DC_URI] == TARGET_CATALOG_URI
+    assert Counter(element.tag for element in source) == Counter(element.tag for element in mirror)
+    assert mirror_definitions == [mirror_uri(uri) for uri in source_definitions]
+    assert _referenced_uris(mirror) == [mirror_uri(uri) for uri in _referenced_uris(source)]
+    assert all(uri.startswith("https://example.com/") for uri in mirror_definitions)
+    assert all(uri.startswith("https://example.com/") for uri in _referenced_uris(mirror))
+    assert all("/terms/" in uri for uri in (*mirror_definitions, *_referenced_uris(mirror)))
 
 
-def test_example_catalog_data_collection_uses_sync_attributes():
-    question_attributes = {question.find("attribute").attrib[DC_URI] for question in _catalog_root().findall("question")}
+def test_example_catalog_uris_are_unique_and_references_resolve():
+    root = _root(CATALOG_PATH)
+    definitions = _defined_uris(root)
 
-    assert {
-        "https://rdmorganiser.github.io/terms/domain/project/dataset/collaboration_tools",
-        "https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-variable",
-        "https://rdmo.nfdi4earth.de/terms/domain/project/dataset/metadata/dc-unit",
-    } <= question_attributes
-
-
-def test_example_catalog_configuration_devices_use_sensor_search():
-    question = next(
-        question
-        for question in _catalog_root().findall("question")
-        if question.attrib[DC_URI] == "http://example.com/terms/questions/sensorsearch/configurations/devices"
-    )
-
-    assert question.findtext("widget_type") == "select"
-    assert question.findtext("value_type") == "option"
-    assert question.find("./optionsets/optionset").attrib[DC_URI] == ("http://example.com/terms/options/sensorsearch/devices")
+    source_definitions = _defined_uris(_root(SOURCE_PATH))
+    assert Counter(definitions) == Counter(mirror_uri(uri) for uri in source_definitions)
+    assert set(_referenced_uris(root)) <= set(definitions)
 
 
-def test_example_catalog_uses_canonical_configuration_page():
-    configuration_page = next(
-        page
-        for page in _catalog_root().findall("page")
-        if page.find("attribute") is not None
-        and page.find("attribute").attrib[DC_URI] == "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
-    )
+def test_example_catalog_preserves_optionset_provider_keys():
+    source_provider_keys = {optionset.findtext("provider_key") for optionset in _root(SOURCE_PATH).findall("optionset")}
+    mirror_provider_keys = {optionset.findtext("provider_key") for optionset in _root(CATALOG_PATH).findall("optionset")}
 
-    assert configuration_page.attrib[DC_URI] == ("https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set")
+    assert mirror_provider_keys == source_provider_keys
+
+
+def test_example_catalog_is_currently_generated():
+    assert CATALOG_PATH.read_bytes() == generate_catalog()

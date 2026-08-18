@@ -33,6 +33,11 @@ dynamic = ["version"]
 dev = [
     "pytest",
 ]
+django-test = [
+    "pytest>=9.0,<10.0",
+    "pytest-django>=4.11,<5.0",
+    "rdmo>=2.5.1,<2.6",
+]
 
 [project.urls]
 repository = "https://github.com/rdmorganiser/rdmo-plugins-sensorsearch"

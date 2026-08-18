@@ -7,11 +7,7 @@ from django.db import transaction
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog
-from rdmo_sensorsearch.handlers.sms_device_enrichment import (
-    INSTRUMENT_END_ATTRIBUTE_URI,
-    INSTRUMENT_START_ATTRIBUTE_URI,
-    SMSDeviceMetadataEnricher,
-)
+from rdmo_sensorsearch.handlers.sms_device_enrichment import SMSDeviceMetadataEnricher
 from rdmo_sensorsearch.naming import configuration_short_label
 from rdmo_sensorsearch.persistence.collection_binding import CollectionBinding, CollectionScope
 from rdmo_sensorsearch.persistence.device_details import (
@@ -19,6 +15,7 @@ from rdmo_sensorsearch.persistence.device_details import (
     catalog_attribute_ids,
     get_attribute_by_uri,
 )
+from rdmo_sensorsearch.services.device_detail_profile import get_device_detail_settings
 from rdmo_sensorsearch.services.device_details import (
     ConfigurationIdentity,
     SelectedDevice,
@@ -29,19 +26,9 @@ from rdmo_sensorsearch.services.device_details import (
 )
 from rdmo_sensorsearch.services.device_metadata import fetch_device_metadata_batch
 from rdmo_sensorsearch.services.refresh import RefreshError, RefreshResult
-from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
+from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
 
 logger = logging.getLogger(__name__)
-
-
-DEVICE_DETAILS_PAGE_URI = "https://rdmo.nfdi4earth.de/terms/questions/instruments_general"
-DEVICE_OPTIONAL_INFO_PAGE_URI = "https://rdmo.nfdi4earth.de/terms/questions/instruments/further-info"
-CONFIGURATION_SET_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
-CONFIGURATION_SEARCH_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
-SELECTED_DEVICES_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
-DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
-DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
-USAGE_TECHNOLOGY_ATTRIBUTE_URI = "https://rdmorganiser.github.io/terms/domain/project/dataset/usage_technology"
 
 
 def reconcile_device_details_from_selected_values(
@@ -132,12 +119,14 @@ def reconcile_device_details(
 ) -> RefreshResult:
     scope_prefix = scope_prefix or ""
     source_set_index = source_set_index or 0
+    detail_settings = get_device_detail_settings(catalog.uri)
     selected_devices = unique_selected_devices(selected_devices)
     configuration_identity = _resolve_configuration_identity(
         project=project,
         scope_prefix=scope_prefix,
         source_set_index=source_set_index,
         configuration_search_attribute_uri=configuration_search_attribute_uri,
+        configuration_collection_attribute_uri=detail_settings.configuration_collection_attribute_uri,
         configuration_external_id=configuration_external_id,
     )
     if configuration_identity is None:
@@ -153,18 +142,18 @@ def reconcile_device_details(
 
     configuration_key = configuration_identity.configuration_key
     configuration_label = configuration_identity.label
-    device_detail_attribute_ids = catalog_attribute_ids(catalog, {DEVICE_DETAILS_PAGE_URI})
+    device_detail_attribute_ids = catalog_attribute_ids(catalog, {detail_settings.device_details_page_uri})
     if not device_detail_attribute_ids:
-        logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
+        logger.warning("Could not resolve device detail attributes for %s", detail_settings.device_details_page_uri)
         return _failed_device_sync(
             configuration_key,
-            f"Could not resolve device detail attributes for {DEVICE_DETAILS_PAGE_URI}.",
+            f"Could not resolve device detail attributes for {detail_settings.device_details_page_uri}.",
             requested_count=len(selected_devices),
         )
     related_attribute_ids = (
         catalog_attribute_ids(
             catalog,
-            {DEVICE_DETAILS_PAGE_URI, DEVICE_OPTIONAL_INFO_PAGE_URI},
+            {detail_settings.device_details_page_uri, detail_settings.device_optional_info_page_uri},
         )
         or device_detail_attribute_ids
     )
@@ -199,9 +188,9 @@ def reconcile_device_details(
         ),
         refresh_is_required=lambda set_index: store.block_needs_refresh(
             set_index,
-            device_link_attribute_uri=DEVICE_LINK_ATTRIBUTE_URI,
-            usage_technology_attribute_uri=USAGE_TECHNOLOGY_ATTRIBUTE_URI,
-            instrument_start_attribute_uri=INSTRUMENT_START_ATTRIBUTE_URI,
+            device_link_attribute_uri=detail_settings.device_link_attribute_uri,
+            usage_technology_attribute_uri=detail_settings.usage_technology_attribute_uri,
+            instrument_start_attribute_uri=detail_settings.instrument_start_attribute_uri,
         ),
         force_refresh=force_refresh,
     )
@@ -216,6 +205,7 @@ def reconcile_device_details(
     metadata_enricher = SMSDeviceMetadataEnricher(
         configuration_external_id=configuration_identity.external_id,
         auth_token=auth_token,
+        detail_settings=detail_settings,
     )
     fetch_batch = fetch_device_metadata_batch(
         plans,
@@ -227,7 +217,7 @@ def reconcile_device_details(
     fetched_payloads = fetch_batch.payloads
     fetch_errors = tuple(RefreshError(external_id=error.external_id, message=error.message) for error in fetch_batch.errors)
 
-    with transaction.atomic(), mute_value_post_save():
+    with transaction.atomic(), mute_value_sync():
         for block in stale_blocks:
             store.delete_block(block.set_index, related_attribute_ids)
 
@@ -243,8 +233,8 @@ def reconcile_device_details(
                 plan,
                 fetched_payload,
                 excluded_attribute_uris={
-                    INSTRUMENT_START_ATTRIBUTE_URI,
-                    INSTRUMENT_END_ATTRIBUTE_URI,
+                    detail_settings.instrument_start_attribute_uri,
+                    detail_settings.instrument_end_attribute_uri,
                 },
             )
 
@@ -301,11 +291,13 @@ def remove_device_detail_block_for_selected_device(
     if not device_external_id:
         return False
 
+    detail_settings = get_device_detail_settings(catalog.uri)
     configuration_identity = _resolve_configuration_identity(
         project=project,
         scope_prefix=scope_prefix,
         source_set_index=source_set_index,
         configuration_search_attribute_uri=configuration_search_attribute_uri,
+        configuration_collection_attribute_uri=detail_settings.configuration_collection_attribute_uri,
     )
     if configuration_identity is None:
         logger.warning(
@@ -328,13 +320,13 @@ def remove_device_detail_block_for_selected_device(
 
     related_attribute_ids = catalog_attribute_ids(
         catalog,
-        {DEVICE_DETAILS_PAGE_URI, DEVICE_OPTIONAL_INFO_PAGE_URI},
+        {detail_settings.device_details_page_uri, detail_settings.device_optional_info_page_uri},
     )
     if not related_attribute_ids:
-        logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
+        logger.warning("Could not resolve device detail attributes for %s", detail_settings.device_details_page_uri)
         return False
 
-    with transaction.atomic(), mute_value_post_save():
+    with transaction.atomic(), mute_value_sync():
         deleted = store.delete_block(block.set_index, related_attribute_ids)
 
     if deleted:
@@ -348,6 +340,7 @@ def remove_orphaned_device_detail_blocks(
     configuration_search_attribute_uris: Iterable[str],
     device_collection_attribute_uri: str,
 ) -> int:
+    detail_settings = get_device_detail_settings(catalog.uri)
     root_attribute = get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
@@ -355,10 +348,10 @@ def remove_orphaned_device_detail_blocks(
 
     related_attribute_ids = catalog_attribute_ids(
         catalog,
-        {DEVICE_DETAILS_PAGE_URI, DEVICE_OPTIONAL_INFO_PAGE_URI},
+        {detail_settings.device_details_page_uri, detail_settings.device_optional_info_page_uri},
     )
     if not related_attribute_ids:
-        logger.warning("Could not resolve device detail attributes for %s", DEVICE_DETAILS_PAGE_URI)
+        logger.warning("Could not resolve device detail attributes for %s", detail_settings.device_details_page_uri)
         return 0
 
     store = RDMODeviceDetailStore(project, root_attribute)
@@ -366,7 +359,7 @@ def remove_orphaned_device_detail_blocks(
     if not orphaned_scopes:
         return 0
 
-    with transaction.atomic(), mute_value_post_save():
+    with transaction.atomic(), mute_value_sync():
         for scope_prefix, set_index in orphaned_scopes:
             store.for_scope(scope_prefix).delete_block(set_index, related_attribute_ids)
         for scope_prefix in {scope_prefix for scope_prefix, _ in orphaned_scopes}:
@@ -395,6 +388,7 @@ def _resolve_configuration_identity(
     scope_prefix: str,
     source_set_index: int,
     configuration_search_attribute_uri: str,
+    configuration_collection_attribute_uri: str,
     configuration_external_id: str | None = None,
 ) -> ConfigurationIdentity | None:
     if not configuration_search_attribute_uri:
@@ -417,7 +411,7 @@ def _resolve_configuration_identity(
         Value.objects.filter(
             project=project,
             snapshot=None,
-            attribute__uri=CONFIGURATION_SET_ATTRIBUTE_URI,
+            attribute__uri=configuration_collection_attribute_uri,
             set_collection=True,
             set_prefix=scope_prefix,
             set_index=source_set_index,

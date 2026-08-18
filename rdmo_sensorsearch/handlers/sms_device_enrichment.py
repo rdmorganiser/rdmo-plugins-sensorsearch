@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import Any
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.handlers.sms_mounting import (
@@ -11,17 +11,18 @@ from rdmo_sensorsearch.handlers.sms_mounting import (
     select_latest_device_mount_action,
     select_latest_device_mount_period,
 )
+from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS, DeviceDetailSettings
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, SelectedDevice, parse_external_id
 from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 logger = logging.getLogger(__name__)
 
-INSTRUMENT_START_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-start-datetime"
-INSTRUMENT_END_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/instrument-end-datetime"
-INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height"
-SURFACE_OFFSET_Z_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth"
-SITE_NAME_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"
-SERIAL_NUMBER_ATTRIBUTE_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/serial_number"
+INSTRUMENT_START_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_start_attribute_uri
+INSTRUMENT_END_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_end_attribute_uri
+INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_location_amsl_attribute_uri
+SURFACE_OFFSET_Z_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.surface_offset_z_attribute_uri
+SITE_NAME_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.site_name_attribute_uri
+SERIAL_NUMBER_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.serial_number_attribute_uri
 
 
 @dataclass(frozen=True)
@@ -30,11 +31,14 @@ class SMSDeviceMetadataEnricher:
 
     configuration_external_id: str | None
     auth_token: str | None = None
+    detail_settings: DeviceDetailSettings = DEFAULT_DEVICE_DETAIL_SETTINGS
 
-    scoped_attribute_uris: ClassVar[tuple[str, str]] = (
-        INSTRUMENT_START_ATTRIBUTE_URI,
-        INSTRUMENT_END_ATTRIBUTE_URI,
-    )
+    @property
+    def scoped_attribute_uris(self) -> tuple[str, str]:
+        return (
+            self.detail_settings.instrument_start_attribute_uri,
+            self.detail_settings.instrument_end_attribute_uri,
+        )
 
     def __call__(self, mapped_values: dict[str, Any], plan: DeviceBlockPlan) -> tuple[RefreshNotice, ...]:
         configuration_external_id = plan.configuration_external_id or self.configuration_external_id
@@ -58,12 +62,12 @@ class SMSDeviceMetadataEnricher:
         handler_binding: Any,
         configuration_external_id: str | None,
     ) -> None:
-        if INSTRUMENT_START_ATTRIBUTE_URI in mapped_values:
-            mapped_values.setdefault(INSTRUMENT_END_ATTRIBUTE_URI, "")
+        if self.detail_settings.instrument_start_attribute_uri in mapped_values:
+            mapped_values.setdefault(self.detail_settings.instrument_end_attribute_uri, "")
             return
         if device.instrument_start:
-            mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = device.instrument_start
-            mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = device.instrument_end or ""
+            mapped_values[self.detail_settings.instrument_start_attribute_uri] = device.instrument_start
+            mapped_values[self.detail_settings.instrument_end_attribute_uri] = device.instrument_end or ""
             return
 
         start_value, end_value = self._resolve_mount_period(
@@ -72,8 +76,8 @@ class SMSDeviceMetadataEnricher:
             handler_binding,
             configuration_external_id,
         )
-        mapped_values[INSTRUMENT_START_ATTRIBUTE_URI] = start_value or ""
-        mapped_values[INSTRUMENT_END_ATTRIBUTE_URI] = end_value or ""
+        mapped_values[self.detail_settings.instrument_start_attribute_uri] = start_value or ""
+        mapped_values[self.detail_settings.instrument_end_attribute_uri] = end_value or ""
 
     def _merge_mount_location(
         self,
@@ -98,9 +102,13 @@ class SMSDeviceMetadataEnricher:
             site_name = location.site_name if location is not None else None
             notices = location.notices if location is not None else ()
 
-        mapped_values[INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI] = station_height_amsl if station_height_amsl is not None else ""
-        mapped_values[SURFACE_OFFSET_Z_ATTRIBUTE_URI] = vertical_surface_offset if vertical_surface_offset is not None else ""
-        mapped_values[SITE_NAME_ATTRIBUTE_URI] = site_name if site_name is not None else ""
+        mapped_values[self.detail_settings.instrument_location_amsl_attribute_uri] = (
+            station_height_amsl if station_height_amsl is not None else ""
+        )
+        mapped_values[self.detail_settings.surface_offset_z_attribute_uri] = (
+            vertical_surface_offset if vertical_surface_offset is not None else ""
+        )
+        mapped_values[self.detail_settings.site_name_attribute_uri] = site_name if site_name is not None else ""
         return notices
 
     def _resolve_mount_period(
@@ -125,7 +133,7 @@ class SMSDeviceMetadataEnricher:
         if not mount_actions:
             return None, None
 
-        serial_number = mapped_values.get(SERIAL_NUMBER_ATTRIBUTE_URI)
+        serial_number = mapped_values.get(self.detail_settings.serial_number_attribute_uri)
         if not isinstance(serial_number, str) or not serial_number.strip():
             serial_number = _serial_number_from_text(device.text)
 

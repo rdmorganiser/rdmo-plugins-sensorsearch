@@ -14,6 +14,15 @@ database transaction. It is not a background job. The user can therefore wait
 for remote APIs and for multiple dependent records to be fetched before the
 updated page is available.
 
+Each triggering request continues to occupy its web-server worker while the
+post-commit synchronization runs. Requests execute concurrently while workers
+are available; additional requests wait in the server or reverse-proxy queue.
+Device detail materialization can create up to four temporary fetch threads per
+active request, so deployments should size worker counts, upstream API limits,
+and request timeouts together. Concurrent edits are not serialized by the
+plugin; workflows reload committed values, but overlapping derived writes can
+still complete in last-writer order.
+
 The plugin parallelizes independent work in a few bounded places: aggregate
 provider searches use up to four workers, and device detail materialization
 uses up to four workers. Identical GET requests made during one metadata refresh
@@ -138,6 +147,16 @@ Remote timeouts, invalid records, expired authentication, and partial backend
 data can produce incomplete synchronization. Where possible, include status,
 message, and timestamp questions next to each refresh control. The user can
 correct an authentication or backend problem and invoke the same action again.
+
+Independent post-commit synchronization concerns are failure-isolated. An
+unexpected exception is logged with the event, project, value, and concern, and
+remaining concerns continue. The triggering RDMO save has already committed
+and is not rolled back; there is no automatic retry queue.
+
+The plugin supports RDMO's default database connection. Project and collection
+copies use RDMO bulk operations and intentionally do not trigger external
+metadata retrieval; copied answers retain the metadata already stored in the
+source project or collection.
 
 For a future SMS membership-filter extension, an invalid explicit period does
 not apply a new device assignment. Typical validation failures are a missing

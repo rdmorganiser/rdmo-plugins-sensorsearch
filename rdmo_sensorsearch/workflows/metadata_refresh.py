@@ -1,3 +1,5 @@
+"""Coordinate explicit metadata refresh actions and their feedback state."""
+
 import logging
 from collections.abc import Callable
 
@@ -19,8 +21,8 @@ from rdmo_sensorsearch.services.refresh import (
     combine_refresh_results,
     format_refresh_message,
 )
-from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
-from rdmo_sensorsearch.signals.backend_value_sync import refresh_value_from_backend
+from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
+from rdmo_sensorsearch.workflows.backend_value_sync import refresh_value_from_backend
 
 logger = logging.getLogger(__name__)
 
@@ -90,27 +92,43 @@ def _get_refresh_actions(catalog_uri: str) -> tuple[RefreshAction, ...]:
 
 
 def clear_refresh_state_for_source(instance: Value, actions: tuple[RefreshAction, ...]) -> None:
+    clear_refresh_state(
+        project=instance.project,
+        source_attribute_uri=instance.attribute.uri,
+        set_prefix=instance.set_prefix or "",
+        set_index=instance.set_index,
+        actions=actions,
+    )
+
+
+def clear_refresh_state(
+    *,
+    project,
+    source_attribute_uri: str,
+    set_prefix: str,
+    set_index: int,
+    actions: tuple[RefreshAction, ...],
+) -> None:
     attribute_uris = {attribute_uri for action in actions for attribute_uri in action.state_attribute_uris}
     if not attribute_uris:
         return
 
-    scope = (instance.set_prefix or "", instance.set_index)
-    with transaction.atomic(), mute_value_post_save():
+    with transaction.atomic(), mute_value_sync():
         deleted, _ = Value.objects.filter(
-            project=instance.project,
+            project=project,
             snapshot=None,
             attribute__uri__in=attribute_uris,
-            set_prefix=scope[0],
-            set_index=scope[1],
+            set_prefix=set_prefix,
+            set_index=set_index,
         ).delete()
 
     if deleted:
         logger.info(
             "Cleared %s metadata refresh state value(s) for source %s (set_prefix=%s, set_index=%s)",
             deleted,
-            instance.attribute.uri,
-            scope[0],
-            scope[1],
+            source_attribute_uri,
+            set_prefix,
+            set_index,
         )
 
 
@@ -276,7 +294,7 @@ def _is_active_trigger(instance: Value) -> bool:
 
 
 def _reset_trigger(instance: Value) -> None:
-    with transaction.atomic(), mute_value_post_save():
+    with transaction.atomic(), mute_value_sync():
         current = Value.objects.filter(pk=instance.pk).first()
         if current is not None and current.value_type == VALUE_TYPE_BOOLEAN and current.text == "1":
             update_value_if_changed(current, text="0")

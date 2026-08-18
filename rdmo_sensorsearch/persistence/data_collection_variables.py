@@ -29,16 +29,26 @@ class DataCollectionVariableAttributes:
 
 
 class RDMODataCollectionVariableStore:
-    def __init__(self, instance: Value, attributes: DataCollectionVariableAttributes):
-        self.instance = instance
+    def __init__(
+        self,
+        project,
+        set_prefix: str,
+        set_index: int,
+        attributes: DataCollectionVariableAttributes,
+    ):
+        self.project = project
+        self.set_prefix = set_prefix or ""
+        self.set_index = set_index
         self.attributes = attributes
-        self.target_prefix = str(instance.set_index)
+        self.target_prefix = str(set_index)
 
     @classmethod
     def resolve(
         cls,
-        instance: Value,
         *,
+        project,
+        set_prefix: str,
+        set_index: int,
         device_collection_attribute_uri: str,
         parameter_name_attribute_uri: str,
         parameter_unit_attribute_uri: str,
@@ -56,7 +66,9 @@ class RDMODataCollectionVariableStore:
         if len(attributes) < len(set(attribute_uris)):
             return None
         return cls(
-            instance,
+            project,
+            set_prefix,
+            set_index,
             DataCollectionVariableAttributes(
                 device_collection=attributes[device_collection_attribute_uri],
                 parameter_name=attributes[parameter_name_attribute_uri],
@@ -69,7 +81,7 @@ class RDMODataCollectionVariableStore:
     def parameters_for_device(self, device_external_id: str) -> tuple[ParameterUnitPair, ...]:
         device_blocks = list(
             Value.objects.filter(
-                project=self.instance.project,
+                project=self.project,
                 snapshot=None,
                 attribute=self.attributes.device_collection,
                 set_collection=True,
@@ -92,12 +104,12 @@ class RDMODataCollectionVariableStore:
     def selected_device_external_ids(self, devices_attribute_uri: str) -> tuple[str, ...]:
         values = (
             Value.objects.filter(
-                project=self.instance.project,
+                project=self.project,
                 snapshot=None,
                 attribute__uri=devices_attribute_uri,
                 set_collection=True,
-                set_prefix=self.instance.set_prefix or "",
-                set_index=self.instance.set_index,
+                set_prefix=self.set_prefix,
+                set_index=self.set_index,
             )
             .exclude(external_id__isnull=True)
             .exclude(external_id__exact="")
@@ -133,7 +145,7 @@ class RDMODataCollectionVariableStore:
 
         if plan.delete_set_indexes:
             deleted, _ = Value.objects.filter(
-                project=self.instance.project,
+                project=self.project,
                 snapshot=None,
                 attribute__in=[self.attributes.variable, self.attributes.unit],
                 set_collection=True,
@@ -150,7 +162,7 @@ class RDMODataCollectionVariableStore:
     def _values_by_set_index(self, attribute: Attribute, set_prefix: str) -> dict[int, str]:
         values = (
             Value.objects.filter(
-                project=self.instance.project,
+                project=self.project,
                 snapshot=None,
                 attribute=attribute,
                 set_collection=True,
@@ -164,7 +176,7 @@ class RDMODataCollectionVariableStore:
     def _external_ids_by_set_index(self) -> dict[int, str]:
         values = (
             Value.objects.filter(
-                project=self.instance.project,
+                project=self.project,
                 snapshot=None,
                 attribute__in=[self.attributes.variable, self.attributes.unit],
                 set_collection=True,
@@ -183,7 +195,7 @@ class RDMODataCollectionVariableStore:
     def _upsert(self, attribute: Attribute, set_index: int, text: str, external_id: str) -> None:
         _, created, changed = upsert_value_if_changed(
             {
-                "project": self.instance.project,
+                "project": self.project,
                 "attribute": attribute,
                 "snapshot": None,
                 "set_collection": True,

@@ -2,10 +2,13 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 from urllib.parse import urlsplit
+from xml.etree import ElementTree
 
 import pytest
 
+from rdmo_sensorsearch.config import catalog_matches, merge_config
 from rdmo_sensorsearch.config_models import PluginConfig
+from rdmo_sensorsearch.services.device_detail_profile import get_device_detail_settings
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -15,12 +18,51 @@ else:
 
 ROOT = Path(__file__).parents[1]
 CONFIG_PATHS = (ROOT / "sensorsearch.toml",)
+MIRROR_CONFIG_PATH = ROOT / "tests" / "fixtures" / "sensorsearch-plugin-dev.toml"
+MIRROR_CATALOG_PATH = ROOT / "xml" / "example_catalog_sensorsearch.xml"
+MIRROR_CATALOG_URI = "https://example.com/terms/questions/plugin-dev/sensorsearch"
 EARTH_SENSOR_CATALOG_URI = "https://rdmo.nfdi4earth.de/terms/questions/earth-sensor-with-refresh-feature-v1"
+ORIGINAL_EARTH_SENSOR_CATALOG_PATH = ROOT / "xml" / "earth-sensor+original.xml"
+DC_URI = "{http://purl.org/dc/elements/1.1/}uri"
 
 
 def _load_config(path):
     with path.open("rb") as config_file:
         return tomllib.load(config_file)
+
+
+def test_original_earth_sensor_catalog_matches_deployment_configuration():
+    root = ElementTree.parse(ORIGINAL_EARTH_SENSOR_CATALOG_PATH).getroot()
+    catalog_uri = root.find("catalog").attrib[DC_URI]
+    attribute_uris = {attribute.attrib[DC_URI] for attribute in root.findall("attribute")}
+    config = _load_config(CONFIG_PATHS[0])
+
+    configured_attribute_uris = set()
+    for handler in config["handlers"].values():
+        defaults = handler.get("defaults", {})
+        for catalog in handler.get("catalogs", []):
+            if not catalog_matches(catalog, catalog_uri):
+                continue
+            settings = merge_config(defaults, catalog)
+            configured_attribute_uris.add(settings["search_attribute_uri"])
+            configured_attribute_uris.update(settings.get("managed_attribute_uris", []))
+            configured_attribute_uris.update(settings.get("attribute_mapping", {}).values())
+            configured_attribute_uris.update(
+                value for key, value in settings.items() if key.endswith("_attribute_uri") and isinstance(value, str)
+            )
+
+    refresh = config["MetadataRefresh"]
+    configured_attribute_uris.update(
+        value for key, value in refresh.items() if key.endswith("_attribute_uri") and isinstance(value, str)
+    )
+    for action in refresh["actions"]:
+        if catalog_matches(action, catalog_uri):
+            configured_attribute_uris.update(
+                value for key, value in action.items() if key.endswith("_attribute_uri") and isinstance(value, str)
+            )
+
+    assert configured_attribute_uris <= attribute_uris
+    assert any(catalog_matches(catalog, catalog_uri) for catalog in config["DataCollectionVariableSync"]["catalogs"])
 
 
 def test_deployment_configuration_passes_schema_validation():
@@ -29,6 +71,23 @@ def test_deployment_configuration_passes_schema_validation():
     assert len(config.device_search.providers) == 5
     assert len(config.configuration_search.providers) == 4
     assert len(config.handlers) == 5
+
+
+def test_plugin_development_catalog_has_an_isolated_complete_test_profile():
+    mirror_config = _load_config(MIRROR_CONFIG_PATH)
+    mirror_attributes = {
+        attribute.attrib[DC_URI] for attribute in ElementTree.parse(MIRROR_CATALOG_PATH).getroot().findall("attribute")
+    }
+
+    assert "example.com" not in CONFIG_PATHS[0].read_text(encoding="utf-8")
+    parsed = PluginConfig.from_mapping(mirror_config)
+    detail_settings = get_device_detail_settings(MIRROR_CATALOG_URI, config=parsed)
+    assert detail_settings.device_details_page_uri == "https://example.com/terms/questions/plugin-dev/instruments_general"
+    assert detail_settings.configuration_collection_attribute_uri in mirror_attributes
+    assert any(
+        MIRROR_CATALOG_URI in ([catalog["catalog_uri"]] if catalog.get("catalog_uri") else catalog.get("catalog_uris", []))
+        for catalog in mirror_config["DataCollectionVariableSync"]["catalogs"]
+    )
 
 
 def test_wheel_build_packages_the_authoritative_deployment_configuration():

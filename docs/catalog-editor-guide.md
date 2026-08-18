@@ -152,6 +152,21 @@ URIs in [Earth Sensor catalog map](earth-sensor-catalog.md#data-collection-devic
 
 ## Adapting the catalog safely
 
+## Independent development mirror
+
+`xml/example_catalog_sensorsearch.xml` is a complete independent mirror of
+`xml/earth-sensor+original.xml`. Every catalog-defined and referenced URI uses
+the `https://example.com/terms/.../plugin-dev/...` namespace; legacy source
+URIs are normalized to include `/terms/`. It preserves the original optionset provider keys, so
+it needs the matching test/example profile at
+`tests/fixtures/sensorsearch-plugin-dev.toml`; do not add these bindings to the
+production `sensorsearch.toml`.
+
+The mirror is generated, not hand-maintained. Run
+`python scripts/generate_plugin_dev_assets.py` to update it, then inspect its
+diff as a catalog change. The complete list of TOML settings is in the
+[configuration reference](configuration-reference.md#complete-setting-index).
+
 Use this order when introducing the plugin into another catalog:
 
 1. choose stable attribute URIs and identify the collection roots;

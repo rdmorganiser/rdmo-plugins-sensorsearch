@@ -1,3 +1,5 @@
+"""Keep configuration collection labels aligned with their source values."""
+
 import logging
 
 from django.db import transaction
@@ -6,7 +8,7 @@ from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.naming import configuration_tab_label
 from rdmo_sensorsearch.persistence.value_reconciliation import update_value_if_changed
-from rdmo_sensorsearch.services.synchronization_context import mute_value_post_save
+from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +19,10 @@ def sync_configuration_tab_from_source(
     clear: bool = False,
 ) -> bool:
     root_value = _configuration_root_value(
-        source_value,
-        collection_attribute_uri,
+        project=source_value.project,
+        set_prefix=source_value.set_prefix or "",
+        set_index=source_value.set_index,
+        collection_attribute_uri=collection_attribute_uri,
     )
     if root_value is None:
         logger.warning(
@@ -32,6 +36,30 @@ def sync_configuration_tab_from_source(
     external_id = None if clear else source_value.external_id or None
     source_label = "" if clear else source_value.text or ""
     return _update_configuration_tab(root_value, external_id, source_label)
+
+
+def clear_configuration_tab_from_deleted_source(
+    *,
+    project,
+    set_prefix: str,
+    set_index: int,
+    collection_attribute_uri: str,
+) -> bool:
+    root_value = _configuration_root_value(
+        project=project,
+        set_prefix=set_prefix,
+        set_index=set_index,
+        collection_attribute_uri=collection_attribute_uri,
+    )
+    if root_value is None:
+        logger.warning(
+            "Configuration tab root not found for attribute %s (set_prefix=%r, set_index=%s)",
+            collection_attribute_uri,
+            set_prefix,
+            set_index,
+        )
+        return False
+    return _update_configuration_tab(root_value, None, "")
 
 
 def sync_configuration_tab_from_root(
@@ -61,16 +89,19 @@ def sync_configuration_tab_from_root(
 
 
 def _configuration_root_value(
-    source_value: Value,
+    *,
+    project,
+    set_prefix: str,
+    set_index: int,
     collection_attribute_uri: str,
 ) -> Value | None:
     return (
         Value.objects.filter(
-            project=source_value.project,
+            project=project,
             snapshot=None,
             attribute__uri=collection_attribute_uri,
-            set_prefix=source_value.set_prefix or "",
-            set_index=source_value.set_index,
+            set_prefix=set_prefix,
+            set_index=set_index,
             set_collection=True,
         )
         .order_by("id")
@@ -88,7 +119,7 @@ def _update_configuration_tab(
         configuration_external_id,
         source_label,
     )
-    with transaction.atomic(), mute_value_post_save():
+    with transaction.atomic(), mute_value_sync():
         changed = update_value_if_changed(root_value, text=text)
 
     if changed:

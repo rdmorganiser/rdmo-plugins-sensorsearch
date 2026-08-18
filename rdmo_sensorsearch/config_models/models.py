@@ -60,6 +60,17 @@ class DataCollectionVariableSyncConfig:
 
 
 @dataclass(frozen=True)
+class DeviceDetailSyncCatalogConfig:
+    scope: CatalogScopeConfig
+    settings: Mapping[str, str]
+
+
+@dataclass(frozen=True)
+class DeviceDetailSyncConfig:
+    catalogs: tuple[DeviceDetailSyncCatalogConfig, ...]
+
+
+@dataclass(frozen=True)
 class MetadataRefreshActionConfig:
     scope: CatalogScopeConfig
     kind: str
@@ -117,6 +128,7 @@ class PluginConfig:
     project_configuration_devices: ProjectOptionsProviderConfig
     project_data_collection_devices: ProjectOptionsProviderConfig
     data_collection_variable_sync: DataCollectionVariableSyncConfig
+    device_detail_sync: DeviceDetailSyncConfig
     metadata_refresh: MetadataRefreshConfig
     handlers: Mapping[str, HandlerConfig]
     raw: Mapping[str, Any]
