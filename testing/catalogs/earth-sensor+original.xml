@@ -12,7 +12,7 @@ Weiterentwicklung als Inkubator ab Jan. 2026 durch Bjarne Biskamp (UFZ) und Cori
 
 Please check the instructions there carefully!</help>
 		<title lang="de">Earth-Sensor Data Management Plan</title>
-		<help lang="de">This is the Earth-Sensor RDMO catalog, developed to collect metadata for sensor based research projects. More information can be found here (help document will be available soon) and also once you have started to fill the catalog with the '&lt;b&gt;Answer questions&lt;/b&gt;' button on the panel to the right  &lt;b&gt; &gt;&gt;&gt; &lt;/b&gt;.
+		<help lang="de">This is the Earth-Sensor RDMO catalog, developed to collect metadata for sensor based research projects. More information can be found &lt;b&gt;&lt;a href=&quot;https://notes.desy.de/VtbihRpeTJWikp4EQ7UzBQ?view&quot;&gt;here&lt;/a&gt;&lt;/b&gt; and also once you have started to fill the catalog with the '&lt;b&gt;Answer questions&lt;/b&gt;' button on the panel to the right  &lt;b&gt; &gt;&gt;&gt; &lt;/b&gt;.
 
 Please check the instructions there carefully!</help>
 		<sections>
@@ -72,7 +72,8 @@ Please switch to &lt;b&gt;english language&lt;/b&gt; in the top panel to ensure 
 (7) Each question is also provided with corresponding explanatory text and, in some cases, exemplary answers.
 
 
-A tutorial is available &lt;a href=&quot;https://notes.desy.de/s/1OKf1cvSU&quot;&gt;here&lt;/a&gt;.
+A tutorial is available &lt;b&gt;&lt;a href=&quot;https://notes.desy.de/s/1OKf1cvSU&quot;&gt;here&lt;/a&gt;&lt;/b&gt;.
+
 In case of questions, suggestions or any other issues discovered, please use the &lt;b&gt;Feedback&lt;/b&gt; button on the top panel.</help>
 		<verbose_name lang="en"/>
 		<title lang="de">Introduction</title>
@@ -118,10 +119,10 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>campaign</uri_path>
 		<dc:comment/>
-		<title lang="en">1) Project ＆ Campaign Information</title>
-		<short_title lang="en">1) Project ＆ Campaign</short_title>
-		<title lang="de">1) Project ＆ Campaign Information</title>
-		<short_title lang="de">1) Project ＆ Campaign</short_title>
+		<title lang="en">1 | Project ＆ Campaign Information</title>
+		<short_title lang="en">1 Project ＆ Campaign</short_title>
+		<title lang="de">1 | Project ＆ Campaign Information</title>
+		<short_title lang="de">1 Project ＆ Campaign</short_title>
 		<pages>
 			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general" order="1"/>
 			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/organisation" order="2"/>
@@ -142,501 +143,29 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<help lang="de">In this first part you should provide general information on your project. Please describe your targeted campaign or long-term observational measurements according to the following questions:</help>
 		<verbose_name lang="de"/>
 		<questionsets>
-			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration" order="3"/>
-			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area" order="4"/>
-			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-lead" order="6"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-lead" order="2"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration" order="4"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area" order="5"/>
 		</questionsets>
 		<questions>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign_name" order="0"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign_keyword" order="1"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign_description" order="2"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign_description" order="3"/>
 		</questions>
 		<conditions/>
 	</page>
-	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/project-duration</uri_path>
-		<dc:comment>start and end of the project</dc:comment>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-timerange"/>
-		<is_collection>False</is_collection>
-		<title lang="en">1.14) Define time range of your project:</title>
-		<help lang="en">Time range of data collection can differ and will be asked later.</help>
-		<verbose_name lang="en">Project duration</verbose_name>
-		<title lang="de">1.14) Define time range of your project:</title>
-		<help lang="de">-- Please switch language to English --</help>
-		<verbose_name lang="de">Project duration</verbose_name>
-		<questionsets/>
-		<questions>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration/project_start" order="1"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration/project_end" order="2"/>
-		</questions>
-		<conditions/>
-	</questionset>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-timerange">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>project-timerange</key>
-		<path>project-timerange</path>
-		<dc:comment/>
-		<parent/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration/project_start">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/project-duration/project_start</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-start-date"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">1.14a) Start date of project:</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en">Project start</verbose_name>
-		<help lang="de"/>
-		<text lang="de">1.14a) Start date of project:</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de">Project start</verbose_name>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>date</widget_type>
-		<value_type>datetime</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-start-date">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>project-start-date</key>
-		<path>project-start-date</path>
-		<dc:comment/>
-		<parent/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration/project_end">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/project-duration/project_end</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-end-date"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">1.14b) End date of project:</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en">Project end date</verbose_name>
-		<help lang="de"/>
-		<text lang="de">1.14b) End date of project:</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>date</widget_type>
-		<value_type>datetime</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-end-date">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>project-end-date</key>
-		<path>project-end-date</path>
-		<dc:comment/>
-		<parent/>
-	</attribute>
-	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area</uri_path>
-		<dc:comment>description of research area area/ bounding box by coordinates</dc:comment>
-		<attribute/>
-		<is_collection>False</is_collection>
-		<title lang="en">1.15) Define your project area:</title>
-		<help lang="en">Please provide coordinates of either your measurement location or the bounding box of the research area. The bounding box rectangle has to be defined by the latitude and longitude coordinates for the upper left and the lower right corner.
-
-&lt;b&gt; Important&lt;/b&gt;:
-
-- latitude / longitude must be given in decimal degrees
-
-- negative numbers (-90 - 0) represent latitudes south of equator, positive numbers (0 - 90) are north of the equator,
-
-- negative values for longitude (-180 - 0) are west of Prime Meridian and positive values (0 - 180) east of Prime Meridian.
-
-- example: upper left corner [50.02, 8.65], lower right corner [49.27, 9.38]</help>
-		<verbose_name lang="en">Project Area</verbose_name>
-		<title lang="de">1.15) Define your measurement area:</title>
-		<help lang="de">-- Please switch language to English --</help>
-		<verbose_name lang="de">Project Area</verbose_name>
-		<questionsets>
-			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location" order="1"/>
-			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left" order="2"/>
-			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right" order="3"/>
-		</questionsets>
-		<questions>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/area-type" order="0"/>
-		</questions>
-		<conditions/>
-	</questionset>
-	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/single-location</uri_path>
-		<dc:comment/>
-		<attribute/>
-		<is_collection>False</is_collection>
-		<title lang="en">Single location of your project in decimal degrees:</title>
-		<help lang="en"/>
-		<verbose_name lang="en"/>
-		<title lang="de">Single location of your project in decimal degrees:</title>
-		<help lang="de"/>
-		<verbose_name lang="de"/>
-		<questionsets/>
-		<questions>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location/lat" order="1"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location/lon" order="2"/>
-		</questions>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/research-area/single-location"/>
-		</conditions>
-	</questionset>
-	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/research-area/single-location">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/single-location</uri_path>
-		<dc:comment/>
-		<source dc:uri="https://rdmo.nfdi4earth.de/terms/domain/area-type"/>
-		<relation>eq</relation>
-		<target_text/>
-		<target_option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/singe-location"/>
-	</condition>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/area-type">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>area-type</key>
-		<path>area-type</path>
-		<dc:comment/>
-		<parent/>
-	</attribute>
-	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/singe-location">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>area-type/singe-location</uri_path>
-		<dc:comment/>
-		<text lang="en">Singe location</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">Singe location</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input/>
-	</option>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location/lat">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/single-location/lat</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lat"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit>[deg]</unit>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lat">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>research-area-coords-ul-lat</key>
-		<path>research-area-coords-ul-lat</path>
-		<dc:comment/>
-		<parent/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location/lon">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/single-location/lon</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lon"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit>[deg]</unit>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lon">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>research-area-coords-ul-lon</key>
-		<path>research-area-coords-ul-lon</path>
-		<dc:comment/>
-		<parent/>
-	</attribute>
-	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/upper-left</uri_path>
-		<dc:comment/>
-		<attribute/>
-		<is_collection>False</is_collection>
-		<title lang="en">Upper left corner of research area bounding box in decimal degrees:</title>
-		<help lang="en"/>
-		<verbose_name lang="en"/>
-		<title lang="de"/>
-		<help lang="de"/>
-		<verbose_name lang="de"/>
-		<questionsets/>
-		<questions>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left/lat" order="1"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left/lon" order="2"/>
-		</questions>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/reasearch-area/bounding-box"/>
-		</conditions>
-	</questionset>
-	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/reasearch-area/bounding-box">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/reasearch-area/bounding-box</uri_path>
-		<dc:comment/>
-		<source dc:uri="https://rdmo.nfdi4earth.de/terms/domain/area-type"/>
-		<relation>eq</relation>
-		<target_text/>
-		<target_option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/bounding-box"/>
-	</condition>
-	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/bounding-box">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>area-type/bounding-box</uri_path>
-		<dc:comment/>
-		<text lang="en">Bounding box</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">Bounding box</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input/>
-	</option>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left/lat">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/upper-left/lat</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lat"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit>[deg]</unit>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left/lon">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/upper-left/lon</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lon"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit>[deg]</unit>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/lower-right</uri_path>
-		<dc:comment/>
-		<attribute/>
-		<is_collection>False</is_collection>
-		<title lang="en">Lower right corner of research area bounding box in decimal degrees:</title>
-		<help lang="en"/>
-		<verbose_name lang="en"/>
-		<title lang="de">Lower right corner of research area in decimal degrees:</title>
-		<help lang="de"/>
-		<verbose_name lang="de"/>
-		<questionsets/>
-		<questions>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right/lat" order="1"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right/lon" order="2"/>
-		</questions>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/reasearch-area/bounding-box"/>
-		</conditions>
-	</questionset>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right/lat">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/lower-right/lat</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-lr-lat"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 49.27 &lt;/span&gt;</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 49.27 &lt;/span&gt;</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit>[deg]</unit>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-lr-lat">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>research-area-coords-lr-lat</key>
-		<path>research-area-coords-lr-lat</path>
-		<dc:comment/>
-		<parent/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right/lon">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/lower-right/lon</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-lr-lon"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g.  9.38 &lt;/span&gt;</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g.  9.38 &lt;/span&gt;</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit>[deg]</unit>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-lr-lon">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>research-area-coords-lr-lon</key>
-		<path>research-area-coords-lr-lon</path>
-		<dc:comment/>
-		<parent/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/area-type">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>general/research-area/area-type</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/area-type"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">Select the area type of your project.</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Select the area type of your project.</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>radio</widget_type>
-		<value_type>option</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>6</width>
-		<optionsets>
-			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type"/>
-		</optionsets>
-		<conditions/>
-	</question>
-	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>area-type</uri_path>
-		<dc:comment/>
-		<provider_key/>
-		<options>
-			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/singe-location" order="1"/>
-			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/bounding-box" order="2"/>
-		</options>
-		<conditions/>
-	</optionset>
 	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-lead">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>general/project-lead</uri_path>
 		<dc:comment>question for possibilty of multiple entries of contacts with several information</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-lead"/>
 		<is_collection>False</is_collection>
-		<title lang="en">1.16) Project lead:</title>
+		<title lang="en">1.1.3 | Project lead:</title>
 		<help lang="en"/>
 		<verbose_name lang="en">Project lead</verbose_name>
-		<title lang="de">1.16) Project lead:</title>
+		<title lang="de">1.1.3 | Project lead:</title>
 		<help lang="de"/>
-		<verbose_name lang="de">Projektleitung</verbose_name>
+		<verbose_name lang="de">Project lead</verbose_name>
 		<questionsets>
 			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-lead/contact-form" order="2"/>
 		</questionsets>
@@ -817,6 +346,478 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-lead"/>
 	</attribute>
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/project-duration</uri_path>
+		<dc:comment>start and end of the project</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-timerange"/>
+		<is_collection>False</is_collection>
+		<title lang="en">1.1.5 | Define time range of your project:</title>
+		<help lang="en">Time range of data collection can differ and will be asked later.</help>
+		<verbose_name lang="en">Project duration</verbose_name>
+		<title lang="de">1.1.5 | Define time range of your project:</title>
+		<help lang="de">-- Please switch language to English --</help>
+		<verbose_name lang="de">Project duration</verbose_name>
+		<questionsets/>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration/project_start" order="1"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration/project_end" order="2"/>
+		</questions>
+		<conditions/>
+	</questionset>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-timerange">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>project-timerange</key>
+		<path>project-timerange</path>
+		<dc:comment/>
+		<parent/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration/project_start">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/project-duration/project_start</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-start-date"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Start date of project:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en">Project start</verbose_name>
+		<help lang="de"/>
+		<text lang="de">Start date of project:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de">Project start</verbose_name>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>date</widget_type>
+		<value_type>datetime</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-start-date">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>project-start-date</key>
+		<path>project-start-date</path>
+		<dc:comment/>
+		<parent/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/project-duration/project_end">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/project-duration/project_end</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-end-date"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">End date of project:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en">Project end date</verbose_name>
+		<help lang="de"/>
+		<text lang="de">End date of project:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>date</widget_type>
+		<value_type>datetime</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/project-end-date">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>project-end-date</key>
+		<path>project-end-date</path>
+		<dc:comment/>
+		<parent/>
+	</attribute>
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area</uri_path>
+		<dc:comment>description of research area area/ bounding box by coordinates</dc:comment>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">1.1.6 | Define your project area:</title>
+		<help lang="en">Please provide coordinates of either your measurement location or the bounding box of the research area. The bounding box rectangle has to be defined by the latitude and longitude coordinates for the upper left and the lower right corner.
+
+&lt;b&gt; Important&lt;/b&gt;:
+
+- latitude / longitude must be given in decimal degrees
+
+- negative numbers (-90 - 0) represent latitudes south of equator, positive numbers (0 - 90) are north of the equator,
+
+- negative values for longitude (-180 - 0) are west of Prime Meridian and positive values (0 - 180) east of Prime Meridian.
+
+- example: upper left corner [50.02, 8.65], lower right corner [49.27, 9.38]</help>
+		<verbose_name lang="en">Project Area</verbose_name>
+		<title lang="de">1.1.6 | Define your measurement area:</title>
+		<help lang="de">-- Please switch language to English --</help>
+		<verbose_name lang="de">Project Area</verbose_name>
+		<questionsets>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location" order="1"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left" order="2"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right" order="3"/>
+		</questionsets>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/area-type" order="0"/>
+		</questions>
+		<conditions/>
+	</questionset>
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/single-location</uri_path>
+		<dc:comment/>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">1.1.6b | Single location of your project in decimal degrees:</title>
+		<help lang="en"/>
+		<verbose_name lang="en"/>
+		<title lang="de">1.1.6b | Single location of your project in decimal degrees:</title>
+		<help lang="de"/>
+		<verbose_name lang="de"/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location/lat" order="1"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location/lon" order="2"/>
+		</questions>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/research-area/single-location"/>
+		</conditions>
+	</questionset>
+	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/research-area/single-location">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/single-location</uri_path>
+		<dc:comment/>
+		<source dc:uri="https://rdmo.nfdi4earth.de/terms/domain/area-type"/>
+		<relation>eq</relation>
+		<target_text/>
+		<target_option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/singe-location"/>
+	</condition>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/area-type">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>area-type</key>
+		<path>area-type</path>
+		<dc:comment/>
+		<parent/>
+	</attribute>
+	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/singe-location">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>area-type/singe-location</uri_path>
+		<dc:comment/>
+		<text lang="en">Singe location</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">Singe location</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input/>
+	</option>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location/lat">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/single-location/lat</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lat"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit>[deg]</unit>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lat">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>research-area-coords-ul-lat</key>
+		<path>research-area-coords-ul-lat</path>
+		<dc:comment/>
+		<parent/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/single-location/lon">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/single-location/lon</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lon"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit>[deg]</unit>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lon">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>research-area-coords-ul-lon</key>
+		<path>research-area-coords-ul-lon</path>
+		<dc:comment/>
+		<parent/>
+	</attribute>
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/upper-left</uri_path>
+		<dc:comment/>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">1.1.6b | Upper left corner of research area bounding box in decimal degrees:</title>
+		<help lang="en"/>
+		<verbose_name lang="en"/>
+		<title lang="de">1.1.6b | Upper left corner of research area bounding box in decimal degrees:</title>
+		<help lang="de"/>
+		<verbose_name lang="de"/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left/lat" order="1"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left/lon" order="2"/>
+		</questions>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/reasearch-area/bounding-box"/>
+		</conditions>
+	</questionset>
+	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/reasearch-area/bounding-box">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/reasearch-area/bounding-box</uri_path>
+		<dc:comment/>
+		<source dc:uri="https://rdmo.nfdi4earth.de/terms/domain/area-type"/>
+		<relation>eq</relation>
+		<target_text/>
+		<target_option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/bounding-box"/>
+	</condition>
+	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/bounding-box">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>area-type/bounding-box</uri_path>
+		<dc:comment/>
+		<text lang="en">Bounding box</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">Bounding box</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input/>
+	</option>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left/lat">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/upper-left/lat</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lat"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 50.02 &lt;/span&gt;</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit>[deg]</unit>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/upper-left/lon">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/upper-left/lon</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-ul-lon"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 8.65 &lt;/span&gt;</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit>[deg]</unit>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/lower-right</uri_path>
+		<dc:comment/>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">1.1.6c | Lower right corner of research area bounding box in decimal degrees:</title>
+		<help lang="en"/>
+		<verbose_name lang="en"/>
+		<title lang="de">1.1.6c | Lower right corner of research area bounding box in decimal degrees:</title>
+		<help lang="de"/>
+		<verbose_name lang="de"/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right/lat" order="1"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right/lon" order="2"/>
+		</questions>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/general/reasearch-area/bounding-box"/>
+		</conditions>
+	</questionset>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right/lat">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/lower-right/lat</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-lr-lat"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 49.27 &lt;/span&gt;</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Latitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g. 49.27 &lt;/span&gt;</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit>[deg]</unit>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-lr-lat">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>research-area-coords-lr-lat</key>
+		<path>research-area-coords-lr-lat</path>
+		<dc:comment/>
+		<parent/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/lower-right/lon">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/lower-right/lon</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-lr-lon"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g.  9.38 &lt;/span&gt;</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Longitude: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt; e.g.  9.38 &lt;/span&gt;</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit>[deg]</unit>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/research-area-coords-lr-lon">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>research-area-coords-lr-lon</key>
+		<path>research-area-coords-lr-lon</path>
+		<dc:comment/>
+		<parent/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/general/research-area/area-type">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>general/research-area/area-type</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/area-type"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">1.1.6.a | Select the area type of your project.</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">1.1.6.a | Select the area type of your project.</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>radio</widget_type>
+		<value_type>option</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>6</width>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type"/>
+		</optionsets>
+		<conditions/>
+	</question>
+	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>area-type</uri_path>
+		<dc:comment/>
+		<provider_key/>
+		<options>
+			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/singe-location" order="1"/>
+			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/area-type/bounding-box" order="2"/>
+		</options>
+		<conditions/>
+	</optionset>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/campaign_name">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>campaign_name</uri_path>
@@ -866,11 +867,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Please use community-specific keywords (Glossary or auto-completion is in progress) to assure findability of your datasets (might be the search tags in data repositories):</help>
-		<text lang="en">1.12) Project Keyword:</text>
+		<text lang="en">1.1.2 | Project Keywords:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">Keyword</verbose_name>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">1.12) Project Keyword:</text>
+		<text lang="de">1.1.2 | Project Keywords:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de">Keyword</verbose_name>
 		<default_option/>
@@ -959,11 +960,11 @@ In case of questions, suggestions or any other issues discovered, please use the
 &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;
 max. 200 words
 &lt;/span&gt;</help>
-		<text lang="en">1.13) Description of your project, your campaign, or the research infrastructure:</text>
+		<text lang="en">1.1.4 | Description of your project, your campaign, or the research infrastructure:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">1.13) Description of your project, your campaign, or the research infrastructure</text>
+		<text lang="de">1.1.4 | Description of your project, your campaign, or the research infrastructure</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -1005,12 +1006,12 @@ max. 200 words
 		<dc:comment/>
 		<attribute/>
 		<is_collection>False</is_collection>
-		<title lang="en">1.2) Project Organisation</title>
-		<short_title lang="en"/>
+		<title lang="en">1.2 | Project Organisation</title>
+		<short_title lang="en">1.2 Project Organisation</short_title>
 		<help lang="en"/>
 		<verbose_name lang="en">Project Organisation</verbose_name>
-		<title lang="de">1.2) Project Organisation</title>
-		<short_title lang="de"/>
+		<title lang="de">1.2 | Project Organisation</title>
+		<short_title lang="de">1.2 Project Organisation</short_title>
 		<help lang="de"/>
 		<verbose_name lang="de">Project Organisation</verbose_name>
 		<questionsets>
@@ -1028,10 +1029,10 @@ max. 200 words
 		<dc:comment>question for possibilty of multiple entries of contacts (data manag) with several information</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dm-lead"/>
 		<is_collection>False</is_collection>
-		<title lang="en">1.21) Responsible person for managing data for the project</title>
-		<help lang="en">Please provide details as a contact for data management for this project. Note: this needs to be someone who keeps track of data acquisition, processing, quality control, documentation, and preservation. This could be the PI or a designee.</help>
+		<title lang="en">1.2.1 | Responsible person for managing data for the project</title>
+		<help lang="en">Please provide details as a contact for data management for this project. Note: this needs to be someone who keeps track of data documentation related to acquisition and processing steps, preservation and publication of datasets. This could be the PI or a designee.</help>
 		<verbose_name lang="en"/>
-		<title lang="de">1.21) Responsible person for managing data for the project</title>
+		<title lang="de">1.2.1 | Responsible person for managing data for the project</title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de"/>
 		<questionsets>
@@ -1214,11 +1215,11 @@ max. 200 words
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">1.22) Collaborating Agencies / Organizations / Institutes:</text>
+		<text lang="en">1.2.2 | Collaborating Agencies / Organizations / Institutes:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">Organization</verbose_name>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">1.22) Collaborating Agencies / Organizations / Institutes:</text>
+		<text lang="de">1.2.2 | Collaborating Agencies / Organizations / Institutes:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de">Organization</verbose_name>
 		<default_option/>
@@ -1255,14 +1256,14 @@ max. 200 words
 		<uri_path>campaign_docu</uri_path>
 		<dc:comment/>
 		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dmp/access"/>
-		<is_collection>False</is_collection>
+		<is_collection>True</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en">e.g. links to project, documentation, ...</help>
-		<text lang="en">1.23) Additional documents relevant for this project:</text>
+		<text lang="en">1.2.3 | Additional documents relevant for this project:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">1.23) Additional documents relevant for this project:</text>
+		<text lang="de">1.2.3 | Additional documents relevant for this project:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -1295,8 +1296,8 @@ max. 200 words
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instruments</uri_path>
 		<dc:comment/>
-		<title lang="en">2) Sensors ＆ Instruments used in your project</title>
-		<short_title lang="en">2) Sensors ＆ Instruments</short_title>
+		<title lang="en">2 | Sensors ＆ Instruments used in your project</title>
+		<short_title lang="en">2 Sensors ＆ Instruments</short_title>
 		<title lang="de">2) Sensors ＆ Instruments used in your project</title>
 		<short_title lang="de">2) Sensors ＆ Instruments</short_title>
 		<pages>
@@ -1313,27 +1314,29 @@ max. 200 words
 		<dc:comment>this page shall enable to import complete configuration or missions from SMS and O2A</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 		<is_collection>True</is_collection>
-		<title lang="en">2.01) Harvest of Configurations/Missions from SMS and O2A Registry</title>
-		<short_title lang="en">2.01) Configurations/Missions</short_title>
-		<help lang="en">This section allows you to provide metadata on all the devices that form the basis of your research data for your project. If you use  &lt;b&gt;&lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt;&lt;/b&gt; or &lt;b&gt;&lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;&lt;/b&gt;, you can load complete device configurations from these sensor management systems. Information about your configurations or missions will be filled automatically in case they are listed in a sensor management system (&lt;b&gt;&lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt;&lt;/b&gt; or &lt;b&gt;&lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;&lt;/b&gt;). Please enter a name in the first field and select your configuration / mission from the list. The form will be automatically filled and you just need to check.
+		<title lang="en">2.1 | Harvest of Configurations/Missions from SMS and O2A Registry</title>
+		<short_title lang="en">2.1 Configurations/Missions</short_title>
+		<help lang="en">This section allows you to provide metadata on all the devices that form the basis of your research data for your project. If you use  &lt;b&gt;&lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt;&lt;/b&gt; or &lt;b&gt;&lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;&lt;/b&gt;, you can load complete device configurations from these sensor management systems. Please enter a mission or configuration name in the first field and select your configuration / mission from the list. Information about your configurations or missions will be filled automatically from entries in &lt;b&gt;&lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt;&lt;/b&gt; or &lt;b&gt;&lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;&lt;/b&gt; and you just need to check.
+
+Please be aware that it may take several seconds until all metadata are fetched!
+
+&lt;b&gt;Recommendation&lt;/b&gt;: after fetching a configuration/ mission, check the next three pages related to the device details before adding new configurations on this page!
+
 In case you did not use campaigns or missions in your sensor management system just proceed to the next page and enter or harvest your devices from there.</help>
 		<verbose_name lang="en">Configuration/Mission</verbose_name>
-		<title lang="de">2.01) Harvest of Configurations/Missions from SMS and O2A Registry</title>
-		<short_title lang="de">2.01) Configurations/Missions</short_title>
+		<title lang="de">2.1 | Harvest of Configurations/Missions from SMS and O2A Registry</title>
+		<short_title lang="de">2.1 Configurations/Missions</short_title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">Configuration/Mission</verbose_name>
 		<questionsets>
-			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/static-location" order="3"/>
-			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period" order="4"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/static-location" order="2"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations/time-period" order="3"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-set" order="5"/>
 		</questionsets>
 		<questions>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configuration_ident_api" order="0"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/description" order="1"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/link" order="5"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh" order="6"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-status" order="7"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-timestamp" order="8"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-message" order="9"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/link" order="4"/>
 		</questions>
 		<conditions/>
 	</page>
@@ -1351,10 +1354,10 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<attribute/>
 		<is_collection>False</is_collection>
-		<title lang="en">2.012) Static location of your configuration or mission:</title>
+		<title lang="en">2.1.3 |  Static location of your configuration or mission:</title>
 		<help lang="en"/>
 		<verbose_name lang="en"/>
-		<title lang="de">2.012) Static location of your configuration or mission:</title>
+		<title lang="de">2.1.3 | Static location of your configuration or mission:</title>
 		<help lang="de"/>
 		<verbose_name lang="de"/>
 		<questionsets/>
@@ -1438,10 +1441,10 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-time-period"/>
 		<is_collection>False</is_collection>
-		<title lang="en">2.013) Time period of the configuration or mission:</title>
+		<title lang="en">2.1.4 | Time period of the configuration or mission:</title>
 		<help lang="en">End date can be empty when configuration or mission is still active.</help>
 		<verbose_name lang="en"/>
-		<title lang="de">2.013) Time period of the configuration or mission:</title>
+		<title lang="de">2.1.4 | Time period of the configuration or mission:</title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de"/>
 		<questionsets/>
@@ -1526,120 +1529,30 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configuration_ident_api">
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-set">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>configuration_ident_api</uri_path>
+		<uri_path>configurations-general/refresh-set</uri_path>
 		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"/>
+		<attribute/>
 		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en">If your configuration / mission is listed in any of the above listed databases, please enter here the name or any identifier for the search. Then you should be able to select your configuration from the list and the following fields will be filled automatically.
-
-&lt;b&gt; Nevertheless, please check the entries below for correctness in case of automatic entries.&lt;/b&gt;</help>
-		<text lang="en">2.011) Configuration / Mission identification for API search</text>
-		<default_text lang="en"/>
+		<title lang="en">2.1.6 | Refresh meta data:</title>
+		<help lang="en">&lt;div style=&quot;padding: 3px 7px;  border: 1px solid #dddd; border-radius: 4px; background-color: #f5f5f5&quot;&gt;
+  &lt;b&gt;Important!&lt;/b&gt;&lt;br&gt;
+  If you change the configuration or mission in SMS or O2A respectively after you imported the meta data into this RDMO, the changes will not be transferred automatically. Use this function to update all meta data of the selected configuration or mission including all registered devices to the current state of SMS or O2A. If you want to refresh all configurations, missions, and individual devices at once use the function under &lt;b&gt;&lt;a href=&quot;https://rdmo-test.nfdi4earth.ulb.tu-darmstadt.de/projects/1685/interview/4785/&quot;&gt;2.5 Refresh all metadata&lt;/a&gt;&lt;/b&gt;. If you have many devices in your configuration or mission, refreshing might take some seconds.
+&lt;/div&gt;</help>
 		<verbose_name lang="en"/>
-		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.011) Configuration / Mission identification for API search</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>select</widget_type>
-		<value_type>option</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets>
-			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/configurations/optionset"/>
-		</optionsets>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>configuration-search</key>
-		<path>configuration-set/configuration-search</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
-	</attribute>
-	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/configurations/optionset">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>configurations/optionset</uri_path>
-		<dc:comment/>
-		<provider_key>sensorsearch_configurations</provider_key>
-		<options/>
-		<conditions/>
-	</optionset>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/description">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>configurations-general/description</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">2.011a) Configuration description:</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
+		<title lang="de">2.1.6 | Refresh meta data:</title>
 		<help lang="de"/>
-		<text lang="de">2.011a) Configuration description:</text>
-		<default_text lang="de"/>
 		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>textarea</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh" order="0"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-status" order="1"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-timestamp" order="2"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-message" order="3"/>
+		</questions>
 		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>configuration-description</key>
-		<path>configuration-set/configuration-description</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/link">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>configurations-general/link</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en"/>
-		<text lang="en">2.014) Link to SMS configuration or O2A mission</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">2.014) Link to SMS configuration or O2A mission</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>configuration-link</key>
-		<path>configuration-set/configuration-link</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
-	</attribute>
+	</questionset>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>configurations-general/refresh</uri_path>
@@ -1647,12 +1560,12 @@ Question: which parent attribute would we need here?</dc:comment>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/refresh-configuration"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Select Yes to reload this configuration and its device assignments from the original backend.</help>
-		<text lang="en">Refresh this configuration from backend:</text>
+		<help lang="en">Select &lt;i&gt;Yes&lt;/i&gt; to start refresh.</help>
+		<text lang="en">Refresh this configuration or mision:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie Ja, um diese Konfiguration und ihre Gerätezuordnungen erneut aus dem ursprünglichen Backend zu laden.</help>
-		<text lang="de">Diese Konfiguration aus dem Backend aktualisieren:</text>
+		<help lang="de"/>
+		<text lang="de">Refresh this configuration or mision:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -1663,7 +1576,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width/>
 		<optionsets>
 			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
 		</optionsets>
@@ -1687,6 +1600,13 @@ Question: which parent attribute would we need here?</dc:comment>
 		<target_text/>
 		<target_option/>
 	</condition>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>configuration-search</key>
+		<path>configuration-set/configuration-search</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
 	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>interview-page-refresh</uri_path>
@@ -1718,7 +1638,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width>6</width>
 		<optionsets/>
 		<conditions>
 			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration"/>
@@ -1754,7 +1674,7 @@ Question: which parent attribute would we need here?</dc:comment>
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width>6</width>
 		<optionsets/>
 		<conditions>
 			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/configurations-general/has-backend-configuration"/>
@@ -1803,19 +1723,126 @@ Question: which parent attribute would we need here?</dc:comment>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configuration_ident_api">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>configuration_ident_api</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en">If your configuration / mission is listed in any of the above listed databases, please enter here the name or any identifier for the search. Then you should be able to select your configuration from the list and the following fields will be filled automatically.
+
+&lt;b&gt; Nevertheless, please check the entries below for correctness in case of automatic entries.&lt;/b&gt;</help>
+		<text lang="en">2.1.1 | Configuration / Mission identification for API search</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de">-- Please switch language to English --</help>
+		<text lang="de">2.1.1 | Configuration / Mission identification for API search</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>select</widget_type>
+		<value_type>option</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/configurations/optionset"/>
+		</optionsets>
+		<conditions/>
+	</question>
+	<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/configurations/optionset">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>configurations/optionset</uri_path>
+		<dc:comment/>
+		<provider_key>sensorsearch_configurations</provider_key>
+		<options/>
+		<conditions/>
+	</optionset>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/description">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>configurations-general/description</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">2.1.2 | Configuration description:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">2.1.2 | Configuration description:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>textarea</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-description">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>configuration-description</key>
+		<path>configuration-set/configuration-description</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/configurations-general/link">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>configurations-general/link</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en"/>
+		<text lang="en">2.1.5 | Link to SMS configuration or O2A mission</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">2.1.5 | Link to SMS configuration or O2A mission</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-link">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>configuration-link</key>
+		<path>configuration-set/configuration-link</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
+	</attribute>
 	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/configuration-set">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instruments/configuration-set</uri_path>
 		<dc:comment/>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/configuration-set"/>
 		<is_collection>True</is_collection>
-		<title lang="en">2.02) Device selection of each configuration or misson</title>
-		<short_title lang="en">2.02) Device selection</short_title>
-		<help lang="en">All individual devices of the fetched configurations or missions are listed below. Here you can either deselect unnecessary devices or add devices which are not part of the configuration by now.</help>
+		<title lang="en">2.2 | Device selection of each configuration or misson</title>
+		<short_title lang="en">2.2 Device selection</short_title>
+		<help lang="en">The individual devices for each of the fetched configurations or missions are listed below. You can either deselect unnecessary devices or add devices which are not part of the respective configuration by now.</help>
 		<verbose_name lang="en">Configuration/Mission</verbose_name>
-		<title lang="de">2.02) Device selection of each configuration or misson</title>
-		<short_title lang="de">2.02) Device selection</short_title>
-		<help lang="de"/>
+		<title lang="de">2.2 | Device selection of each configuration or misson</title>
+		<short_title lang="de">2.2 Device selection</short_title>
+		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">Configuration/Mission</verbose_name>
 		<questionsets/>
 		<questions>
@@ -1832,11 +1859,11 @@ Devices imported from the configuration backend or added individually through se
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Search by name, type, manufacturer, serial number, PID, or another device identifier.</help>
-		<text lang="en">2.02) Devices in this configuration or mission</text>
+		<text lang="en">2.2.1 | Devices in this configuration or mission</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">Device</verbose_name>
-		<help lang="de">Suchen Sie nach Name, Typ, Hersteller, Seriennummer, PID oder einer anderen Gerätekennung.</help>
-		<text lang="de">2.02) Geräte in dieser Konfiguration oder Mission</text>
+		<help lang="de">-- Please switch language to English --</help>
+		<text lang="de">2.2.1 | Devices in this configuration or mission</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de">Gerät</verbose_name>
 		<default_option/>
@@ -1875,17 +1902,18 @@ Devices imported from the configuration backend or added individually through se
 Should be suitable for sensors that are in a sensor management system (SMS and O2A) or also for manual inputs</dc:comment>
 		<attribute dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"/>
 		<is_collection>True</is_collection>
-		<title lang="en">2.03) Device details</title>
-		<short_title lang="en">2.03) Device details</short_title>
-		<help lang="en">Sensor information will be filled automatically in case the device is listed in the sensor management system SMS or O2A REGISTRY or has to be filled manually. If your sensor is listed in &lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt; or &lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;, then please enter a name, PID, or instrument type in the first field and select your device from the list. The form will be automatically filled and you just need to check. Otherwise please enter all required sensor details in the fields below.</help>
+		<title lang="en">2.3 | Device details</title>
+		<short_title lang="en">2.3 Device details</short_title>
+		<help lang="en">All sensor information should already be filled automatically in case the device information is fetched from the configurations or missions of the sensor management system SMS or O2A REGISTRY, otherwise those information has to be filled manually. If your sensor is listed in &lt;a href=&quot;https://registry.o2a-data.de&quot;&gt;O2A REGISTRY&lt;/a&gt; or &lt;a href=&quot;https://helmholtz.software/software/sensor-management-system&quot;&gt;SMS&lt;/a&gt;, then please enter a name, PID, or instrument type in the first field and select your device from the list. The form will be automatically filled and you just need to check. Otherwise please enter all required sensor details in the fields below.</help>
 		<verbose_name lang="en">Device</verbose_name>
-		<title lang="de">2.03) Device details</title>
-		<short_title lang="de">2.03) Device details</short_title>
+		<title lang="de">2.3 | Device details</title>
+		<short_title lang="de">2.3 Device details</short_title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">Device</verbose_name>
 		<questionsets>
 			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/time-range" order="8"/>
 			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/variable-unit" order="9"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-set" order="10"/>
 		</questionsets>
 		<questions>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instrument_ident_api" order="0"/>
@@ -1896,10 +1924,6 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instrument_serial_nr" order="5"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instrument_PID" order="6"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/device-link" order="7"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh" order="10"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-status" order="11"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-timestamp" order="12"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-message" order="13"/>
 		</questions>
 		<conditions/>
 	</page>
@@ -1930,10 +1954,10 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<dc:comment/>
 		<attribute/>
 		<is_collection>False</is_collection>
-		<title lang="en">2.3) Operational time range of your sensor:</title>
+		<title lang="en">2.3.9 | Operational time range of your sensor:</title>
 		<help lang="en">Can differ from configuration or mission.</help>
 		<verbose_name lang="en"/>
-		<title lang="de">2.3) Operational time range of your sensor:</title>
+		<title lang="de">2.3.9 | Operational time range of your sensor:</title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de"/>
 		<questionsets/>
@@ -2003,7 +2027,7 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">End date and time of the sensor implementation:</text>
+		<text lang="de">End date and time of the sensor&lt;br&gt;implementation: &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;YYYY-MM-DD hh:mm&lt;/span&gt;</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2031,10 +2055,10 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<dc:comment>question set for answering variable and unit together</dc:comment>
 		<attribute/>
 		<is_collection>True</is_collection>
-		<title lang="en">2.4) Which parameters or variables will be collected by this instrument?</title>
+		<title lang="en">2.3.10 | Which parameters or variables will be collected by this instrument?</title>
 		<help lang="en">Please use the names and units from metadata standards of your field.</help>
 		<verbose_name lang="en">Variable</verbose_name>
-		<title lang="de">2.4) Which parameters or variables will be collected by this instrument?</title>
+		<title lang="de">2.3.10 | Which parameters or variables will be collected by this instrument?</title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">Variable</verbose_name>
 		<questionsets/>
@@ -2052,11 +2076,11 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">Parameter / Variable name</text>
+		<text lang="en">Name</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Parameter / Variable name</text>
+		<text lang="de">Name</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2100,11 +2124,11 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">Parameter / Variable unit</text>
+		<text lang="en">Unit</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Parameter / Variable unit</text>
+		<text lang="de">Unit</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2126,6 +2150,192 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/preservation/parameter"/>
 	</attribute>
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-set">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general/refresh-set</uri_path>
+		<dc:comment/>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">2.3.11 | Refresh meta data:</title>
+		<help lang="en">&lt;div style=&quot;padding: 3px 7px; border: 1px solid #dddd; border-radius: 4px; background-color: #f5f5f5&quot;&gt;
+  &lt;b&gt;Important!&lt;/b&gt;&lt;br&gt;
+  If you change the device information in SMS or O2A respectively after you imported the meta data into this RDMO, the changes will not be transferred automatically. Use this function to update all meta data of the selected devices to the current state of SMS or O2A. If you want to refresh all configurations, missions, and individual devices at once use the function under &lt;b&gt;&lt;a href=&quot;https://rdmo-test.nfdi4earth.ulb.tu-darmstadt.de/projects/1685/interview/4785/&quot;&gt;2.5 Refresh all metadata&lt;/a&gt;&lt;/b&gt;.
+&lt;/div&gt;</help>
+		<verbose_name lang="en"/>
+		<title lang="de">2.3.11 | Refresh meta data:</title>
+		<help lang="de"/>
+		<verbose_name lang="de"/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh" order="0"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-status" order="1"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-timestamp" order="2"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-message" order="3"/>
+		</questions>
+		<conditions/>
+	</questionset>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general/refresh</uri_path>
+		<dc:comment>Triggers a refresh of the current device from its backend.</dc:comment>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en">Select &lt;i&gt;Yes&lt;/i&gt; to start refresh.</help>
+		<text lang="en">Refresh this device:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Refresh this device:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>yesno</widget_type>
+		<value_type>boolean</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets>
+			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
+		</optionsets>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-device</key>
+		<path>dataset/usage_technology/refresh-device</path>
+		<dc:comment>Boolean action trigger for refreshing one device.</dc:comment>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments-general/has-backend-device</uri_path>
+		<dc:comment>Shows local device refresh controls only when a backend device is selected.</dc:comment>
+		<source dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"/>
+		<relation>notempty</relation>
+		<target_text/>
+		<target_option/>
+	</condition>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix>
+		<key>keywords</key>
+		<path>dataset/usage_technology/keywords</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general/refresh-status</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last refresh status:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Last refresh status:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>6</width>
+		<optionsets/>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-status</key>
+		<path>dataset/usage_technology/refresh-status</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general/refresh-timestamp</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last refresh timestamp:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Last refresh timestamp:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>text</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>6</width>
+		<optionsets/>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-timestamp</key>
+		<path>dataset/usage_technology/refresh-timestamp</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>instruments_general/refresh-message</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message"/>
+		<is_collection>False</is_collection>
+		<is_optional>True</is_optional>
+		<help lang="en"/>
+		<text lang="en">Last refresh message:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de"/>
+		<text lang="de">Last refresh message:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>textarea</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets/>
+		<conditions>
+			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
+		</conditions>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<key>refresh-message</key>
+		<path>dataset/usage_technology/refresh-message</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
+	</attribute>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instrument_ident_api">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instrument_ident_api</uri_path>
@@ -2136,13 +2346,13 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<help lang="en">If your sensor is listed in any of the above listed databases, please enter here the name, type, manufacturer, serial number or PID,... for the search. Then you should be able to select your device from the list and the following fields will be automatically filled.
 
 &lt;b&gt; Nevertheless, please check the entries below for correctness in case of automatic entries.&lt;/b&gt;</help>
-		<text lang="en">2.1) Instrument identification for API search:</text>
+		<text lang="en">2.3.1 | Instrument identification for API search:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">Wenn Ihr Sensor in REGISTRY, SMS oder GIPP aufgeführt ist, geben Sie bitte entweder Name, Typ, Hersteller, Seriennummer oder PID,... ein. Dann sollte Ihr Gerät aus der Liste auswählbar sein und das Formular wird automatisch ausgefüllt.
 
 &lt;b&gt; Bitte prüfen Sie die nachfolgenden Einträge auf Korrektheit falls automatisch befüllt wurde.&lt;/b&gt;</help>
-		<text lang="de">2.1) Identifizierung des Instruments für die API-Suche:</text>
+		<text lang="de">2.3.1 | Instrument identification for API search:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2159,13 +2369,6 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		</optionsets>
 		<conditions/>
 	</question>
-	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords">
-		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix>
-		<key>keywords</key>
-		<path>dataset/usage_technology/keywords</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
-	</attribute>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instrument_name_api">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instrument_name_api</uri_path>
@@ -2174,11 +2377,11 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Use a common name (similar to &lt;span style=&quot;font-style: italic&quot;&gt;long name&lt;/span&gt; in SMS).</help>
-		<text lang="en">2.2) Name of instrument:</text>
+		<text lang="en">2.3.2 | Name of instrument:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.2) Name of instrument:</text>
+		<text lang="de">2.3.2 | Name of instrument:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2221,7 +2424,7 @@ Use controlled vocabularies such as:
 - &lt;a href=&quot;https://glossary.ametsoc.org/wiki/Welcome/&quot;&gt;'Glossary of Meteorology'&lt;/a&gt;
 - &lt;a href=&quot;https://www.odm2.org/&quot;&gt;'ODM2'&lt;/a&gt;
 - &lt;a href=&quot;https://vocab.nerc.ac.uk/&quot;&gt;'NERC'&lt;/a&gt;</help>
-		<text lang="en">2.22) Type of instrument:</text>
+		<text lang="en">2.3.3 | Type of instrument:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">Bitte Kurzbeschreibung des Instrumententyps (in englisch), wie z.B.: gas analyzer, infrared spectrometer, soil moisture probe, lysimeter, anemometer, Lidar, water quality sensor,...
@@ -2233,7 +2436,7 @@ in SMS: https://sms-cv.helmholtz.cloud/sms/cv/app/equipmenttype/
 https://registry.o2a-data.de/items
 
 https://glossary.ametsoc.org/wiki/Welcome</help>
-		<text lang="de">2.22) Type of instrument:</text>
+		<text lang="de">2.3.3 | Type of instrument:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2270,11 +2473,11 @@ https://glossary.ametsoc.org/wiki/Welcome</help>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Please check out and use official trademarks (&lt;a href=&quot;https://euipo.europa.eu/eSearch/#basic/&quot;&gt;European&lt;/a&gt;, &lt;a href=&quot;https://tmsearch.uspto.gov/search/search-information&quot;&gt;US&lt;/a&gt;).</help>
-		<text lang="en">2.23) Instrument Manufacturer:</text>
+		<text lang="en">2.3.4 | Instrument Manufacturer:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.23) Instrument Manufacturer:</text>
+		<text lang="de">2.3.4 | Instrument Manufacturer:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2304,11 +2507,11 @@ https://glossary.ametsoc.org/wiki/Welcome</help>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Provide the official manufacturer notation.</help>
-		<text lang="en">2.24) Instrument Model:</text>
+		<text lang="en">2.3.5 | Instrument Model:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.24) Instrument Model:</text>
+		<text lang="de">2.3.5 | Instrument Model:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2338,11 +2541,11 @@ https://glossary.ametsoc.org/wiki/Welcome</help>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">If no serial number is available provide an inventory number instead.</help>
-		<text lang="en">2.25) Instrument Serial Number:</text>
+		<text lang="en">2.3.6 | Instrument Serial Number:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.25) Instrument Serial Number:</text>
+		<text lang="de">2.3.6 | Instrument Serial Number:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2372,11 +2575,11 @@ https://glossary.ametsoc.org/wiki/Welcome</help>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">If no PID is available, provide another Unique Persistent Identifier (URN or UUID) for the instrument or leave it as &lt;span style=&quot;font-family: monospace; letter-spacing: 0.04em;&quot;&gt;NA&lt;/span&gt; if none exists.</help>
-		<text lang="en">2.26) Unique Persistent Instrument Identification (PID):</text>
+		<text lang="en">2.3.7 | Unique Persistent Instrument Identification (PID):</text>
 		<default_text lang="en">NA</default_text>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.26) Unique Persistent Instrument Identification (PID):</text>
+		<text lang="de">2.3.7 | Unique Persistent Instrument Identification (PID):</text>
 		<default_text lang="de">NA</default_text>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2406,11 +2609,11 @@ https://glossary.ametsoc.org/wiki/Welcome</help>
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">2.27) Link to device in SMS or O2A:</text>
+		<text lang="en">2.3.8 | Link to device in SMS or O2A:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">2.27) Link to device in SMS or O2A:</text>
+		<text lang="de">2.3.8 | Link to device in SMS or O2A:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2432,174 +2635,19 @@ https://glossary.ametsoc.org/wiki/Welcome</help>
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
 	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments_general/refresh</uri_path>
-		<dc:comment>Triggers a refresh of the current device from its backend.</dc:comment>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en">Select Yes to reload this device's metadata from the original backend.</help>
-		<text lang="en">Refresh this device from backend:</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie Ja, um die Metadaten dieses Geräts erneut aus dem ursprünglichen Backend zu laden.</help>
-		<text lang="de">Dieses Gerät aus dem Backend aktualisieren:</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>yesno</widget_type>
-		<value_type>boolean</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets>
-			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
-		</optionsets>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-device</key>
-		<path>dataset/usage_technology/refresh-device</path>
-		<dc:comment>Boolean action trigger for refreshing one device.</dc:comment>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
-	</attribute>
-	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments-general/has-backend-device</uri_path>
-		<dc:comment>Shows local device refresh controls only when a backend device is selected.</dc:comment>
-		<source dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"/>
-		<relation>notempty</relation>
-		<target_text/>
-		<target_option/>
-	</condition>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-status">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments_general/refresh-status</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last refresh status</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Status der letzten Aktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-status</key>
-		<path>dataset/usage_technology/refresh-status</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments_general/refresh-timestamp</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last refresh timestamp</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Zeitpunkt der letzten Aktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>text</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>4</width>
-		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-timestamp</key>
-		<path>dataset/usage_technology/refresh-timestamp</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments_general/refresh-message</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message"/>
-		<is_collection>False</is_collection>
-		<is_optional>True</is_optional>
-		<help lang="en"/>
-		<text lang="en">Last refresh message</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de"/>
-		<text lang="de">Meldung der letzten Aktualisierung</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>textarea</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<key>refresh-message</key>
-		<path>dataset/usage_technology/refresh-message</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
-	</attribute>
 	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/further-info">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>instruments/further-info</uri_path>
 		<dc:comment/>
 		<attribute dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"/>
 		<is_collection>True</is_collection>
-		<title lang="en">2.04) Optional Info</title>
-		<short_title lang="en">2.04) Optional Info</short_title>
-		<help lang="en"/>
+		<title lang="en">2.4 | Optional Information related to your devices</title>
+		<short_title lang="en">2.4 Optional Info</short_title>
+		<help lang="en">All devices entered to your DMP are listed below. To add further information related to the device location etc., just click on the respective sensor and check pre-filled entries from the sensor management systems or add information manually.</help>
 		<verbose_name lang="en">Device</verbose_name>
-		<title lang="de">2.04) Optional Info</title>
-		<short_title lang="de">2.04) Optional Info</short_title>
-		<help lang="de"/>
+		<title lang="de">2.4 | Optional Information related to your devices</title>
+		<short_title lang="de">2.4 Optional Info</short_title>
+		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">Device</verbose_name>
 		<questionsets>
 			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/instruments/further-info/location" order="0"/>
@@ -2621,14 +2669,14 @@ https://glossary.ametsoc.org/wiki/Welcome</help>
 		<dc:comment/>
 		<attribute/>
 		<is_collection>False</is_collection>
-		<title lang="en">2.5) Location of instrument during the project or campaign:</title>
+		<title lang="en">2.4.1 | Location of instrument during the project or campaign:</title>
 		<help lang="en">Either static location for a fixed instrument or start position for moving platforms.
 The actual coordinates of the tracks or cruises of sensors on moving platforms should be included in the dataset.
 For moving platforms the following three questions refer to the start position as well. &lt;br&gt;
 
 If you used the configuration/mission pipeline, individual device locations are obsolete. If not, please provide the location of your device in the following fields.</help>
 		<verbose_name lang="en"/>
-		<title lang="de">2.5) Location of instrument during the project or campaign:</title>
+		<title lang="de">2.4.1 | Location of instrument during the project or campaign:</title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de"/>
 		<questionsets/>
@@ -2721,11 +2769,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">2.52) Instrument location above mean sea level (AMSL in meter):</text>
+		<text lang="en">2.4.2 | Instrument location above mean sea level (AMSL in meter):</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.52) Instrument location above mean sea level (AMSL in meter):</text>
+		<text lang="de">2.4.2 | Instrument location above mean sea level (AMSL in meter):</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2755,11 +2803,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">2.53) Height (or depth) of sensor above or below surface level in meter:</text>
+		<text lang="en">2.4.3 | Height (or depth) of sensor above or below surface level in meter:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">sensor-height</verbose_name>
 		<help lang="de"/>
-		<text lang="de">2.53) Height (or depth) of sensor above or below surface level in meter:</text>
+		<text lang="de">2.4.3 | Height (or depth) of sensor above or below surface level in meter:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de">Sensorhöhe</verbose_name>
 		<default_option/>
@@ -2789,11 +2837,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">2.54) Site name of instrument location:</text>
+		<text lang="en">2.4.4 | Site name of instrument location:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.54) Site name of instrument location:</text>
+		<text lang="de">2.4.4 | Site name of instrument location:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2830,11 +2878,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en">Identify any standard protocols or methodologies that will be used to collect and process the data, if available. Identify the source of the SOP, include a link and digital object identifier (DOI, if available). &lt;br&gt;</help>
-		<text lang="en">2.6) Standard Operating Procedure (SOP), if available:</text>
+		<text lang="en">2.4.5 | Standard Operating Procedure (SOP), if available:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.6) Standard Operating Procedure (SOP), if available:</text>
+		<text lang="de">2.4.5 | Standard Operating Procedure (SOP), if available:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2864,11 +2912,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">2.7) Name of the institution that owns the instrument:</text>
+		<text lang="en">2.4.6 | Name of the institution that owns the instrument:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.7) Name of the institution that owns the instrument:</text>
+		<text lang="de">2.4.6 | Name of the institution that owns the instrument:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2908,11 +2956,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">2.8) Name of person(s) responsible for the instrument:</text>
+		<text lang="en">2.4.7 | Name of person(s) responsible for the instrument:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">Responsibility</verbose_name>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.8) Name of person(s) responsible for the instrument:</text>
+		<text lang="de">2.4.7 | Name of person(s) responsible for the instrument:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de">Responsibility</verbose_name>
 		<default_option/>
@@ -2949,11 +2997,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">2.9) Further comments?</text>
+		<text lang="en">2.4.8 | Further comments?</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">2.9) Further comments?</text>
+		<text lang="de">2.4.8 | Further comments?</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -2981,13 +3029,35 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<dc:comment>Project-wide maintenance actions for metadata imported from external backends.</dc:comment>
 		<attribute/>
 		<is_collection>False</is_collection>
-		<title lang="en">2.05) Refresh imported metadata</title>
-		<short_title lang="en">Refresh metadata</short_title>
-		<help lang="en">Use these actions to reload all imported configuration or device metadata from the original backends.</help>
+		<title lang="en">2.5 | Refresh all imported metadata</title>
+		<short_title lang="en">2.5 Refresh all metadata</short_title>
+		<help lang="en">&lt;div style=&quot;padding: 3px 7px; border: 1px solid #dddd; border-radius: 4px; background-color: #f5f5f5&quot;&gt;
+  &lt;b&gt;Important!&lt;/b&gt;&lt;br&gt;
+  If you change information about your configurations, missions, or individual devices in SMS or O2A respectively after you imported the metadata into this RDMO, the changes will not be transferred automatically. Use these functions to update the metadata of either all configurations or missions and all their registered devices or the metadata of all devices you add individually (not included in any configuration or mission) to the current state of SMS or O2A.
+&lt;/div&gt;</help>
 		<verbose_name lang="en"/>
 		<title lang="de">2.05) Importierte Metadaten aktualisieren</title>
 		<short_title lang="de">Metadaten aktualisieren</short_title>
 		<help lang="de">Mit diesen Aktionen können alle importierten Konfigurations- oder Gerätemetadaten erneut aus den ursprünglichen Backends geladen werden.</help>
+		<verbose_name lang="de"/>
+		<questionsets>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configuration" order="1"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices" order="2"/>
+		</questionsets>
+		<questions/>
+		<conditions/>
+	</page>
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configuration">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/configuration</uri_path>
+		<dc:comment/>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">2.5.1 | Configurations or missions:</title>
+		<help lang="en">Refresh all metadata for all configurations or missions including their devices which are registered in them.</help>
+		<verbose_name lang="en"/>
+		<title lang="de">2.5.1 | Configurations or missions:</title>
+		<help lang="de"/>
 		<verbose_name lang="de"/>
 		<questionsets/>
 		<questions>
@@ -2995,13 +3065,9 @@ If you used the configuration/mission pipeline, individual device locations are 
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/status" order="1"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/timestamp" order="2"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/message" order="3"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/trigger" order="10"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/status" order="11"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/timestamp" order="12"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/message" order="13"/>
 		</questions>
 		<conditions/>
-	</page>
+	</questionset>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/configurations/trigger">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>metadata-refresh/configurations/trigger</uri_path>
@@ -3009,12 +3075,12 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations/trigger"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Select Yes to reload every backend configuration stored in this project.</help>
-		<text lang="en">Refresh all configurations from backend:</text>
+		<help lang="en">Select &lt;i&gt;Yes&lt;/i&gt; to start refresh.</help>
+		<text lang="en">Refresh all configurations or missions:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie Ja, um alle im Projekt gespeicherten Backend-Konfigurationen erneut zu laden.</help>
-		<text lang="de">Alle Konfigurationen aus dem Backend aktualisieren:</text>
+		<help lang="de"/>
+		<text lang="de">Refresh all configurations or missions:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3025,7 +3091,7 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width/>
 		<optionsets>
 			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
 		</optionsets>
@@ -3060,11 +3126,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">Last configuration refresh status</text>
+		<text lang="en">Last configuration refresh status:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Status der letzten Konfigurationsaktualisierung</text>
+		<text lang="de">Last configuration refresh status:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3075,7 +3141,7 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width>6</width>
 		<optionsets/>
 		<conditions/>
 	</question>
@@ -3094,11 +3160,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">Last configuration refresh timestamp</text>
+		<text lang="en">Last configuration refresh timestamp:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Zeitpunkt der letzten Konfigurationsaktualisierung</text>
+		<text lang="de">Last configuration refresh timestamp:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3109,7 +3175,7 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width>6</width>
 		<optionsets/>
 		<conditions/>
 	</question>
@@ -3128,11 +3194,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">Last configuration refresh message</text>
+		<text lang="en">Last configuration refresh message:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Meldung der letzten Konfigurationsaktualisierung</text>
+		<text lang="de">Last configuration refresh message:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3154,6 +3220,27 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/configurations"/>
 	</attribute>
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>metadata-refresh/devices</uri_path>
+		<dc:comment/>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">2.5.2 | Individual devices:</title>
+		<help lang="en">Refresh all metadata of all devices which were not imported via a configuration or mission.</help>
+		<verbose_name lang="en"/>
+		<title lang="de">2.5.2 | Individual devices:</title>
+		<help lang="de"/>
+		<verbose_name lang="de"/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/trigger" order="0"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/status" order="1"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/timestamp" order="2"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/message" order="3"/>
+		</questions>
+		<conditions/>
+	</questionset>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata-refresh/devices/trigger">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>metadata-refresh/devices/trigger</uri_path>
@@ -3161,12 +3248,12 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/trigger"/>
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
-		<help lang="en">Select Yes to reload every materialized device in this project.</help>
-		<text lang="en">Refresh all devices from backend:</text>
+		<help lang="en">Select &lt;i&gt;Yes&lt;/i&gt; to start refresh.</help>
+		<text lang="en">Refresh all devices:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Wählen Sie Ja, um alle im Projekt materialisierten Geräte erneut zu laden.</help>
-		<text lang="de">Alle Geräte aus dem Backend aktualisieren:</text>
+		<help lang="de"/>
+		<text lang="de">Refresh all devices:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3177,7 +3264,7 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width/>
 		<optionsets>
 			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
 		</optionsets>
@@ -3205,11 +3292,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">Last device refresh status</text>
+		<text lang="en">Last device refresh status:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Status der letzten Geräteaktualisierung</text>
+		<text lang="de">Last device refresh status:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3220,7 +3307,7 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width>6</width>
 		<optionsets/>
 		<conditions/>
 	</question>
@@ -3239,11 +3326,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">Last device refresh timestamp</text>
+		<text lang="en">Last device refresh timestamp:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Zeitpunkt der letzten Geräteaktualisierung</text>
+		<text lang="de">Last device refresh timestamp:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3254,7 +3341,7 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width>6</width>
 		<optionsets/>
 		<conditions/>
 	</question>
@@ -3273,11 +3360,11 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">Last device refresh message</text>
+		<text lang="en">Last device refresh message:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">Meldung der letzten Geräteaktualisierung</text>
+		<text lang="de">Last device refresh message:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3303,10 +3390,10 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>data_collection</uri_path>
 		<dc:comment/>
-		<title lang="en">3) Data Collections</title>
-		<short_title lang="en"/>
-		<title lang="de">3) Datenkollektionen</title>
-		<short_title lang="de"/>
+		<title lang="en">3 | Data Collections</title>
+		<short_title lang="en">3 Data Collections</short_title>
+		<title lang="de">3 | Data Collections</title>
+		<short_title lang="de">3 Data Collections</short_title>
 		<pages>
 			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc-general" order="1"/>
 			<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_details" order="2"/>
@@ -3320,14 +3407,14 @@ If you used the configuration/mission pipeline, individual device locations are 
 		<dc:comment/>
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/id"/>
 		<is_collection>True</is_collection>
-		<title lang="en">3.1) General Information</title>
-		<short_title lang="en">3.1) General</short_title>
+		<title lang="en">3.1 | General Information</title>
+		<short_title lang="en">3.1 General</short_title>
 		<help lang="en">In this section, you can provide metadata for the data collections you produce during your research project.
 
 Please provide a description for each of your data collection types. A data collection may contain data from various configurations and devices which must be listed below.</help>
 		<verbose_name lang="en">data collection</verbose_name>
-		<title lang="de">3.1) General Information</title>
-		<short_title lang="de">General</short_title>
+		<title lang="de">3.1 | General Information</title>
+		<short_title lang="de">3.1 General</short_title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">data collection</verbose_name>
 		<questionsets>
@@ -3354,10 +3441,10 @@ Please provide a description for each of your data collection types. A data coll
 		<dc:comment/>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dc-lead"/>
 		<is_collection>False</is_collection>
-		<title lang="en">3.13) Responsible person(s) for the data collection:</title>
+		<title lang="en">3.1.3 | Responsible person(s) for the data collection:</title>
 		<help lang="en"/>
 		<verbose_name lang="en"/>
-		<title lang="de">3.13) Responsible person(s) for the data collection:</title>
+		<title lang="de">3.1.3 | Responsible person(s) for the data collection:</title>
 		<help lang="de"/>
 		<verbose_name lang="de"/>
 		<questionsets>
@@ -3538,10 +3625,10 @@ Please provide a description for each of your data collection types. A data coll
 		<dc:comment>questionset for variables and units in dataset</dc:comment>
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/metadata"/>
 		<is_collection>True</is_collection>
-		<title lang="en">3.15) Which variables will be contained in the data collection from your devices?</title>
+		<title lang="en">3.1.5 | Which variables will be contained in the data collection from your devices?</title>
 		<help lang="en">Is filled automatically by selecting the devices for this data collection in the question above. Deselect all parameters or variables which shall not be included in your published data collection.</help>
 		<verbose_name lang="en">variable</verbose_name>
-		<title lang="de">3.15) Which variables will be contained in the data collection from your devices?</title>
+		<title lang="de">3.1.5 | Which variables will be contained in the data collection from your devices?</title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">variable</verbose_name>
 		<questionsets/>
@@ -3635,11 +3722,11 @@ Please provide a description for each of your data collection types. A data coll
 		<is_optional>False</is_optional>
 		<help lang="en">Preferably with project, campaign name, location, time, etc..
 This might be the naming of your data collection and improves the findability of your collection for example in data repositories. Therefore, keep machine-readability in mind (use underscores instead of spaces, etc.).</help>
-		<text lang="en">3.11) Descriptive (but brief) name for this data collection:</text>
+		<text lang="en">3.1.1 | Descriptive (but brief) name for this data collection:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.11) Descriptive (but brief) name for this data collection:</text>
+		<text lang="de">3.1.1 | Descriptive (but brief) name for this data collection:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3670,11 +3757,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_optional>False</is_optional>
 		<help lang="en">The description should serve as an overview for the data collections gathered in your project and could be used for the abstract in a data repository.
 &lt;span style=&quot;margin-top: 1px; margin-left: 5px; background-color: #efefef; color: #777; display: inline-block; min-width: 10px; padding: 3px 7px; font-size: 12px; font-weight: bold; line-height: 1; text-align: center;  border-radius: 10px;&quot;&gt;max. 200 words &lt;/span&gt;</help>
-		<text lang="en">3.12) Description of the data collection:</text>
+		<text lang="en">3.1.2 | Description of the data collection:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.12) Description of the data collection:</text>
+		<text lang="de">3.1.2 | Description of the data collection:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -3704,11 +3791,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Which devices were used for this data collection? You can select devices entered in section 2, remove or add instruments depending on the context of the data collection to be described.</help>
-		<text lang="en">3.14) Devices contributing to the data collection:</text>
+		<text lang="en">3.1.4 | Devices contributing to the data collection:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en">Device</verbose_name>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.14) Devices contributing to the data collection:</text>
+		<text lang="de">3.1.4 | Devices contributing to the data collection:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de">Device</verbose_name>
 		<default_option/>
@@ -3746,24 +3833,23 @@ This might be the naming of your data collection and improves the findability of
 		<dc:comment/>
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/id"/>
 		<is_collection>True</is_collection>
-		<title lang="en">3.2) Data collection details</title>
-		<short_title lang="en">3.2) Details</short_title>
+		<title lang="en">3.2 | Data collection details</title>
+		<short_title lang="en">3.2 Details</short_title>
 		<help lang="en"/>
 		<verbose_name lang="en">Data collection</verbose_name>
-		<title lang="de">3.2) Data collection details</title>
-		<short_title lang="de">3.2) Details</short_title>
+		<title lang="de">3.2 | Data collection details</title>
+		<short_title lang="de">3.2 Details</short_title>
 		<help lang="de"/>
 		<verbose_name lang="de">Data collection</verbose_name>
 		<questionsets>
 			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_details/temporal-resolution" order="1"/>
+			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_details/temporal-coverage" order="2"/>
 		</questionsets>
 		<questions>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_type" order="0"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc-spatial-coverage/type" order="2"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc-spatial-coverage/type" order="3"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_horizontal" order="4"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_vertical" order="5"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_start" order="6"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_end" order="7"/>
 		</questions>
 		<conditions/>
 	</page>
@@ -3773,10 +3859,10 @@ This might be the naming of your data collection and improves the findability of
 		<dc:comment/>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dc-temporal-resolution"/>
 		<is_collection>False</is_collection>
-		<title lang="en">3.26) Temporal resolution of the data collection:</title>
+		<title lang="en">3.2.2 | Temporal resolution of the data collection:</title>
 		<help lang="en"/>
 		<verbose_name lang="en"/>
-		<title lang="de">3.26) Temporal resolution of the data collection:</title>
+		<title lang="de">3.2.2 | Temporal resolution of the data collection:</title>
 		<help lang="de"/>
 		<verbose_name lang="de"/>
 		<questionsets/>
@@ -3962,6 +4048,93 @@ This might be the naming of your data collection and improves the findability of
 		<view_text lang="de"/>
 		<additional_input/>
 	</option>
+	<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_details/temporal-coverage">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>dc_details/temporal-coverage</uri_path>
+		<dc:comment/>
+		<attribute/>
+		<is_collection>False</is_collection>
+		<title lang="en">3.2.3 | Actual or planned temporal coverage of the data collection:</title>
+		<help lang="en"/>
+		<verbose_name lang="en"/>
+		<title lang="de">3.2.3 | Actual or planned temporal coverage of the data collection:</title>
+		<help lang="de"/>
+		<verbose_name lang="de"/>
+		<questionsets/>
+		<questions>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_start" order="0"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_end" order="1"/>
+		</questions>
+		<conditions/>
+	</questionset>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_start">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>dc_start</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/start_date"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en">Please provide the start date of the data set.</help>
+		<text lang="en">Data collection start date:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de">-- Please switch language to English --</help>
+		<text lang="de">Data collection start date:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>date</widget_type>
+		<value_type>datetime</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/start_date">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix>
+		<key>start_date</key>
+		<path>dataset/usage_technology/processing/start_date</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing"/>
+	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_end">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>dc_end</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/end_date"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en">Please provide the end date of the data set.</help>
+		<text lang="en">Data collection end date:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de">-- Please switch language to English --</help>
+		<text lang="de">Data collection end date:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>date</widget_type>
+		<value_type>datetime</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width>6</width>
+		<optionsets/>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/end_date">
+		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix>
+		<key>end_date</key>
+		<path>dataset/usage_technology/processing/end_date</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing"/>
+	</attribute>
 	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_type">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>dc_type</uri_path>
@@ -3970,11 +4143,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Please select whether the data collection is a one-time data collection, a continuous series of measurements (data stream), or a regular series of snapshots (e.g. radar outputs).</help>
-		<text lang="en">3.21) Type of the data collection:</text>
+		<text lang="en">3.2.1 | Type of the data collection:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.21) Type of the data collection:</text>
+		<text lang="de">3.2.1 | Type of the data collection:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -4060,11 +4233,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">3.22) Spatial coverage of the data:</text>
+		<text lang="en">3.2.4 | Spatial coverage of the data:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">3.22) Spatial coverage of the data:</text>
+		<text lang="de">3.2.4 | Spatial coverage of the data:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -4165,11 +4338,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>True</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">3.23) Horizontal resolution of the data collection:</text>
+		<text lang="en">3.2.5 | Horizontal resolution of the data collection:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">3.23) Horizontal resolution of the data collection:</text>
+		<text lang="de">3.2.5 | Horizontal resolution of the data collection:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -4240,11 +4413,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en"/>
-		<text lang="en">3.24) Vertical resolution of the data collection:</text>
+		<text lang="en">3.2.6 | Vertical resolution of the data collection:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">3.24) Vertical resolution of the data collection:</text>
+		<text lang="de">3.2.6 | Vertical resolution of the data collection:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -4266,86 +4439,18 @@ This might be the naming of your data collection and improves the findability of
 		<dc:comment/>
 		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location"/>
 	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_start">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>dc_start</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/start_date"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en">Please provide the start date of the data set.</help>
-		<text lang="en">3.25a) Actual or planned temporal coverage of the data (start date):</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.25a) Actual or planned temporal coverage of the data (start date):</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>date</widget_type>
-		<value_type>datetime</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/start_date">
-		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix>
-		<key>start_date</key>
-		<path>dataset/usage_technology/processing/start_date</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing"/>
-	</attribute>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dc_end">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>dc_end</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/end_date"/>
-		<is_collection>False</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en">Please provide the end date of the data set.</help>
-		<text lang="en">3.25b) Actual or planned temporal coverage of the data (end date):</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.25b) Actual or planned temporal coverage of the data (end date):</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>date</widget_type>
-		<value_type>datetime</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width>6</width>
-		<optionsets/>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/end_date">
-		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix>
-		<key>end_date</key>
-		<path>dataset/usage_technology/processing/end_date</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing"/>
-	</attribute>
 	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/data_exchange">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>data_exchange</uri_path>
 		<dc:comment/>
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/id"/>
 		<is_collection>True</is_collection>
-		<title lang="en">3.3) Data Exchange</title>
-		<short_title lang="en">3.3) Data Exchange</short_title>
-		<help lang="en"/>
+		<title lang="en">3.3 | Data Exchange</title>
+		<short_title lang="en">3.3 Data Exchange</short_title>
+		<help lang="en">Please provide information about data exchange during or directly after your ongoing project.</help>
 		<verbose_name lang="en">Data collection</verbose_name>
-		<title lang="de">3.3) Data Exchange</title>
-		<short_title lang="de">3.3) Data Exchange</short_title>
+		<title lang="de">3.3 | Data Exchange</title>
+		<short_title lang="de">3.3 Data Exchange</short_title>
 		<help lang="de"/>
 		<verbose_name lang="de">Data collection</verbose_name>
 		<questionsets>
@@ -4359,7 +4464,6 @@ This might be the naming of your data collection and improves the findability of
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/moses/dataset/data-exchange/quality_check" order="5"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/moses/dataset/data-exchange/volume" order="6"/>
 			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/embargo_period_yes_no" order="7"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/access_restrictions" order="9"/>
 		</questions>
 		<conditions/>
 	</page>
@@ -4415,11 +4519,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">When will the embargo end?</text>
+		<text lang="en">3.3.7.a | When will the embargo end?</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">When will the embargo end?</text>
+		<text lang="de">3.3.7.a | When will the embargo end?</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -4430,7 +4534,7 @@ This might be the naming of your data collection and improves the findability of
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>4</width>
+		<width>5</width>
 		<optionsets/>
 		<conditions/>
 	</question>
@@ -4449,11 +4553,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">What is the reason for the embargo?</text>
+		<text lang="en">3.3.7.b | What is the reason for the embargo?</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">What is the reason for the embargo?</text>
+		<text lang="de">3.3.7.b | What is the reason for the embargo?</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -4464,7 +4568,7 @@ This might be the naming of your data collection and improves the findability of
 		<minimum/>
 		<step/>
 		<unit/>
-		<width>8</width>
+		<width>7</width>
 		<optionsets/>
 		<conditions/>
 	</question>
@@ -4490,11 +4594,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en"/>
-		<text lang="en">3.31) When will this dataset be available for exchange?</text>
+		<text lang="en">3.3.1 |  When will this dataset be available for exchange?</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">3.31) When will this dataset be available for exchange?</text>
+		<text lang="de">3.3.1 |  When will this dataset be available for exchange?</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -4595,11 +4699,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Please provide the means on how this data collection will be made accessible during your project or campaign.</help>
-		<text lang="en">3.32) How will this data collection be exchanged during your project or campaign?</text>
+		<text lang="en">3.3.2 | How will this data collection be exchanged during your project or campaign?</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.32) How will this data collection be exchanged during your project or campaign?</text>
+		<text lang="de">3.3.2 | How will this data collection be exchanged during your project or campaign?</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -4685,11 +4789,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Please provide the intended user group of this data collection before official publication in a designated repository.</help>
-		<text lang="en">3.33) Who is granted access to this dataset during your project or campaign?</text>
+		<text lang="en">3.3.3 | Who is granted access to this dataset during your project or campaign?</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">3.33) Who is granted access to this dataset during your project or campaign?</text>
+		<text lang="de">3.3.3 | Who is granted access to this dataset during your project or campaign?</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -4797,11 +4901,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Identify the standardized formats in which the data will be generated, maintained, and made available. Use common and descriptive file formats such as NetCDF.</help>
-		<text lang="en">3.35) Format / Type of data:</text>
+		<text lang="en">3.3.4 | Format / Type of data:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.35) Format / Type of data:</text>
+		<text lang="de">3.3.4 | Format / Type of data:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -5097,11 +5201,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>True</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Has the dataset been checked for quality issues?</help>
-		<text lang="en">3.36) Quality Assurance:</text>
+		<text lang="en">3.3.5 | Quality Assurance:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.36) Quality Assurance:</text>
+		<text lang="de">3.3.5 | Quality Assurance:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -5187,11 +5291,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Please provide an estimation of the data size that will be generated:</help>
-		<text lang="en">3.37) Estimated size of the data set:</text>
+		<text lang="en">3.3.6 | Estimated size of the data set:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">3.37) Estimated size of the data set:</text>
+		<text lang="de">3.3.6 | Estimated size of the data set:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -5329,11 +5433,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Project and campaign data and associated products should be available publicly at the end of your project or campaign. If a request to limit access for a period of time after project completion is needed, please identify the length of the time and the reason for the extension.</help>
-		<text lang="en">3.38) Shall there be an embargo period before the data are made available?</text>
+		<text lang="en">3.3.7 | Shall there be an embargo period before the data are made available?</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.38) Shall there be an embargo period before the data are made available?</text>
+		<text lang="de">3.3.7 | Shall there be an embargo period before the data are made available?</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -5348,192 +5452,28 @@ This might be the naming of your data collection and improves the findability of
 		<optionsets/>
 		<conditions/>
 	</question>
-	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/access_restrictions">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>dataset/access_restrictions</uri_path>
-		<dc:comment/>
-		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/sharing/sharing_license"/>
-		<is_collection>True</is_collection>
-		<is_optional>False</is_optional>
-		<help lang="en">Please indicate limitations on access or reuse (e.g. licenses, sensitive data, restricted data, software with license restrictions) according to &lt;a href=&quot;https://creativecommons.org/cc-licenses/&quot;&gt;creative commons&lt;/a&gt;.</help>
-		<text lang="en">3.39) License:</text>
-		<default_text lang="en"/>
-		<verbose_name lang="en"/>
-		<help lang="de">-- Please switch language to English --</help>
-		<text lang="de">3.39) License:</text>
-		<default_text lang="de"/>
-		<verbose_name lang="de"/>
-		<default_option/>
-		<default_external_id/>
-		<widget_type>radio</widget_type>
-		<value_type>text</value_type>
-		<maximum/>
-		<minimum/>
-		<step/>
-		<unit/>
-		<width/>
-		<optionsets>
-			<optionset dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/dataset/access_restrictions"/>
-		</optionsets>
-		<conditions/>
-	</question>
-	<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/sharing/sharing_license">
-		<uri_prefix>https://rdmorganiser.github.io/terms</uri_prefix>
-		<key>sharing_license</key>
-		<path>project/dataset/sharing/sharing_license</path>
-		<dc:comment/>
-		<parent dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/sharing"/>
-	</attribute>
-	<optionset dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/dataset/access_restrictions">
-		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
-		<uri_path>dataset/access_restrictions</uri_path>
-		<dc:comment/>
-		<provider_key/>
-		<options>
-			<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc0" order="0"/>
-			<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc-by4" order="1"/>
-			<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc-by-sa" order="2"/>
-			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc_by-nd" order="3"/>
-			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc" order="4"/>
-			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc-sa" order="5"/>
-			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc-nd" order="6"/>
-			<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_other" order="7"/>
-		</options>
-		<conditions/>
-	</optionset>
-	<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc0">
-		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
-		<uri_path>access_restrictions_cc0</uri_path>
-		<dc:comment/>
-		<text lang="en">CC0 (free usage - &quot;no rights reserved&quot;)</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">CC0 (free usage - &quot;no rights reserved&quot;)</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input/>
-	</option>
-	<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc-by4">
-		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
-		<uri_path>access_restrictions_cc-by4</uri_path>
-		<dc:comment/>
-		<text lang="en">CC-BY (credit must be given to the creator)</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">CC-BY (credit must be given to the creator)</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input/>
-	</option>
-	<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc-by-sa">
-		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
-		<uri_path>access_restrictions_cc-by-sa</uri_path>
-		<dc:comment/>
-		<text lang="en">CC BY-SA (credit must be given to the creator, adaptations must be shared under the same terms)</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">CC BY-SA (credit must be given to the creator, adaptations must be shared under the same terms)</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input/>
-	</option>
-	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc_by-nd">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>access_restrictions_cc_by-nd</uri_path>
-		<dc:comment/>
-		<text lang="en">CC BY-ND (credit must be given to the creator, no derivatives or adaptations of the work are permitted)</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">CC BY-ND (credit must be given to the creator, no derivatives or adaptations of the work are permitted)</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input/>
-	</option>
-	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>access_restrictions_cc-by-nc</uri_path>
-		<dc:comment/>
-		<text lang="en">CC BY-NC (credit must be given to the creator, only noncommercial use of the work is permitted)</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">CC BY-NC (credit must be given to the creator, only noncommercial use of the work is permitted)</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input/>
-	</option>
-	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc-sa">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>access_restrictions_cc-by-nc-sa</uri_path>
-		<dc:comment/>
-		<text lang="en">CC BY-NC-SA (credit must be given to the creator, only noncommercial use, adaptations to be shared under the same terms)</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">CC BY-NC-SA (credit must be given to the creator, only noncommercial use, adaptations to be shared under the same terms)</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input/>
-	</option>
-	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc-nd">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>access_restrictions_cc-by-nc-nd</uri_path>
-		<dc:comment/>
-		<text lang="en">CC BY-NC-ND (credit must be given to the creator, only noncommercial use, no derivatives or adaptations are permitted)</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">CC BY-NC-ND (credit must be given to the creator, only noncommercial use, no derivatives or adaptations are permitted)</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input/>
-	</option>
-	<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_other">
-		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
-		<uri_path>access_restrictions_other</uri_path>
-		<dc:comment/>
-		<text lang="en">If other, please specify</text>
-		<help lang="en"/>
-		<default_text lang="en"/>
-		<view_text lang="en"/>
-		<text lang="de">If other, please specify</text>
-		<help lang="de"/>
-		<default_text lang="de"/>
-		<view_text lang="de"/>
-		<additional_input>text</additional_input>
-	</option>
 	<page dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
 		<uri_path>metadata</uri_path>
 		<dc:comment/>
 		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/id"/>
 		<is_collection>True</is_collection>
-		<title lang="en">3.4) Metadata</title>
-		<short_title lang="en"/>
-		<help lang="en">Please insert the requested details for each of the different datasets.</help>
+		<title lang="en">3.4 | Data publications</title>
+		<short_title lang="en">3.4 Data publications</short_title>
+		<help lang="en">Please provide information about (planned) publications of your datasets. Insert the requested details for each of the different datasets.</help>
 		<verbose_name lang="en">Data collection</verbose_name>
-		<title lang="de">3.4) Metadata</title>
-		<short_title lang="de"/>
+		<title lang="de">3.4 | Data publications</title>
+		<short_title lang="de">3.4 Data publications</short_title>
 		<help lang="de">-- Please switch language to English --</help>
 		<verbose_name lang="de">Data collection</verbose_name>
 		<questionsets>
 			<questionset dc:uri="https://rdmo.nfdi4earth.de/terms/questions/metadata/lead" order="0"/>
 		</questionsets>
 		<questions>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/metadata/pid" order="3"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/metadata/repository" order="5"/>
-			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/metadata/citation" order="6"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/metadata/pid" order="1"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/metadata/repository" order="2"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/metadata/citation" order="3"/>
+			<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/access_restrictions" order="4"/>
 		</questions>
 		<conditions/>
 	</page>
@@ -5543,10 +5483,10 @@ This might be the naming of your data collection and improves the findability of
 		<dc:comment/>
 		<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/metadata-lead"/>
 		<is_collection>False</is_collection>
-		<title lang="en">3.41) Who is responsible for the metadata?</title>
+		<title lang="en">3.4.1 | Who is responsible for the metadata?</title>
 		<help lang="en"/>
 		<verbose_name lang="en"/>
-		<title lang="de">3.41) Who is responsible for the metadata?</title>
+		<title lang="de">3.4.1 | Who is responsible for the metadata?</title>
 		<help lang="de"/>
 		<verbose_name lang="de"/>
 		<questionsets>
@@ -5892,11 +5832,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Responsible for the metadata means creating and updating metadata compliant with metadata standards.</help>
-		<text lang="en">Is the person responsible for the data collection also responsible for the metadata?</text>
+		<text lang="en">3.4.1a | Is the person responsible for the data collection also responsible for the metadata?</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">Verantwortlich für die Metadaten bedeutet die Erstellung und Pflege von Metadaten konform mit Metadaten-Standards.</help>
-		<text lang="de">3.41) Ist dieselbe Person, die für die Datensammlung verantwortlich ist, auch für die Metadaten verantwortlich?</text>
+		<text lang="de">3.4.1a | Is the person responsible for the data collection also responsible for the metadata?</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -5919,11 +5859,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>False</is_optional>
 		<help lang="en">Provide a persistent Identifier (PID) / link to the data when publicly available. Otherwise insert information about your publication plan.</help>
-		<text lang="en">3.43) Persistent Identifier (PID) or link to data product:</text>
+		<text lang="en">3.4.2 | Persistent Identifier (PID) or link to data product:</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de">Provide a persistent Identifier (PID) / link to the data when publicly available.</help>
-		<text lang="de">3.43) Persistent Identifier (PID) or link to data product:</text>
+		<text lang="de">3.4.2 | Persistent Identifier (PID) or link to data product:</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -5960,11 +5900,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>True</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en">Only for datasets that are not publicly available.</help>
-		<text lang="en">3.45) Repository for data - redundant, if PID available</text>
+		<text lang="en">3.4.3 | Repository for data - redundant, if PID available</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
 		<help lang="de"/>
-		<text lang="de">3.45) Repository for data - redundant, if PID available</text>
+		<text lang="de">3.4.3 | Repository for data - redundant, if PID available</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -6080,11 +6020,11 @@ This might be the naming of your data collection and improves the findability of
 		<is_collection>False</is_collection>
 		<is_optional>True</is_optional>
 		<help lang="en">Specify how the data should be cited.</help>
-		<text lang="en">3.46) Citation - optional, if PID available</text>
+		<text lang="en">3.4.4 | Citation - optional, if PID available</text>
 		<default_text lang="en"/>
 		<verbose_name lang="en"/>
-		<help lang="de">Specify how the data should be cited.</help>
-		<text lang="de">3.46) Citation - optional, if PID available</text>
+		<help lang="de"/>
+		<text lang="de">3.4.4 | Citation - optional, if PID available</text>
 		<default_text lang="de"/>
 		<verbose_name lang="de"/>
 		<default_option/>
@@ -6106,4 +6046,169 @@ This might be the naming of your data collection and improves the findability of
 		<dc:comment/>
 		<parent dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/pids"/>
 	</attribute>
+	<question dc:uri="https://rdmo.nfdi4earth.de/terms/questions/dataset/access_restrictions">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>dataset/access_restrictions</uri_path>
+		<dc:comment/>
+		<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/sharing/sharing_license"/>
+		<is_collection>False</is_collection>
+		<is_optional>False</is_optional>
+		<help lang="en">Please indicate limitations on access or reuse (e.g. licenses, sensitive data, restricted data, software with license restrictions) according to &lt;a href=&quot;https://creativecommons.org/cc-licenses/&quot;&gt;creative commons&lt;/a&gt;.</help>
+		<text lang="en">3.4.5 | License:</text>
+		<default_text lang="en"/>
+		<verbose_name lang="en"/>
+		<help lang="de">-- Please switch language to English --</help>
+		<text lang="de">3.4.5 | License:</text>
+		<default_text lang="de"/>
+		<verbose_name lang="de"/>
+		<default_option/>
+		<default_external_id/>
+		<widget_type>radio</widget_type>
+		<value_type>text</value_type>
+		<maximum/>
+		<minimum/>
+		<step/>
+		<unit/>
+		<width/>
+		<optionsets>
+			<optionset dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/dataset/access_restrictions"/>
+		</optionsets>
+		<conditions/>
+	</question>
+	<attribute dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/sharing/sharing_license">
+		<uri_prefix>https://rdmorganiser.github.io/terms</uri_prefix>
+		<key>sharing_license</key>
+		<path>project/dataset/sharing/sharing_license</path>
+		<dc:comment/>
+		<parent dc:uri="https://rdmorganiser.github.io/terms/domain/project/dataset/sharing"/>
+	</attribute>
+	<optionset dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/dataset/access_restrictions">
+		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
+		<uri_path>dataset/access_restrictions</uri_path>
+		<dc:comment/>
+		<provider_key/>
+		<options>
+			<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc0" order="0"/>
+			<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc-by4" order="1"/>
+			<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc-by-sa" order="2"/>
+			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc_by-nd" order="3"/>
+			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc" order="4"/>
+			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc-sa" order="5"/>
+			<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc-nd" order="6"/>
+			<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_other" order="7"/>
+		</options>
+		<conditions/>
+	</optionset>
+	<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc0">
+		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
+		<uri_path>access_restrictions_cc0</uri_path>
+		<dc:comment/>
+		<text lang="en">CC0 (free usage - &quot;no rights reserved&quot;)</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">CC0 (free usage - &quot;no rights reserved&quot;)</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input/>
+	</option>
+	<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc-by4">
+		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
+		<uri_path>access_restrictions_cc-by4</uri_path>
+		<dc:comment/>
+		<text lang="en">CC-BY (credit must be given to the creator)</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">CC-BY (credit must be given to the creator)</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input/>
+	</option>
+	<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_cc-by-sa">
+		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
+		<uri_path>access_restrictions_cc-by-sa</uri_path>
+		<dc:comment/>
+		<text lang="en">CC BY-SA (credit must be given to the creator, adaptations must be shared under the same terms)</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">CC BY-SA (credit must be given to the creator, adaptations must be shared under the same terms)</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input/>
+	</option>
+	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc_by-nd">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>access_restrictions_cc_by-nd</uri_path>
+		<dc:comment/>
+		<text lang="en">CC BY-ND (credit must be given to the creator, no derivatives or adaptations of the work are permitted)</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">CC BY-ND (credit must be given to the creator, no derivatives or adaptations of the work are permitted)</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input/>
+	</option>
+	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>access_restrictions_cc-by-nc</uri_path>
+		<dc:comment/>
+		<text lang="en">CC BY-NC (credit must be given to the creator, only noncommercial use of the work is permitted)</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">CC BY-NC (credit must be given to the creator, only noncommercial use of the work is permitted)</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input/>
+	</option>
+	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc-sa">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>access_restrictions_cc-by-nc-sa</uri_path>
+		<dc:comment/>
+		<text lang="en">CC BY-NC-SA (credit must be given to the creator, only noncommercial use, adaptations to be shared under the same terms)</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">CC BY-NC-SA (credit must be given to the creator, only noncommercial use, adaptations to be shared under the same terms)</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input/>
+	</option>
+	<option dc:uri="https://rdmo.nfdi4earth.de/terms/options/access_restrictions_cc-by-nc-nd">
+		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
+		<uri_path>access_restrictions_cc-by-nc-nd</uri_path>
+		<dc:comment/>
+		<text lang="en">CC BY-NC-ND (credit must be given to the creator, only noncommercial use, no derivatives or adaptations are permitted)</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">CC BY-NC-ND (credit must be given to the creator, only noncommercial use, no derivatives or adaptations are permitted)</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input/>
+	</option>
+	<option dc:uri="https://rdmo-sandbox.gfz-potsdam.de/terms/options/access_restrictions_other">
+		<uri_prefix>https://rdmo-sandbox.gfz-potsdam.de/terms</uri_prefix>
+		<uri_path>access_restrictions_other</uri_path>
+		<dc:comment/>
+		<text lang="en">If other, please specify</text>
+		<help lang="en"/>
+		<default_text lang="en"/>
+		<view_text lang="en"/>
+		<text lang="de">If other, please specify</text>
+		<help lang="de"/>
+		<default_text lang="de"/>
+		<view_text lang="de"/>
+		<additional_input>text</additional_input>
+	</option>
 </rdmo>
