@@ -30,6 +30,9 @@ The plugin supports four connected workflows:
   behavior, authentication, performance, and current backend limitations.
 - [Developer architecture](developer-architecture.md) describes module
   responsibilities and the service boundary used for synchronization logic.
+- [Development history](development-history.md) tells the curated story of the
+  plugin's evolution, major releases, and the design decisions behind its
+  current architecture.
 - [SMS location and configuration-period remediation plan](sms-location-and-configuration-period-plan.md)
   records the reviewer findings and the planned resolver, diagnostics,
   configuration, testing, feedback, and catalog-period changes.
