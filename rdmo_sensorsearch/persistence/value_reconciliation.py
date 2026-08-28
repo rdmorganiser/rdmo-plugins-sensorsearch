@@ -20,6 +20,36 @@ from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
 logger = logging.getLogger(__name__)
 
 
+class _ScalarScopeResolver:
+    """Reuse one project value index while resolving all fields in one result."""
+
+    def __init__(self, instance):
+        self.project = instance.project
+        self.catalog = self.project.catalog
+        self.catalog.prefetch_elements()
+        values = self.project.values.filter(snapshot=None).select_related("attribute")
+        self.answer_tree = AnswerTree(self.catalog, values)
+        self._scopes_by_key: dict[tuple[int, int, str, int], list[tuple[str, int]]] = {}
+
+    def resolve(self, instance, attribute) -> list[tuple[str, int]]:
+        base_scope = (_normalize_set_prefix(instance.set_prefix), instance.set_index)
+        key = (instance.attribute_id, attribute.id, *base_scope)
+        cached = self._scopes_by_key.get(key)
+        if cached is not None:
+            return cached
+
+        scopes = _scalar_scopes_via_answer_tree(instance, attribute, answer_tree=self.answer_tree)
+        self._scopes_by_key[key] = scopes
+        return scopes
+
+
+def _attributes_by_uri(attribute_uris) -> dict[str, Attribute]:
+    attributes: dict[str, Attribute] = {}
+    for attribute in Attribute.objects.filter(uri__in=set(attribute_uris)).order_by("id"):
+        attributes.setdefault(attribute.uri, attribute)
+    return attributes
+
+
 def _is_blank_scalar(value: Any) -> bool:
     if value is None:
         return True
@@ -247,18 +277,21 @@ def apply_mapped_values(instance, mapped_values: dict):
         return
 
     with transaction.atomic(), mute_value_sync():
+        attributes = _attributes_by_uri(mapped_values)
+        scope_resolver: _ScalarScopeResolver | None = None
         scope_cache: dict[int, list[tuple[str, int]]] = {}
         for attribute_uri, value in mapped_values.items():
-            try:
-                attribute = Attribute.objects.get(uri=attribute_uri)
-            except Attribute.DoesNotExist:
+            attribute = attributes.get(attribute_uri)
+            if attribute is None:
                 continue
 
             if isinstance(value, list):
                 _apply_list(instance, attribute, value)
                 continue
 
-            scopes = scope_cache.setdefault(attribute.id, _scalar_scopes(instance, attribute))
+            if scope_resolver is None:
+                scope_resolver = _ScalarScopeResolver(instance)
+            scopes = scope_cache.setdefault(attribute.id, _scalar_scopes(instance, attribute, scope_resolver))
             if not scopes:
                 scopes = [(_normalize_set_prefix(instance.set_prefix), instance.set_index)]
             if len(scopes) > 1:
@@ -288,17 +321,16 @@ def apply_mapped_values(instance, mapped_values: dict):
             current = queryset.first()
 
             if current is None:
-                _, created, changed = upsert_value_if_changed(
-                    {
-                        "project": instance.project,
-                        "attribute": attribute,
-                        "snapshot": None,
-                        "set_prefix": primary_set_prefix,
-                        "set_index": primary_set_index,
-                        "set_collection": False,
-                    },
-                    {"text": normalized_value},
+                Value.objects.create(
+                    project=instance.project,
+                    attribute=attribute,
+                    snapshot=None,
+                    set_prefix=primary_set_prefix,
+                    set_index=primary_set_index,
+                    set_collection=False,
+                    text=normalized_value,
                 )
+                created = changed = True
             else:
                 created = False
                 changed = update_value_if_changed(current, text=normalized_value)
@@ -348,11 +380,13 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
     row_index_field = binding.row_index_field
     existing = {getattr(value, row_index_field): value for value in queryset.only("id", row_index_field, "text")}
 
-    def upsert_at(index: int, text: Any):
-        _, created, changed = upsert_value_if_changed(
-            binding.value_lookup(parent_scope, index),
-            {"text": text},
-        )
+    def upsert_at(index: int, text: Any, current=None):
+        if current is None:
+            Value.objects.create(**binding.value_lookup(parent_scope, index), text=text)
+            created = changed = True
+        else:
+            created = False
+            changed = update_value_if_changed(current, text=text)
         logger.info(
             "%s collection value for attribute %s at %s=%s: %r",
             format_change_label(created, changed),
@@ -391,8 +425,8 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
 
         text = _normalize_scalar(raw_value)
         current = existing.get(index)
-        if not current or (current.text != text and getattr(current, "value", None) != text):
-            upsert_at(index, text)
+        if not current or current.text != text:
+            upsert_at(index, text, current=current)
         last_nonblank_index = max(last_nonblank_index, index)
 
     delete_from(last_nonblank_index + 1)
@@ -470,10 +504,12 @@ def _update_collection_assignment(instance, collection: CollectionAssignment):
         if "external_id" in value:
             defaults["external_id"] = value.get("external_id")
 
-        _, created, changed = upsert_value_if_changed(
-            binding.value_lookup(parent_scope, row_index),
-            defaults,
-        )
+        if existing is None:
+            Value.objects.create(**binding.value_lookup(parent_scope, row_index), **defaults)
+            created = changed = True
+        else:
+            created = False
+            changed = update_value_if_changed(existing, **defaults)
         logger.info(
             "%s handler collection value for attribute %s using %s at %s=%s: %r",
             format_change_label(created, changed),
@@ -514,18 +550,21 @@ def _normalize_set_prefix(set_prefix: str | None) -> str:
     return set_prefix or ""
 
 
-def _scalar_scopes(instance, attribute) -> list[tuple[str, int]]:
-    return _scalar_scopes_via_answer_tree(instance, attribute)
+def _scalar_scopes(instance, attribute, resolver: _ScalarScopeResolver | None = None) -> list[tuple[str, int]]:
+    if resolver is None:
+        resolver = _ScalarScopeResolver(instance)
+    return resolver.resolve(instance, attribute)
 
 
-def _scalar_scopes_via_answer_tree(instance, attribute) -> list[tuple[str, int]]:
+def _scalar_scopes_via_answer_tree(instance, attribute, *, answer_tree=None) -> list[tuple[str, int]]:
     base_scope = (_normalize_set_prefix(instance.set_prefix), instance.set_index)
     project = instance.project
     catalog = project.catalog
 
-    catalog.prefetch_elements()
-    values = project.values.filter(snapshot=None).select_related("attribute")
-    answer_tree = AnswerTree(catalog, values)
+    if answer_tree is None:
+        catalog.prefetch_elements()
+        values = project.values.filter(snapshot=None).select_related("attribute")
+        answer_tree = AnswerTree(catalog, values)
 
     discovered_scopes: list[tuple[str, int]] = []
     for page in catalog.pages:

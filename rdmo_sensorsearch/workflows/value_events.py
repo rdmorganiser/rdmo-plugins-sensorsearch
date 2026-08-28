@@ -5,10 +5,12 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from time import perf_counter
 
 from rdmo.domain.models import Attribute
 from rdmo.projects.models import Project, Value
 
+from rdmo_sensorsearch.client import deduplicate_json_requests
 from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog
 from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBinding,
@@ -36,6 +38,7 @@ from rdmo_sensorsearch.workflows.device_details import (
 from rdmo_sensorsearch.workflows.metadata_refresh import (
     clear_refresh_state,
     clear_refresh_state_for_source,
+    get_refresh_action,
     get_refresh_actions_for_input,
     get_refresh_actions_for_source,
     run_metadata_refresh_action,
@@ -87,17 +90,9 @@ def handle_value_saved(value_id: int, auth_token: str | None = None) -> None:
     if instance.project is None or instance.project.catalog is None or instance.attribute is None:
         return
 
-    stages = (
-        ("backend-value", lambda: sync_backend_value_after_save(instance, auth_token=auth_token)),
-        ("configuration-tab", lambda: _sync_configuration_tab_after_save(instance)),
-        ("selected-device-details", lambda: _sync_selected_device_details_after_save(instance, auth_token)),
-        ("data-collection-variables", lambda: _sync_data_collection_variables_after_save(instance)),
-        ("metadata-refresh", lambda: run_metadata_refresh_action(instance, auth_token=auth_token)),
-        ("metadata-source-state", lambda: _clear_metadata_source_state_after_save(instance)),
-        ("metadata-input-state", lambda: _clear_metadata_input_state_after_save(instance)),
-        ("orphaned-device-details", lambda: _remove_orphaned_device_details(instance.project, instance.attribute.uri)),
-    )
-    _run_stages("save", value_id, instance.project_id, stages)
+    stages = _save_stages(instance, auth_token)
+    with deduplicate_json_requests():
+        _run_stages("save", value_id, instance.project_id, stages)
 
 
 def handle_value_deleted(context: DeletedValueContext) -> None:
@@ -130,7 +125,9 @@ def _run_stages(
     project_id: int,
     stages: Iterable[tuple[str, Callable[[], object]]],
 ) -> None:
+    event_started = perf_counter()
     for stage_name, stage in stages:
+        stage_started = perf_counter()
         try:
             stage()
         except Exception:
@@ -141,6 +138,75 @@ def _run_stages(
                 value_id,
                 project_id,
             )
+        finally:
+            logger.debug(
+                "Sensorsearch %s stage %s completed for value=%s project=%s duration_ms=%.1f",
+                event,
+                stage_name,
+                value_id,
+                project_id,
+                (perf_counter() - stage_started) * 1000,
+            )
+    logger.debug(
+        "Sensorsearch %s workflow completed for value=%s project=%s duration_ms=%.1f",
+        event,
+        value_id,
+        project_id,
+        (perf_counter() - event_started) * 1000,
+    )
+
+
+def _save_stages(instance: Value, auth_token: str | None) -> tuple[tuple[str, Callable[[], object]], ...]:
+    catalog_uri = instance.project.catalog.uri
+    attribute_uri = instance.attribute.uri
+    bindings = get_handler_bindings_for_catalog(catalog_uri)
+    stages: list[tuple[str, Callable[[], object]]] = []
+
+    if any(candidate.search_attribute_uri == attribute_uri for candidate in bindings):
+        stages.append(("backend-value", lambda: sync_backend_value_after_save(instance, auth_token=auth_token)))
+
+    configuration_bindings = {
+        (candidate.search_attribute_uri, collection_attribute_uri)
+        for candidate in bindings
+        if (
+            collection_attribute_uri := getattr(
+                candidate.handler,
+                "configuration_collection_attribute_uri",
+                None,
+            )
+        )
+    }
+    if any(attribute_uri in binding for binding in configuration_bindings):
+        stages.append(("configuration-tab", lambda: _sync_configuration_tab_after_save(instance)))
+
+    if any(attribute_uri == getattr(candidate.handler, "selected_devices_attribute_uri", None) for candidate in bindings):
+        stages.append(("selected-device-details", lambda: _sync_selected_device_details_after_save(instance, auth_token)))
+
+    variable_settings = get_data_collection_variable_sync_settings(catalog_uri)
+    if variable_settings is not None and attribute_uri == variable_settings.devices_attribute_uri:
+        stages.append(("data-collection-variables", lambda: _sync_data_collection_variables_after_save(instance)))
+
+    if get_refresh_action(catalog_uri, attribute_uri) is not None:
+        stages.append(("metadata-refresh", lambda: run_metadata_refresh_action(instance, auth_token=auth_token)))
+
+    if (not instance.external_id and instance.is_empty) and get_refresh_actions_for_source(catalog_uri, attribute_uri):
+        stages.append(("metadata-source-state", lambda: _clear_metadata_source_state_after_save(instance)))
+
+    if get_refresh_actions_for_input(catalog_uri, attribute_uri):
+        stages.append(("metadata-input-state", lambda: _clear_metadata_input_state_after_save(instance)))
+
+    if any(
+        candidate.search_attribute_uri == attribute_uri and getattr(candidate.handler, "device_collection_attribute_uri", None)
+        for candidate in bindings
+    ):
+        stages.append(
+            (
+                "orphaned-device-details",
+                lambda: _remove_orphaned_device_details(instance.project, attribute_uri),
+            )
+        )
+
+    return tuple(stages)
 
 
 def _configuration_tab_bindings(catalog_uri: str) -> set[tuple[str, str]]:

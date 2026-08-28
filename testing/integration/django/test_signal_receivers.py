@@ -100,6 +100,97 @@ def test_workflow_failures_are_isolated(caplog):
     assert "Sensorsearch save stage backend-value failed for value=17 project=23" in caplog.text
 
 
+def test_save_workflow_only_builds_relevant_stages(monkeypatch):
+    catalog_uri = "https://example.test/catalog"
+    search_uri = "https://example.test/search"
+    configuration_uri = "https://example.test/configuration"
+    selected_uri = "https://example.test/selected"
+    variables_uri = "https://example.test/variables"
+    refresh_uri = "https://example.test/refresh"
+    source_uri = "https://example.test/source"
+    input_uri = "https://example.test/input"
+    handler = SimpleNamespace(
+        configuration_collection_attribute_uri=configuration_uri,
+        selected_devices_attribute_uri=selected_uri,
+        device_collection_attribute_uri="https://example.test/devices",
+    )
+    binding = SimpleNamespace(search_attribute_uri=search_uri, handler=handler)
+    monkeypatch.setattr(value_events, "get_handler_bindings_for_catalog", lambda uri: (binding,))
+    monkeypatch.setattr(
+        value_events,
+        "get_data_collection_variable_sync_settings",
+        lambda uri: SimpleNamespace(devices_attribute_uri=variables_uri),
+    )
+    monkeypatch.setattr(
+        value_events,
+        "get_refresh_action",
+        lambda catalog, attribute: object() if attribute == refresh_uri else None,
+    )
+    monkeypatch.setattr(
+        value_events,
+        "get_refresh_actions_for_source",
+        lambda catalog, attribute: (object(),) if attribute == source_uri else (),
+    )
+    monkeypatch.setattr(
+        value_events,
+        "get_refresh_actions_for_input",
+        lambda catalog, attribute: (object(),) if attribute == input_uri else (),
+    )
+
+    def stage_names(attribute_uri, *, external_id="", is_empty=True):
+        instance = SimpleNamespace(
+            project=SimpleNamespace(catalog=SimpleNamespace(uri=catalog_uri)),
+            attribute=SimpleNamespace(uri=attribute_uri),
+            external_id=external_id,
+            is_empty=is_empty,
+        )
+        return [name for name, _ in value_events._save_stages(instance, "token")]
+
+    assert stage_names(search_uri) == ["backend-value", "configuration-tab", "orphaned-device-details"]
+    assert stage_names(configuration_uri) == ["configuration-tab"]
+    assert stage_names(selected_uri) == ["selected-device-details"]
+    assert stage_names(variables_uri) == ["data-collection-variables"]
+    assert stage_names(refresh_uri) == ["metadata-refresh"]
+    assert stage_names(source_uri) == ["metadata-source-state"]
+    assert stage_names(source_uri, external_id="sms:1") == []
+    assert stage_names(input_uri) == ["metadata-input-state"]
+    assert stage_names("https://example.test/unrelated") == []
+
+
+def test_scalar_scope_resolver_reuses_one_answer_tree(monkeypatch):
+    catalog = SimpleNamespace(prefetch_elements=Mock())
+    values = Mock()
+    values.filter.return_value.select_related.return_value = [SimpleNamespace()]
+    project = SimpleNamespace(catalog=catalog, values=values)
+    instance = SimpleNamespace(
+        project=project,
+        attribute_id=11,
+        set_prefix=None,
+        set_index=2,
+    )
+    answer_tree = object()
+    answer_tree_factory = Mock(return_value=answer_tree)
+    scope_lookup = Mock(side_effect=lambda instance, attribute, answer_tree: [("", attribute.id)])
+    monkeypatch.setattr(value_events, "AnswerTree", answer_tree_factory, raising=False)
+
+    from rdmo_sensorsearch.persistence import value_reconciliation
+
+    monkeypatch.setattr(value_reconciliation, "AnswerTree", answer_tree_factory)
+    monkeypatch.setattr(value_reconciliation, "_scalar_scopes_via_answer_tree", scope_lookup)
+    resolver = value_reconciliation._ScalarScopeResolver(instance)
+    first_attribute = SimpleNamespace(id=21)
+    second_attribute = SimpleNamespace(id=22)
+
+    assert resolver.resolve(instance, first_attribute) == [("", 21)]
+    assert resolver.resolve(instance, first_attribute) == [("", 21)]
+    assert resolver.resolve(instance, second_attribute) == [("", 22)]
+
+    catalog.prefetch_elements.assert_called_once_with()
+    values.filter.assert_called_once_with(snapshot=None)
+    answer_tree_factory.assert_called_once_with(catalog, [SimpleNamespace()])
+    assert scope_lookup.call_count == 2
+
+
 @pytest.mark.django_db
 def test_mirror_catalog_imports_with_plugin_dev_attribute_root():
     elements, errors = parse_xml_to_elements(MIRROR_CATALOG_PATH)
