@@ -18,3 +18,5 @@ dist
 env
 
 .vscode
+.playwright-cli
+log/
