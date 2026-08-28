@@ -7,12 +7,17 @@ from django.db import transaction
 from django.utils import timezone
 
 from rdmo.core.constants import VALUE_TYPE_BOOLEAN
+from rdmo.domain.models import Attribute
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import deduplicate_json_requests
 from rdmo_sensorsearch.config import catalog_matches, load_config
 from rdmo_sensorsearch.naming import canonical_configuration_label, canonical_device_label
-from rdmo_sensorsearch.persistence.value_reconciliation import replace_scalar_value_in_scopes, update_value_if_changed
+from rdmo_sensorsearch.persistence.value_reconciliation import (
+    _scalar_scopes,
+    replace_scalar_value_in_scopes,
+    update_value_if_changed,
+)
 from rdmo_sensorsearch.services.refresh import (
     RefreshAction,
     RefreshError,
@@ -207,19 +212,7 @@ def _refresh_current_value(
     preserve_existing_collections: bool = False,
     require_configuration_period: bool = False,
 ) -> tuple[RefreshResult, str]:
-    source_value = (
-        Value.objects.filter(
-            project=trigger.project,
-            snapshot=None,
-            attribute__uri=source_attribute_uri,
-            set_prefix=trigger.set_prefix or "",
-            set_index=trigger.set_index,
-        )
-        .exclude(external_id__isnull=True)
-        .exclude(external_id__exact="")
-        .order_by("-id")
-        .first()
-    )
+    source_value = _get_scoped_source_value(trigger, source_attribute_uri)
     if source_value is None:
         return _failed_result(trigger, missing_value_message), ""
 
@@ -232,6 +225,32 @@ def _refresh_current_value(
         ),
         label_formatter(source_value.text or source_value.external_id, source_value.external_id),
     )
+
+
+def _get_scoped_source_value(trigger: Value, source_attribute_uri: str) -> Value | None:
+    try:
+        source_attribute = Attribute.objects.get(uri=source_attribute_uri)
+    except Attribute.DoesNotExist:
+        return None
+
+    for set_prefix, set_index in _scalar_scopes(trigger, source_attribute):
+        source_value = (
+            Value.objects.filter(
+                project=trigger.project,
+                snapshot=None,
+                attribute=source_attribute,
+                set_prefix=set_prefix,
+                set_index=set_index,
+            )
+            .exclude(external_id__isnull=True)
+            .exclude(external_id__exact="")
+            .order_by("-id")
+            .first()
+        )
+        if source_value is not None:
+            return source_value
+
+    return None
 
 
 def _refresh_all_configurations(
