@@ -22,16 +22,14 @@ LOCAL_REFRESH_CONDITIONS = {
             "https://rdmo.nfdi4earth.de/terms/questions/configurations-general/refresh-timestamp",
         },
     },
-    "https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device": {
-        "source": "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords",
-        "questions": {
-            "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh",
-            "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-status",
-            "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-message",
-            "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-timestamp",
-        },
-    },
 }
+DEVICE_REFRESH_QUESTION_URIS = {
+    "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh",
+    "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-status",
+    "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-message",
+    "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-timestamp",
+}
+DEVICE_REFRESH_CONDITION_URI = "https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"
 
 
 def _catalog_root():
@@ -71,14 +69,15 @@ def test_individual_device_refresh_questions_are_on_device_collection_page():
         for page in root.findall("page")
         if page.attrib[DC_URI] == "https://rdmo.nfdi4earth.de/terms/questions/instruments_general"
     )
-    question_uris = {question.attrib[DC_URI] for question in device_page.findall("./questions/question")}
+    refresh_set_uri = "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-set"
+    assert refresh_set_uri in {questionset.attrib[DC_URI] for questionset in device_page.findall("./questionsets/questionset")}
 
-    assert {
-        "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh",
-        "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-status",
-        "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-message",
-        "https://rdmo.nfdi4earth.de/terms/questions/instruments_general/refresh-timestamp",
-    } <= question_uris
+    refresh_set = next(
+        questionset for questionset in root.findall("questionset") if questionset.attrib[DC_URI] == refresh_set_uri
+    )
+    question_uris = {question.attrib[DC_URI] for question in refresh_set.findall("./questions/question")}
+
+    assert DEVICE_REFRESH_QUESTION_URIS <= question_uris
 
 
 def test_configuration_device_rows_use_sensor_search():
@@ -109,6 +108,19 @@ def test_local_refresh_questions_require_a_backend_source_in_their_scope():
         assert condition.find("source").attrib[DC_URI] == expected["source"]
         assert condition.findtext("relation") == "notempty"
         assert questions == expected["questions"]
+
+
+def test_individual_device_refresh_questions_are_always_visible():
+    root = _catalog_root()
+    questions = {
+        question.attrib[DC_URI]: question
+        for question in root.findall("question")
+        if question.attrib[DC_URI] in DEVICE_REFRESH_QUESTION_URIS
+    }
+
+    assert set(questions) == DEVICE_REFRESH_QUESTION_URIS
+    assert DEVICE_REFRESH_CONDITION_URI not in {condition.attrib[DC_URI] for condition in root.findall("condition")}
+    assert all(not question.findall("./conditions/condition") for question in questions.values())
 
 
 def test_configuration_period_is_the_backend_period_without_an_apply_action():
