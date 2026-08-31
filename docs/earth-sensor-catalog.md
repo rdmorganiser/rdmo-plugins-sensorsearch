@@ -56,7 +56,7 @@ The condition controlling configuration-only controls is:
 
 ## Backend configuration or mission period
 
-Question set 2.013 records the period of the selected configuration or mission.
+Question set 2.1.4 records the period of the selected configuration or mission.
 The synchronization owns these fields when a backend record is selected.
 
 | Role | URI |
@@ -225,13 +225,9 @@ The further-information location question set and coordinates are:
 | Message attribute | `https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message` |
 | Trigger optionset | `https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh` |
 
-The condition for backend-linked device controls is:
-
-| Role | URI/value |
-| --- | --- |
-| Condition | `https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device` |
-| Source attribute | `https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords` |
-| Relation | `notempty` |
+These four per-device controls are unconditional. Keeping them visible avoids an
+additional condition-resolution lookup for every device collection row; backend
+refresh handling continues to decide whether a selected device can be refreshed.
 
 ## Bulk metadata refresh page
 

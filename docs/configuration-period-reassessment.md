@@ -13,7 +13,7 @@ authoritative Earth Sensor catalog.
 
 ## Baseline catalog meaning
 
-Question set 2.013 is titled **Time period of the configuration or mission**.
+Question set 2.1.4 is titled **Time period of the configuration or mission**.
 Its two questions use these established attributes:
 
 | Meaning | Question URI | Attribute URI |
@@ -53,7 +53,7 @@ historical mount model.
 
 ## Problems in the earlier implementation
 
-The first date-filter prototype reinterpreted the established 2.013 attributes
+The first date-filter prototype reinterpreted the established 2.1.4 attributes
 as user-owned filter inputs. As a result:
 
 - SMS and O2A backend period mappings were removed;
@@ -72,7 +72,7 @@ mission item's deployment fields.
 ## Extension design
 
 Date-based membership selection remains useful, but it must be an explicit,
-optional extension rather than a reinterpretation of question 2.013.
+optional extension rather than a reinterpretation of question 2.1.4.
 
 ### Separate catalog attributes
 
@@ -94,7 +94,7 @@ question should:
 - use optionset
   `https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh`;
 - be conditioned on a selected backend configuration; and
-- explain that it rebuilds device membership without changing question 2.013.
+- explain that it rebuilds device membership without changing question 2.1.4.
 
 ### Explicit TOML activation
 
@@ -138,7 +138,7 @@ entered range to every mission item is not membership filtering.
 
 ## Implementation and verification plan
 
-1. Restore SMS and O2A backend mappings for the established 2.013 attributes.
+1. Restore SMS and O2A backend mappings for the established 2.1.4 attributes.
 2. Remove the date-filter action and filter-input settings from the baseline
    `sensorsearch.toml`.
 3. Make membership filtering run only through an explicit refresh execution

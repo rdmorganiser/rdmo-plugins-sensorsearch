@@ -68,7 +68,7 @@ to the repository.
 
 ## Configuration periods and optional membership filtering
 
-In the original Earth Sensor catalog, question set 2.013 is backend-owned when
+In the original Earth Sensor catalog, question set 2.1.4 is backend-owned when
 a configuration or mission is selected. SMS `start_date`/`end_date` or O2A
 `startDate`/`endDate` populate the two answers. Selection synchronizes all
 current backend members; the catalog contains no apply-filter action.
@@ -130,7 +130,7 @@ exceptional installations.
 
 Fields in `attribute_mapping` are written when a backend response supplies a
 value. Fields in `managed_attribute_uris` are explicitly owned by the handler
-and may be cleared when no current value exists. Question set 2.013 is managed
+and may be cleared when no current value exists. Question set 2.1.4 is managed
 for selected backend configurations and missions. Do not mark interpretations,
 planning dates, comments, or future membership-filter inputs as managed.
 

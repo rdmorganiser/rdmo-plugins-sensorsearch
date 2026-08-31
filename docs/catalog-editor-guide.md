@@ -52,7 +52,7 @@ Mapping values are exact RDMO attribute URIs. A simple mapping is:
 
 Only add a target to `managed_attribute_uris` when the backend is authoritative
 for that field. Managed fields may be cleared when the backend stops returning
-a value. In the original Earth Sensor catalog, question set 2.013 describes the
+a value. In the original Earth Sensor catalog, question set 2.1.4 describes the
 selected backend configuration or mission, so its start and end attributes are
 managed outputs. Separate attributes introduced by a future membership-filter
 extension remain user-owned inputs.
@@ -91,12 +91,12 @@ this relationship.
 
 The original Earth Sensor catalog does not contain or activate a date-based
 membership filter. Configuration and mission selection immediately
-synchronizes all backend members, while question set 2.013 receives the
+synchronizes all backend members, while question set 2.1.4 receives the
 backend configuration or mission period.
 
 A future catalog can add a distinct SMS-only workflow. It needs three new
 attributes for filter start, filter end, and an explicit apply trigger. Do not
-reuse the established 2.013 attributes. The SMS handler catalog mapping must
+reuse the established 2.1.4 attributes. The SMS handler catalog mapping must
 then opt in with:
 
 ```toml

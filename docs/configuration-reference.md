@@ -262,7 +262,7 @@ This handler fetches one SMS configuration and its mounted devices.
 | `frontend_link_attribute_uri` | Configuration link target. |
 | `latitude_attribute_uri`, `longitude_attribute_uri` | Configuration static-location targets. |
 | `membership_filter_enabled` | Explicit opt-in for a future SMS-only historical membership-filter extension. Omit for baseline catalogs. |
-| `membership_filter_start_attribute_uri`, `membership_filter_end_attribute_uri` | Separate user-owned filter inputs. They must be configured together when the extension is enabled and must not reuse question set 2.013. |
+| `membership_filter_start_attribute_uri`, `membership_filter_end_attribute_uri` | Separate user-owned filter inputs. They must be configured together when the extension is enabled and must not reuse question set 2.1.4. |
 | `device_id_prefix`, `device_text_prefix` | Converts a mounted SMS device into an option understood by the matching device handler. |
 | `static_location_end_tolerance_seconds` | Same bounded static-location fallback used by the SMS device handler. Configure both handlers identically. |
 | `incomplete_mount_chain_policy` | Same `strict` or `direct_device_offset` policy used by the SMS device handler. |
@@ -285,7 +285,7 @@ for SMS.
 `mission_item_page_size` limits the page size. `item_id_prefix` must match the
 O2A device provider. `mission_start_date_path`, `mission_end_date_path`, and
 `date_mapping_paths` describe dates present in the mission API. Their mapped
-targets are the backend-owned question set 2.013 answers, and materialized
+targets are the backend-owned question set 2.1.4 answers, and materialized
 mission items inherit that mission period. O2A membership-filter settings are
 rejected because the Registry has no comparable historical mount model.
 

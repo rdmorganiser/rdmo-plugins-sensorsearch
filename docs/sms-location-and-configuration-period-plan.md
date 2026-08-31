@@ -388,7 +388,7 @@ Ask the reviewer to repeat at least these checks:
 
 > **Superseded:** The period recommendation below records the earlier design.
 > After adopting `earth-sensor+original.xml` as the source of truth, question
-> 2.013 again represents the backend configuration or mission period. See
+> 2.1.4 again represents the backend configuration or mission period. See
 > [Configuration-period baseline and optional membership filtering](configuration-period-reassessment.md)
 > for the current plan.
 
