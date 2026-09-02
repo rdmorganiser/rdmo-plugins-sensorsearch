@@ -64,8 +64,8 @@ class DeletedValueContext:
     def from_value(cls, instance: Value) -> DeletedValueContext | None:
         if instance.project_id is None or instance.attribute_id is None:
             return None
-        project = instance.project
-        attribute = instance.attribute
+        project = Project.objects.select_related("catalog").filter(pk=instance.project_id).first()
+        attribute = Attribute.objects.filter(pk=instance.attribute_id).first()
         if project is None or project.catalog is None or attribute is None:
             return None
         return cls(

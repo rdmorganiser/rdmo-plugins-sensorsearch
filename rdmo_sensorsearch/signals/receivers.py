@@ -4,10 +4,11 @@ import logging
 from functools import partial
 
 from django.db import transaction
+from django.db.models import QuerySet
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from rdmo.projects.models import Value
+from rdmo.projects.models import Project, Value
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
 from rdmo_sensorsearch.services.synchronization_context import is_value_sync_muted
@@ -22,6 +23,10 @@ logger = logging.getLogger(__name__)
 
 def _is_snapshot_value(instance: Value) -> bool:
     return getattr(instance, "snapshot_id", None) is not None
+
+
+def _is_project_delete(origin: object) -> bool:
+    return isinstance(origin, Project) or (isinstance(origin, QuerySet) and origin.model is Project)
 
 
 @receiver(
@@ -57,6 +62,9 @@ def value_deleted(sender, instance, **kwargs):
         return
     if _is_snapshot_value(instance):
         logger.debug("Skipping sensorsearch post_delete handling for snapshot value %s", instance.pk)
+        return
+    if _is_project_delete(kwargs.get("origin")):
+        logger.debug("Skipping sensorsearch post_delete handling during project deletion for value %s", instance.pk)
         return
 
     context = DeletedValueContext.from_value(instance)

@@ -3,17 +3,21 @@ from unittest.mock import Mock
 
 import pytest
 
+from django.utils import timezone
+
 from rdmo.core.imports import ImportElementFields
 from rdmo.core.xml import parse_xml_to_elements
 from rdmo.domain.models import Attribute
 from rdmo.management.imports import import_elements
-from rdmo.projects.models import Value
+from rdmo.projects.models import Project, Value
+from rdmo.questions.models import Catalog
 
 from rdmo_sensorsearch.signals import receivers
 from rdmo_sensorsearch.workflows import value_events
 from testing.paths import CATALOGS_ROOT
 
 MIRROR_CATALOG_PATH = CATALOGS_ROOT / "example_catalog_sensorsearch.xml"
+MIRROR_CATALOG_URI = "https://example.com/terms/questions/plugin-dev/sensorsearch"
 PLUGIN_DEV_ATTRIBUTE_URI = "https://example.com/terms/domain/plugin-dev"
 PROJECT_LEAD_ATTRIBUTE_URI = "https://example.com/terms/domain/plugin-dev/project-lead"
 
@@ -25,6 +29,33 @@ def _value(**overrides):
     }
     fields.update(overrides)
     return SimpleNamespace(**fields)
+
+
+@pytest.fixture
+def mirror_catalog():
+    elements, errors = parse_xml_to_elements(MIRROR_CATALOG_PATH)
+
+    assert errors == []
+    imported_elements = import_elements(elements)
+    assert all(not element[ImportElementFields.ERRORS] for element in imported_elements)
+
+    return Catalog.objects.get(uri=MIRROR_CATALOG_URI)
+
+
+def _project(catalog):
+    return Project.objects.create(title="SensorSearch signal receiver test", catalog=catalog)
+
+
+def _create_values(project):
+    root_attribute = Attribute.objects.get(uri=PLUGIN_DEV_ATTRIBUTE_URI)
+    project_lead_attribute = Attribute.objects.get(uri=PROJECT_LEAD_ATTRIBUTE_URI)
+    now = timezone.now()
+    Value.objects.bulk_create(
+        (
+            Value(created=now, updated=now, project=project, attribute=root_attribute, text="root"),
+            Value(created=now, updated=now, project=project, attribute=project_lead_attribute, text="lead"),
+        )
+    )
 
 
 def test_raw_value_save_is_ignored(monkeypatch):
@@ -78,6 +109,54 @@ def test_value_delete_passes_an_immutable_context_after_commit(
 
     assert len(callbacks) == 1
     handler.assert_called_once_with(context=context)
+
+
+@pytest.mark.django_db
+def test_value_delete_skips_project_queryset_origin(monkeypatch):
+    context_from_value = Mock()
+    on_commit = Mock()
+    monkeypatch.setattr(receivers.DeletedValueContext, "from_value", context_from_value)
+    monkeypatch.setattr(receivers.transaction, "on_commit", on_commit)
+
+    receivers.value_deleted(sender=Value, instance=_value(), origin=Project.objects.none())
+
+    context_from_value.assert_not_called()
+    on_commit.assert_not_called()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_project_delete_skips_sensorsearch_value_handling(
+    mirror_catalog,
+    monkeypatch,
+    django_capture_on_commit_callbacks,
+):
+    project = _project(mirror_catalog)
+    _create_values(project)
+    project_id = project.pk
+    context_from_value = Mock(wraps=value_events.DeletedValueContext.from_value)
+    handler = Mock()
+    monkeypatch.setattr(receivers.DeletedValueContext, "from_value", context_from_value)
+    monkeypatch.setattr(receivers, "handle_value_deleted", handler)
+
+    with django_capture_on_commit_callbacks(execute=True) as callbacks:
+        project.delete()
+
+    assert not Project.objects.filter(pk=project_id).exists()
+    assert not Value.objects.filter(project_id=project_id).exists()
+    context_from_value.assert_not_called()
+    assert callbacks == []
+    handler.assert_not_called()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_deleted_value_context_ignores_missing_project(mirror_catalog):
+    project = _project(mirror_catalog)
+    _create_values(project)
+    value = Value.objects.filter(project=project).first()
+
+    project.delete()
+
+    assert value_events.DeletedValueContext.from_value(value) is None
 
 
 def test_workflow_failures_are_isolated(caplog):
