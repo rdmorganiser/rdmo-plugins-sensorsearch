@@ -1,0 +1,1055 @@
+{
+  "recorded_at_utc": "2026-09-08T12:53:48.965734+00:00",
+  "plugin_base_commit": "733dfb34944ce239605ca8f6a5844f433122f59c",
+  "plugin_candidate": "working tree",
+  "plugin_source_sha256": "a7626f7a6f9607d5147d679204432a3e912367cc06fa1ae479dc39717e5b8c40",
+  "rdmo_commit": "391d7ff49f1b776882ffcff9232349a5de51cab9",
+  "python": "3.10.21",
+  "django": "5.2.17",
+  "sqlite": "3.53.1",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.39",
+  "method": "First invocation, 5 warm-ups, 20 timed samples; separate traced-memory sample. Mock HTTP, in-memory SQLite. Baselines are original read paths on identical fixtures, not a complete old deployment.",
+  "count_ranges": "An integer means identical counts across all 20 samples; a pair means [minimum, maximum]. Nested and parallel phase times overlap.",
+  "validation": {
+    "unit_passed": 238,
+    "integration_passed": 59,
+    "ruff_check": "passed"
+  },
+  "scenarios": [
+    {
+      "name": "workflow/1/unchanged",
+      "first_invocation_ms": 1.921,
+      "median_ms": 1.773,
+      "p95_ms": 2.001,
+      "peak_allocated_bytes": 33893,
+      "sql_counts": {
+        "RELEASE": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 3
+      },
+      "median_sql_ms": 0.167,
+      "event_counts": {
+        "device.fetch_batch": 1,
+        "device.load_state": 1
+      },
+      "median_cumulative_phase_ms": {
+        "device.fetch_batch": 0.003,
+        "device.load_state": 1.147
+      }
+    },
+    {
+      "name": "workflow/1/forced",
+      "first_invocation_ms": 13.477,
+      "median_ms": 14.056,
+      "p95_ms": 18.823,
+      "peak_allocated_bytes": 121261,
+      "sql_counts": {
+        "RELEASE": 3,
+        "SAVEPOINT": 3,
+        "SELECT": 21
+      },
+      "median_sql_ms": 1.819,
+      "event_counts": {
+        "device.fetch_batch": 1,
+        "device.load_state": 1,
+        "http.executed": 2,
+        "http.requested": 2,
+        "http.status.200": 2,
+        "scalar.apply": 1,
+        "scalar.scope_setup": 1
+      },
+      "median_cumulative_phase_ms": {
+        "device.fetch_batch": 0.39,
+        "device.load_state": 1.206,
+        "http.executed": 0.024,
+        "scalar.apply": 9.817,
+        "scalar.scope_setup": 1.711
+      }
+    },
+    {
+      "name": "workflow/1/initial",
+      "first_invocation_ms": 26.179,
+      "median_ms": 20.243,
+      "p95_ms": 30.023,
+      "peak_allocated_bytes": 129029,
+      "sql_counts": {
+        "DELETE": 1,
+        "INSERT": 7,
+        "RELEASE": 5,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 5,
+        "SELECT": 27
+      },
+      "median_sql_ms": 2.536,
+      "event_counts": {
+        "device.compact": 1,
+        "device.fetch_batch": 2,
+        "device.load_state": 2,
+        "http.executed": 2,
+        "http.requested": 2,
+        "http.status.200": 2,
+        "scalar.apply": 1,
+        "scalar.scope_setup": 1,
+        "signal.delete": 7,
+        "signal.save": 7,
+        "value.created": 7,
+        "value.deleted": 7
+      },
+      "median_cumulative_phase_ms": {
+        "device.compact": 0.641,
+        "device.fetch_batch": 0.411,
+        "device.load_state": 1.768,
+        "http.executed": 0.026,
+        "scalar.apply": 9.873,
+        "scalar.scope_setup": 1.496,
+        "signal.delete": 0.013,
+        "signal.save": 0.034
+      }
+    },
+    {
+      "name": "workflow/10/unchanged",
+      "first_invocation_ms": 3.395,
+      "median_ms": 2.071,
+      "p95_ms": 2.442,
+      "peak_allocated_bytes": 53100,
+      "sql_counts": {
+        "RELEASE": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 3
+      },
+      "median_sql_ms": 0.219,
+      "event_counts": {
+        "device.fetch_batch": 1,
+        "device.load_state": 1
+      },
+      "median_cumulative_phase_ms": {
+        "device.fetch_batch": 0.004,
+        "device.load_state": 1.298
+      }
+    },
+    {
+      "name": "workflow/10/forced",
+      "first_invocation_ms": 121.763,
+      "median_ms": 109.012,
+      "p95_ms": 120.073,
+      "peak_allocated_bytes": 1701591,
+      "sql_counts": {
+        "RELEASE": 21,
+        "SAVEPOINT": 21,
+        "SELECT": 147
+      },
+      "median_sql_ms": 10.035,
+      "event_counts": {
+        "device.fetch_batch": 1,
+        "device.load_state": 1,
+        "http.cache_hit": 9,
+        "http.executed": 11,
+        "http.requested": 20,
+        "http.status.200": 11,
+        "scalar.apply": 10,
+        "scalar.scope_setup": 10
+      },
+      "median_cumulative_phase_ms": {
+        "device.fetch_batch": 1.384,
+        "device.load_state": 1.334,
+        "http.executed": 0.079,
+        "scalar.apply": 88.087,
+        "scalar.scope_setup": 37.265
+      }
+    },
+    {
+      "name": "workflow/10/initial",
+      "first_invocation_ms": 148.009,
+      "median_ms": 150.664,
+      "p95_ms": 179.327,
+      "peak_allocated_bytes": 678498,
+      "sql_counts": {
+        "DELETE": 10,
+        "INSERT": 70,
+        "RELEASE": 23,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 23,
+        "SELECT": 180
+      },
+      "median_sql_ms": 16.163,
+      "event_counts": {
+        "device.compact": 1,
+        "device.fetch_batch": 2,
+        "device.load_state": 2,
+        "http.cache_hit": 9,
+        "http.executed": 11,
+        "http.requested": 20,
+        "http.status.200": 11,
+        "scalar.apply": 10,
+        "scalar.scope_setup": 10,
+        "signal.delete": 70,
+        "signal.save": 70,
+        "value.created": 70,
+        "value.deleted": 70
+      },
+      "median_cumulative_phase_ms": {
+        "device.compact": 0.672,
+        "device.fetch_batch": 1.407,
+        "device.load_state": 1.835,
+        "http.executed": 0.081,
+        "scalar.apply": 83.666,
+        "scalar.scope_setup": 27.205,
+        "signal.delete": 0.112,
+        "signal.save": 0.284
+      }
+    },
+    {
+      "name": "workflow/50/unchanged",
+      "first_invocation_ms": 3.191,
+      "median_ms": 2.949,
+      "p95_ms": 4.799,
+      "peak_allocated_bytes": 162221,
+      "sql_counts": {
+        "RELEASE": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 3
+      },
+      "median_sql_ms": 0.289,
+      "event_counts": {
+        "device.fetch_batch": 1,
+        "device.load_state": 1
+      },
+      "median_cumulative_phase_ms": {
+        "device.fetch_batch": 0.005,
+        "device.load_state": 1.723
+      }
+    },
+    {
+      "name": "workflow/50/forced",
+      "first_invocation_ms": 1150.453,
+      "median_ms": 1151.885,
+      "p95_ms": 1213.615,
+      "peak_allocated_bytes": 9968834,
+      "sql_counts": {
+        "RELEASE": 101,
+        "SAVEPOINT": 101,
+        "SELECT": 707
+      },
+      "median_sql_ms": 68.628,
+      "event_counts": {
+        "device.fetch_batch": 1,
+        "device.load_state": 1,
+        "http.cache_hit": 49,
+        "http.executed": 51,
+        "http.requested": 100,
+        "http.status.200": 51,
+        "scalar.apply": 50,
+        "scalar.scope_setup": 50
+      },
+      "median_cumulative_phase_ms": {
+        "device.fetch_batch": 3.513,
+        "device.load_state": 1.813,
+        "http.executed": 0.262,
+        "scalar.apply": 1051.369,
+        "scalar.scope_setup": 781.823
+      }
+    },
+    {
+      "name": "workflow/50/initial",
+      "first_invocation_ms": 1012.035,
+      "median_ms": 1018.52,
+      "p95_ms": 1061.077,
+      "peak_allocated_bytes": 8644580,
+      "sql_counts": {
+        "DELETE": 50,
+        "INSERT": 350,
+        "RELEASE": 103,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 103,
+        "SELECT": 860
+      },
+      "median_sql_ms": 86.969,
+      "event_counts": {
+        "device.compact": 1,
+        "device.fetch_batch": 2,
+        "device.load_state": 2,
+        "http.cache_hit": 49,
+        "http.executed": 51,
+        "http.requested": 100,
+        "http.status.200": 51,
+        "scalar.apply": 50,
+        "scalar.scope_setup": 50,
+        "signal.delete": 350,
+        "signal.save": 350,
+        "value.created": 350,
+        "value.deleted": 350
+      },
+      "median_cumulative_phase_ms": {
+        "device.compact": 0.647,
+        "device.fetch_batch": 3.375,
+        "device.load_state": 2.346,
+        "http.executed": 0.256,
+        "scalar.apply": 692.356,
+        "scalar.scope_setup": 405.223,
+        "signal.delete": 0.543,
+        "signal.save": 1.472
+      }
+    },
+    {
+      "name": "workflow/100/unchanged",
+      "first_invocation_ms": 3.864,
+      "median_ms": 3.926,
+      "p95_ms": 5.783,
+      "peak_allocated_bytes": 308475,
+      "sql_counts": {
+        "RELEASE": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 3
+      },
+      "median_sql_ms": 0.388,
+      "event_counts": {
+        "device.fetch_batch": 1,
+        "device.load_state": 1
+      },
+      "median_cumulative_phase_ms": {
+        "device.fetch_batch": 0.007,
+        "device.load_state": 2.294
+      }
+    },
+    {
+      "name": "workflow/100/forced",
+      "first_invocation_ms": 4664.219,
+      "median_ms": 3973.17,
+      "p95_ms": 4084.734,
+      "peak_allocated_bytes": 14956607,
+      "sql_counts": {
+        "RELEASE": 201,
+        "SAVEPOINT": 201,
+        "SELECT": 1407
+      },
+      "median_sql_ms": 188.514,
+      "event_counts": {
+        "device.fetch_batch": 1,
+        "device.load_state": 1,
+        "http.cache_hit": 99,
+        "http.executed": 101,
+        "http.requested": 200,
+        "http.status.200": 101,
+        "scalar.apply": 100,
+        "scalar.scope_setup": 100
+      },
+      "median_cumulative_phase_ms": {
+        "device.fetch_batch": 6.6,
+        "device.load_state": 2.261,
+        "http.executed": 1.658,
+        "scalar.apply": 3764.328,
+        "scalar.scope_setup": 3153.494
+      }
+    },
+    {
+      "name": "workflow/100/initial",
+      "first_invocation_ms": 2856.031,
+      "median_ms": 2795.028,
+      "p95_ms": 2984.588,
+      "peak_allocated_bytes": 14881322,
+      "sql_counts": {
+        "DELETE": 100,
+        "INSERT": 700,
+        "RELEASE": 203,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 203,
+        "SELECT": 1710
+      },
+      "median_sql_ms": 194.688,
+      "event_counts": {
+        "device.compact": 1,
+        "device.fetch_batch": 2,
+        "device.load_state": 2,
+        "http.cache_hit": 99,
+        "http.executed": 101,
+        "http.requested": 200,
+        "http.status.200": 101,
+        "scalar.apply": 100,
+        "scalar.scope_setup": 100,
+        "signal.delete": 700,
+        "signal.save": 700,
+        "value.created": 700,
+        "value.deleted": 700
+      },
+      "median_cumulative_phase_ms": {
+        "device.compact": 0.7,
+        "device.fetch_batch": 5.72,
+        "device.load_state": 2.882,
+        "http.executed": 0.478,
+        "scalar.apply": 2165.299,
+        "scalar.scope_setup": 1547.181,
+        "signal.delete": 1.06,
+        "signal.save": 2.807
+      }
+    },
+    {
+      "name": "devices/1/legacy",
+      "first_invocation_ms": 4.365,
+      "median_ms": 4.524,
+      "p95_ms": 4.988,
+      "peak_allocated_bytes": 32786,
+      "sql_counts": {
+        "SELECT": 7
+      },
+      "median_sql_ms": 0.361,
+      "event_counts": {},
+      "median_cumulative_phase_ms": {}
+    },
+    {
+      "name": "devices/1/bulk",
+      "first_invocation_ms": 1.422,
+      "median_ms": 1.138,
+      "p95_ms": 1.312,
+      "peak_allocated_bytes": 32658,
+      "sql_counts": {
+        "SELECT": 2
+      },
+      "median_sql_ms": 0.118,
+      "event_counts": {
+        "device.load_state": 1
+      },
+      "median_cumulative_phase_ms": {
+        "device.load_state": 1.107
+      }
+    },
+    {
+      "name": "devices/10/legacy",
+      "first_invocation_ms": 27.881,
+      "median_ms": 28.221,
+      "p95_ms": 32.826,
+      "peak_allocated_bytes": 76453,
+      "sql_counts": {
+        "SELECT": 52
+      },
+      "median_sql_ms": 2.029,
+      "event_counts": {},
+      "median_cumulative_phase_ms": {}
+    },
+    {
+      "name": "devices/10/bulk",
+      "first_invocation_ms": 1.725,
+      "median_ms": 1.328,
+      "p95_ms": 1.402,
+      "peak_allocated_bytes": 52307,
+      "sql_counts": {
+        "SELECT": 2
+      },
+      "median_sql_ms": 0.137,
+      "event_counts": {
+        "device.load_state": 1
+      },
+      "median_cumulative_phase_ms": {
+        "device.load_state": 1.232
+      }
+    },
+    {
+      "name": "devices/50/legacy",
+      "first_invocation_ms": 134.494,
+      "median_ms": 133.755,
+      "p95_ms": 155.319,
+      "peak_allocated_bytes": 116282,
+      "sql_counts": {
+        "SELECT": 252
+      },
+      "median_sql_ms": 11.063,
+      "event_counts": {},
+      "median_cumulative_phase_ms": {}
+    },
+    {
+      "name": "devices/50/bulk",
+      "first_invocation_ms": 2.263,
+      "median_ms": 2.011,
+      "p95_ms": 2.453,
+      "peak_allocated_bytes": 150230,
+      "sql_counts": {
+        "SELECT": 2
+      },
+      "median_sql_ms": 0.206,
+      "event_counts": {
+        "device.load_state": 1
+      },
+      "median_cumulative_phase_ms": {
+        "device.load_state": 1.644
+      }
+    },
+    {
+      "name": "devices/100/legacy",
+      "first_invocation_ms": 280.461,
+      "median_ms": 278.521,
+      "p95_ms": 316.769,
+      "peak_allocated_bytes": 310816,
+      "sql_counts": {
+        "SELECT": 502
+      },
+      "median_sql_ms": 28.175,
+      "event_counts": {},
+      "median_cumulative_phase_ms": {}
+    },
+    {
+      "name": "devices/100/bulk",
+      "first_invocation_ms": 3.126,
+      "median_ms": 3.077,
+      "p95_ms": 4.471,
+      "peak_allocated_bytes": 295320,
+      "sql_counts": {
+        "SELECT": 2
+      },
+      "median_sql_ms": 0.297,
+      "event_counts": {
+        "device.load_state": 1
+      },
+      "median_cumulative_phase_ms": {
+        "device.load_state": 2.329
+      }
+    },
+    {
+      "name": "parameters/1/legacy",
+      "first_invocation_ms": 2.033,
+      "median_ms": 1.963,
+      "p95_ms": 2.116,
+      "peak_allocated_bytes": 32189,
+      "sql_counts": {
+        "SELECT": 3
+      },
+      "median_sql_ms": 0.143,
+      "event_counts": {},
+      "median_cumulative_phase_ms": {}
+    },
+    {
+      "name": "parameters/1/bulk",
+      "first_invocation_ms": 1.602,
+      "median_ms": 1.319,
+      "p95_ms": 1.528,
+      "peak_allocated_bytes": 28836,
+      "sql_counts": {
+        "SELECT": 2
+      },
+      "median_sql_ms": 0.122,
+      "event_counts": {
+        "variables.load_parameters": 1
+      },
+      "median_cumulative_phase_ms": {
+        "variables.load_parameters": 1.314
+      }
+    },
+    {
+      "name": "parameters/10/legacy",
+      "first_invocation_ms": 19.94,
+      "median_ms": 20.289,
+      "p95_ms": 20.833,
+      "peak_allocated_bytes": 98613,
+      "sql_counts": {
+        "SELECT": 30
+      },
+      "median_sql_ms": 1.66,
+      "event_counts": {},
+      "median_cumulative_phase_ms": {}
+    },
+    {
+      "name": "parameters/10/bulk",
+      "first_invocation_ms": 2.845,
+      "median_ms": 2.752,
+      "p95_ms": 4.454,
+      "peak_allocated_bytes": 65133,
+      "sql_counts": {
+        "SELECT": 2
+      },
+      "median_sql_ms": 0.291,
+      "event_counts": {
+        "variables.load_parameters": 1
+      },
+      "median_cumulative_phase_ms": {
+        "variables.load_parameters": 2.745
+      }
+    },
+    {
+      "name": "parameters/50/legacy",
+      "first_invocation_ms": 104.104,
+      "median_ms": 109.598,
+      "p95_ms": 119.982,
+      "peak_allocated_bytes": 205190,
+      "sql_counts": {
+        "SELECT": 150
+      },
+      "median_sql_ms": 11.565,
+      "event_counts": {},
+      "median_cumulative_phase_ms": {}
+    },
+    {
+      "name": "parameters/50/bulk",
+      "first_invocation_ms": 9.517,
+      "median_ms": 9.5,
+      "p95_ms": 12.634,
+      "peak_allocated_bytes": 262427,
+      "sql_counts": {
+        "SELECT": 2
+      },
+      "median_sql_ms": 1.46,
+      "event_counts": {
+        "variables.load_parameters": 1
+      },
+      "median_cumulative_phase_ms": {
+        "variables.load_parameters": 9.489
+      }
+    },
+    {
+      "name": "parameters/100/legacy",
+      "first_invocation_ms": 250.971,
+      "median_ms": 223.386,
+      "p95_ms": 249.357,
+      "peak_allocated_bytes": 256810,
+      "sql_counts": {
+        "SELECT": 300
+      },
+      "median_sql_ms": 29.751,
+      "event_counts": {},
+      "median_cumulative_phase_ms": {}
+    },
+    {
+      "name": "parameters/100/bulk",
+      "first_invocation_ms": 19.762,
+      "median_ms": 19.873,
+      "p95_ms": 21.558,
+      "peak_allocated_bytes": 584793,
+      "sql_counts": {
+        "SELECT": 2
+      },
+      "median_sql_ms": 3.731,
+      "event_counts": {
+        "variables.load_parameters": 1
+      },
+      "median_cumulative_phase_ms": {
+        "variables.load_parameters": 19.861
+      }
+    },
+    {
+      "name": "variables/unchanged",
+      "first_invocation_ms": 2.883,
+      "median_ms": 2.908,
+      "p95_ms": 3.568,
+      "peak_allocated_bytes": 41655,
+      "sql_counts": {
+        "SELECT": 4
+      },
+      "median_sql_ms": 0.284,
+      "event_counts": {
+        "variables.load_parameters": 1
+      },
+      "median_cumulative_phase_ms": {
+        "variables.load_parameters": 1.486
+      }
+    },
+    {
+      "name": "signals/unrelated-loaded",
+      "first_invocation_ms": 0.012,
+      "median_ms": 0.005,
+      "p95_ms": 0.005,
+      "peak_allocated_bytes": 776,
+      "sql_counts": {},
+      "median_sql_ms": 0.0,
+      "event_counts": {
+        "signal.save": 1,
+        "value.saved": 1
+      },
+      "median_cumulative_phase_ms": {
+        "signal.save": 0.003
+      }
+    },
+    {
+      "name": "scalar/100",
+      "first_invocation_ms": 11.763,
+      "median_ms": 11.33,
+      "p95_ms": 12.49,
+      "peak_allocated_bytes": 412261,
+      "sql_counts": {
+        "SELECT": 11
+      },
+      "median_sql_ms": 1.136,
+      "event_counts": {
+        "scalar.scope_setup": 1
+      },
+      "median_cumulative_phase_ms": {
+        "scalar.scope_setup": 10.428
+      }
+    },
+    {
+      "name": "scalar/1000",
+      "first_invocation_ms": 45.737,
+      "median_ms": 40.935,
+      "p95_ms": 100.319,
+      "peak_allocated_bytes": 3572506,
+      "sql_counts": {
+        "SELECT": 11
+      },
+      "median_sql_ms": 1.841,
+      "event_counts": {
+        "scalar.scope_setup": 1
+      },
+      "median_cumulative_phase_ms": {
+        "scalar.scope_setup": 39.889
+      }
+    },
+    {
+      "name": "scalar/5000",
+      "first_invocation_ms": 233.032,
+      "median_ms": 223.206,
+      "p95_ms": 243.952,
+      "peak_allocated_bytes": 17509381,
+      "sql_counts": {
+        "SELECT": 11
+      },
+      "median_sql_ms": 4.675,
+      "event_counts": {
+        "scalar.scope_setup": 1
+      },
+      "median_cumulative_phase_ms": {
+        "scalar.scope_setup": 221.926
+      }
+    },
+    {
+      "name": "scalar/10000",
+      "first_invocation_ms": 445.613,
+      "median_ms": 447.617,
+      "p95_ms": 463.321,
+      "peak_allocated_bytes": 34946460,
+      "sql_counts": {
+        "SELECT": 11
+      },
+      "median_sql_ms": 9.15,
+      "event_counts": {
+        "scalar.scope_setup": 1
+      },
+      "median_cumulative_phase_ms": {
+        "scalar.scope_setup": 446.389
+      }
+    },
+    {
+      "name": "delete/unrelated/1",
+      "first_invocation_ms": 0.869,
+      "median_ms": 0.86,
+      "p95_ms": 0.924,
+      "peak_allocated_bytes": 24403,
+      "sql_counts": {
+        "DELETE": 1,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 2
+      },
+      "median_sql_ms": 0.115,
+      "event_counts": {
+        "signal.delete": 1,
+        "value.deleted": 1
+      },
+      "median_cumulative_phase_ms": {
+        "signal.delete": 0.278
+      }
+    },
+    {
+      "name": "delete/unrelated/10",
+      "first_invocation_ms": 3.259,
+      "median_ms": 3.427,
+      "p95_ms": 3.66,
+      "peak_allocated_bytes": 48437,
+      "sql_counts": {
+        "DELETE": 1,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 11
+      },
+      "median_sql_ms": 0.272,
+      "event_counts": {
+        "signal.delete": 10,
+        "value.deleted": 10
+      },
+      "median_cumulative_phase_ms": {
+        "signal.delete": 2.346
+      }
+    },
+    {
+      "name": "delete/unrelated/100",
+      "first_invocation_ms": 32.614,
+      "median_ms": 27.787,
+      "p95_ms": 39.581,
+      "peak_allocated_bytes": 226523,
+      "sql_counts": {
+        "DELETE": 1,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 101
+      },
+      "median_sql_ms": 1.411,
+      "event_counts": {
+        "signal.delete": 100,
+        "value.deleted": 100
+      },
+      "median_cumulative_phase_ms": {
+        "signal.delete": 22.982
+      }
+    },
+    {
+      "name": "delete/unrelated/1000",
+      "first_invocation_ms": 258.139,
+      "median_ms": 266.82,
+      "p95_ms": 323.462,
+      "peak_allocated_bytes": 1943074,
+      "sql_counts": {
+        "DELETE": 10,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 1001
+      },
+      "median_sql_ms": 11.218,
+      "event_counts": {
+        "signal.delete": 1000,
+        "value.deleted": 1000
+      },
+      "median_cumulative_phase_ms": {
+        "signal.delete": 227.554
+      }
+    },
+    {
+      "name": "delete/relevant/1",
+      "first_invocation_ms": 2.499,
+      "median_ms": 2.275,
+      "p95_ms": 2.477,
+      "peak_allocated_bytes": 36342,
+      "sql_counts": {
+        "DELETE": 1,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 5
+      },
+      "median_sql_ms": 0.253,
+      "event_counts": {
+        "callback.delete.executed": 1,
+        "callback.delete.scheduled": 1,
+        "signal.delete": 1,
+        "signal.delete.relevant": 1,
+        "stage.delete.configuration-tab": 1,
+        "stage.delete.data-collection-variables": 1,
+        "stage.delete.metadata-input-state": 1,
+        "stage.delete.metadata-source-state": 1,
+        "stage.delete.orphaned-device-details": 1,
+        "stage.delete.selected-device-details": 1,
+        "value.deleted": 1
+      },
+      "median_cumulative_phase_ms": {
+        "callback.delete.executed": 1.065,
+        "signal.delete": 0.573,
+        "stage.delete.configuration-tab": 0.008,
+        "stage.delete.data-collection-variables": 0.004,
+        "stage.delete.metadata-input-state": 0.013,
+        "stage.delete.metadata-source-state": 0.023,
+        "stage.delete.orphaned-device-details": 0.006,
+        "stage.delete.selected-device-details": 0.006
+      }
+    },
+    {
+      "name": "delete/relevant/10",
+      "first_invocation_ms": 16.733,
+      "median_ms": 17.302,
+      "p95_ms": 25.781,
+      "peak_allocated_bytes": 78295,
+      "sql_counts": {
+        "DELETE": 1,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 41
+      },
+      "median_sql_ms": 1.133,
+      "event_counts": {
+        "callback.delete.executed": 10,
+        "callback.delete.scheduled": 10,
+        "signal.delete": 10,
+        "signal.delete.relevant": 10,
+        "stage.delete.configuration-tab": 10,
+        "stage.delete.data-collection-variables": 10,
+        "stage.delete.metadata-input-state": 10,
+        "stage.delete.metadata-source-state": 10,
+        "stage.delete.orphaned-device-details": 10,
+        "stage.delete.selected-device-details": 10,
+        "value.deleted": 10
+      },
+      "median_cumulative_phase_ms": {
+        "callback.delete.executed": 10.76,
+        "signal.delete": 5.525,
+        "stage.delete.configuration-tab": 0.095,
+        "stage.delete.data-collection-variables": 0.036,
+        "stage.delete.metadata-input-state": 0.138,
+        "stage.delete.metadata-source-state": 0.25,
+        "stage.delete.orphaned-device-details": 0.06,
+        "stage.delete.selected-device-details": 0.059
+      }
+    },
+    {
+      "name": "delete/relevant/100",
+      "first_invocation_ms": 169.407,
+      "median_ms": 167.411,
+      "p95_ms": 183.258,
+      "peak_allocated_bytes": 402558,
+      "sql_counts": {
+        "DELETE": 1,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 401
+      },
+      "median_sql_ms": 9.239,
+      "event_counts": {
+        "callback.delete.executed": 100,
+        "callback.delete.scheduled": 100,
+        "signal.delete": 100,
+        "signal.delete.relevant": 100,
+        "stage.delete.configuration-tab": 100,
+        "stage.delete.data-collection-variables": 100,
+        "stage.delete.metadata-input-state": 100,
+        "stage.delete.metadata-source-state": 100,
+        "stage.delete.orphaned-device-details": 100,
+        "stage.delete.selected-device-details": 100,
+        "value.deleted": 100
+      },
+      "median_cumulative_phase_ms": {
+        "callback.delete.executed": 104.597,
+        "signal.delete": 53.398,
+        "stage.delete.configuration-tab": 0.728,
+        "stage.delete.data-collection-variables": 0.294,
+        "stage.delete.metadata-input-state": 1.366,
+        "stage.delete.metadata-source-state": 2.281,
+        "stage.delete.orphaned-device-details": 0.53,
+        "stage.delete.selected-device-details": 0.498
+      }
+    },
+    {
+      "name": "delete/relevant/1000",
+      "first_invocation_ms": 1611.232,
+      "median_ms": 1634.279,
+      "p95_ms": 1698.477,
+      "peak_allocated_bytes": 3146882,
+      "sql_counts": {
+        "DELETE": 10,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 4001
+      },
+      "median_sql_ms": 88.285,
+      "event_counts": {
+        "callback.delete.executed": 1000,
+        "callback.delete.scheduled": 1000,
+        "signal.delete": 1000,
+        "signal.delete.relevant": 1000,
+        "stage.delete.configuration-tab": 1000,
+        "stage.delete.data-collection-variables": 1000,
+        "stage.delete.metadata-input-state": 1000,
+        "stage.delete.metadata-source-state": 1000,
+        "stage.delete.orphaned-device-details": 1000,
+        "stage.delete.selected-device-details": 1000,
+        "value.deleted": 1000
+      },
+      "median_cumulative_phase_ms": {
+        "callback.delete.executed": 1051.574,
+        "signal.delete": 524.854,
+        "stage.delete.configuration-tab": 7.0,
+        "stage.delete.data-collection-variables": 2.825,
+        "stage.delete.metadata-input-state": 13.913,
+        "stage.delete.metadata-source-state": 22.306,
+        "stage.delete.orphaned-device-details": 5.396,
+        "stage.delete.selected-device-details": 4.961
+      }
+    },
+    {
+      "name": "delete/project/1",
+      "first_invocation_ms": 3.77,
+      "median_ms": 3.916,
+      "p95_ms": 6.551,
+      "peak_allocated_bytes": 45997,
+      "sql_counts": {
+        "DELETE": 6,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 6
+      },
+      "median_sql_ms": 0.477,
+      "event_counts": {
+        "signal.delete": 1,
+        "value.deleted": 1
+      },
+      "median_cumulative_phase_ms": {
+        "signal.delete": 0.01
+      }
+    },
+    {
+      "name": "delete/project/10",
+      "first_invocation_ms": 4.517,
+      "median_ms": 4.308,
+      "p95_ms": 4.879,
+      "peak_allocated_bytes": 62613,
+      "sql_counts": {
+        "DELETE": 6,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 6
+      },
+      "median_sql_ms": 0.489,
+      "event_counts": {
+        "signal.delete": 10,
+        "value.deleted": 10
+      },
+      "median_cumulative_phase_ms": {
+        "signal.delete": 0.03
+      }
+    },
+    {
+      "name": "delete/project/100",
+      "first_invocation_ms": 7.249,
+      "median_ms": 7.573,
+      "p95_ms": 9.232,
+      "peak_allocated_bytes": 240643,
+      "sql_counts": {
+        "DELETE": 6,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 6
+      },
+      "median_sql_ms": 0.725,
+      "event_counts": {
+        "signal.delete": 100,
+        "value.deleted": 100
+      },
+      "median_cumulative_phase_ms": {
+        "signal.delete": 0.225
+      }
+    },
+    {
+      "name": "delete/project/1000",
+      "first_invocation_ms": 38.724,
+      "median_ms": 38.883,
+      "p95_ms": 92.362,
+      "peak_allocated_bytes": 1970037,
+      "sql_counts": {
+        "DELETE": 15,
+        "RELEASE": 1,
+        "ROLLBACK": 1,
+        "SAVEPOINT": 1,
+        "SELECT": 6
+      },
+      "median_sql_ms": 2.37,
+      "event_counts": {
+        "signal.delete": 1000,
+        "value.deleted": 1000
+      },
+      "median_cumulative_phase_ms": {
+        "signal.delete": 2.2
+      }
+    }
+  ]
+}

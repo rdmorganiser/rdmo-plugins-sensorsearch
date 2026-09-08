@@ -144,3 +144,11 @@ def load_config() -> Mapping[str, Any]:
 def clear_config_cache() -> None:
     """Clear the parsed configuration cache, primarily for tests and controlled reloads."""
     load_config_model.cache_clear()
+    # Avoid importing the Django workflow graph merely to reset configuration
+    # (the configuration API is also used by framework-independent tooling).
+    registry = sys.modules.get("rdmo_sensorsearch.handlers.catalog_registry")
+    if registry is not None:
+        registry.clear_handler_registry()
+    routing = sys.modules.get("rdmo_sensorsearch.workflows.event_routing")
+    if routing is not None:
+        routing.routing_attributes.cache_clear()

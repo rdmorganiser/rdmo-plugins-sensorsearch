@@ -16,3 +16,14 @@ not included in the plugin wheel.
   source catalog or production configuration.
 - `config/` contains the minimal Django settings used by the integration
   suite.
+- `performance/` contains synthetic fixtures and opt-in measurement helpers.
+  The associated regression tests run in `integration/django/` with the normal
+  Django suite and assert query counts, output parity, and callback behavior.
+  Set `SENSORSEARCH_BENCHMARK_OUTPUT=/tmp/sensorsearch-benchmarks.ndjson` to
+  additionally record five warm-ups and twenty measured samples per scenario.
+  Use a fresh output path per run; results append. The full benchmark run also
+  repeats metadata writes and 1,000-row deletes and can take several minutes.
+  All backend responses are mocked and the database is isolated SQLite.
+
+See [the performance review](../docs/performance-review.md) for the environment,
+measurement boundaries, results, and remaining deployment checks.

@@ -75,6 +75,7 @@ def test_value_save_runs_once_after_commit(monkeypatch, django_capture_on_commit
     handler = Mock()
     monkeypatch.setattr(receivers, "handle_value_saved", handler)
     monkeypatch.setattr(receivers, "get_sms_auth_token", lambda: "token")
+    monkeypatch.setattr(receivers, "route_value", lambda instance: ("catalog", "attribute"))
 
     with django_capture_on_commit_callbacks(execute=True) as callbacks:
         receivers.value_saved(sender=Value, instance=_value(), raw=False)
@@ -100,7 +101,8 @@ def test_value_delete_passes_an_immutable_context_after_commit(
         external_id="sms:7",
     )
     handler = Mock()
-    monkeypatch.setattr(receivers.DeletedValueContext, "from_value", lambda instance: context)
+    monkeypatch.setattr(receivers, "route_value", lambda instance: (context.catalog_uri, context.attribute_uri))
+    monkeypatch.setattr(receivers.DeletedValueContext, "from_value", lambda instance, **kwargs: context)
     monkeypatch.setattr(receivers, "handle_value_deleted", handler)
 
     with django_capture_on_commit_callbacks(execute=True) as callbacks:

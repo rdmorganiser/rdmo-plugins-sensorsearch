@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
+from functools import reduce
+from operator import or_
 
 from django.db.models import Q
 
@@ -15,8 +19,12 @@ from rdmo_sensorsearch.services.data_collection_variables import (
     ParameterUnitPair,
     is_auto_variable_marker,
 )
+from rdmo_sensorsearch.services.performance import measure_phase
 
 logger = logging.getLogger(__name__)
+
+# Bound SQL expression/parameter counts on all supported database backends.
+DEVICE_LOOKUP_BATCH_SIZE = 100
 
 
 @dataclass(frozen=True)
@@ -79,27 +87,83 @@ class RDMODataCollectionVariableStore:
         )
 
     def parameters_for_device(self, device_external_id: str) -> tuple[ParameterUnitPair, ...]:
-        device_blocks = list(
-            Value.objects.filter(
-                project=self.project,
-                snapshot=None,
-                attribute=self.attributes.device_collection,
-                set_collection=True,
+        return self.parameters_by_device((device_external_id,))[device_external_id]
+
+    @measure_phase("variables.load_parameters")
+    def parameters_by_device(self, external_ids: Iterable[str]) -> dict[str, tuple[ParameterUnitPair, ...]]:
+        requested = tuple(dict.fromkeys(external_ids))
+        if not requested:
+            return {}
+        blocks_by_device = defaultdict(list)
+        prefixes = set()
+        for offset in range(0, len(requested), DEVICE_LOOKUP_BATCH_SIZE):
+            batch = requested[offset : offset + DEVICE_LOOKUP_BATCH_SIZE]
+            # Let the database evaluate each match: Python suffix matching
+            # would change LIKE/collation semantics (notably on SQLite).
+            matches = {
+                f"device_match_{i}": Q(external_id=device_id) | Q(external_id__endswith=f"||{device_id}")
+                for i, device_id in enumerate(batch)
+            }
+            device_blocks = (
+                Value.objects.filter(
+                    project=self.project,
+                    snapshot=None,
+                    attribute=self.attributes.device_collection,
+                    set_collection=True,
+                )
+                .filter(reduce(or_, matches.values()))
+                .annotate(**matches)
+                .order_by(
+                    "set_prefix",
+                    "set_index",
+                    "id",
+                )
+                .values_list("set_index", *matches)
             )
-            .filter(Q(external_id=device_external_id) | Q(external_id__endswith=f"||{device_external_id}"))
-            .order_by("set_prefix", "set_index", "id")
-        )
-        parameters = []
-        for block in device_blocks:
-            source_prefix = str(block.set_index)
-            names_by_index = self._values_by_set_index(self.attributes.parameter_name, source_prefix)
-            units_by_index = self._values_by_set_index(self.attributes.parameter_unit, source_prefix)
+            for index, *matched in device_blocks:
+                for device_id, is_match in zip(batch, matched, strict=True):
+                    if is_match:
+                        blocks_by_device[device_id].append(str(index))
+                        prefixes.add(str(index))
+
+        values_by_scope = defaultdict(dict)
+        ordered_prefixes = sorted(prefixes)
+        for offset in range(0, len(ordered_prefixes), 500):
+            values = (
+                Value.objects.filter(
+                    project=self.project,
+                    snapshot=None,
+                    set_collection=True,
+                    set_prefix__in=ordered_prefixes[offset : offset + 500],
+                    attribute__in=(self.attributes.parameter_name, self.attributes.parameter_unit),
+                )
+                .exclude(text__isnull=True)
+                .order_by("set_index", "id")
+                .values_list(
+                    "attribute_id",
+                    "set_prefix",
+                    "set_index",
+                    "text",
+                )
+            )
+            for attribute_id, prefix, index, text in values:
+                values_by_scope[(attribute_id, prefix)][index] = text
+
+        parameters_by_prefix = {}
+        for source_prefix in prefixes:
+            names_by_index = values_by_scope[(self.attributes.parameter_name.id, source_prefix)]
+            units_by_index = values_by_scope[(self.attributes.parameter_unit.id, source_prefix)]
+            parameters = []
             for set_index in sorted(set(names_by_index) | set(units_by_index)):
                 name = names_by_index.get(set_index, "")
                 unit = units_by_index.get(set_index, "")
                 if name or unit:
                     parameters.append(ParameterUnitPair(name=name, unit=unit))
-        return tuple(parameters)
+            parameters_by_prefix[source_prefix] = tuple(parameters)
+        return {
+            device_id: tuple(parameter for prefix in blocks_by_device[device_id] for parameter in parameters_by_prefix[prefix])
+            for device_id in requested
+        }
 
     def selected_device_external_ids(self, devices_attribute_uri: str) -> tuple[str, ...]:
         values = (
@@ -125,9 +189,26 @@ class RDMODataCollectionVariableStore:
         return tuple(external_ids)
 
     def existing_variables(self) -> tuple[ExistingDataCollectionVariable, ...]:
-        names_by_index = self._values_by_set_index(self.attributes.variable, self.target_prefix)
-        units_by_index = self._values_by_set_index(self.attributes.unit, self.target_prefix)
-        markers_by_index = self._external_ids_by_set_index()
+        names_by_index, units_by_index, markers_by_index = {}, {}, {}
+        values = (
+            Value.objects.filter(
+                project=self.project,
+                snapshot=None,
+                set_collection=True,
+                set_prefix=self.target_prefix,
+                attribute__in=(self.attributes.variable, self.attributes.unit),
+            )
+            .order_by("set_index", "id")
+            .values_list("attribute_id", "set_index", "text", "external_id")
+        )
+        for attribute_id, index, text, external_id in values:
+            if text is not None:
+                if attribute_id == self.attributes.variable.id:
+                    names_by_index[index] = text
+                if attribute_id == self.attributes.unit.id:
+                    units_by_index[index] = text
+            if external_id and is_auto_variable_marker(external_id):
+                markers_by_index[index] = external_id
         return tuple(
             ExistingDataCollectionVariable(
                 set_index=set_index,

@@ -11,7 +11,9 @@ from django.dispatch import receiver
 from rdmo.projects.models import Project, Value
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
+from rdmo_sensorsearch.services.performance import count_event, measure_phase
 from rdmo_sensorsearch.services.synchronization_context import is_value_sync_muted
+from rdmo_sensorsearch.workflows.event_routing import route_value
 from rdmo_sensorsearch.workflows.value_events import (
     DeletedValueContext,
     handle_value_deleted,
@@ -19,6 +21,17 @@ from rdmo_sensorsearch.workflows.value_events import (
 )
 
 logger = logging.getLogger(__name__)
+_ROUTING_UNAVAILABLE = object()
+
+
+def _route_value(instance):
+    try:
+        return route_value(instance)
+    except Exception:
+        # Routing used to run only inside a robust commit callback. A broken
+        # configuration must not turn the new early gate into a failed save.
+        logger.exception("Sensorsearch early routing failed; retaining commit-time handling")
+        return _ROUTING_UNAVAILABLE
 
 
 def _is_snapshot_value(instance: Value) -> bool:
@@ -34,14 +47,21 @@ def _is_project_delete(origin: object) -> bool:
     sender=Value,
     dispatch_uid="rdmo_sensorsearch.value.post_save",
 )
+@measure_phase("signal.save")
 def value_saved(sender, instance, *, raw, **kwargs):
+    count_event("value.created" if kwargs.get("created") else "value.saved")
     if raw or is_value_sync_muted() or instance is None:
         return
     if _is_snapshot_value(instance):
         logger.debug("Skipping sensorsearch post_save handling for snapshot value %s", instance.pk)
         return
 
-    auth_token = get_sms_auth_token()
+    if _route_value(instance) is None:
+        return
+    count_event("signal.save.relevant")
+    with measure_phase("auth"):
+        auth_token = get_sms_auth_token()
+    count_event("callback.save.scheduled")
     transaction.on_commit(
         partial(
             handle_value_saved,
@@ -57,7 +77,9 @@ def value_saved(sender, instance, *, raw, **kwargs):
     sender=Value,
     dispatch_uid="rdmo_sensorsearch.value.post_delete",
 )
+@measure_phase("signal.delete")
 def value_deleted(sender, instance, **kwargs):
+    count_event("value.deleted")
     if is_value_sync_muted() or instance is None:
         return
     if _is_snapshot_value(instance):
@@ -67,9 +89,14 @@ def value_deleted(sender, instance, **kwargs):
         logger.debug("Skipping sensorsearch post_delete handling during project deletion for value %s", instance.pk)
         return
 
-    context = DeletedValueContext.from_value(instance)
+    routing = _route_value(instance)
+    if routing is None:
+        return
+    count_event("signal.delete.relevant")
+    context = DeletedValueContext.from_value(instance, routing=None if routing is _ROUTING_UNAVAILABLE else routing)
     if context is None:
         return
+    count_event("callback.delete.scheduled")
     transaction.on_commit(
         partial(handle_value_deleted, context=context),
         robust=True,

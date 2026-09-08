@@ -12,6 +12,12 @@ _HANDLER_BINDINGS_BY_CATALOG: dict[str, list[HandlerBinding]] | None = None
 _REGISTRY_LOCK = Lock()
 
 
+def clear_handler_registry() -> None:
+    global _HANDLER_BINDINGS_BY_CATALOG
+    with _REGISTRY_LOCK:
+        _HANDLER_BINDINGS_BY_CATALOG = None
+
+
 def handler_bindings_by_catalog() -> dict[str, list[HandlerBinding]]:
     """Return the configured handler bindings, building the registry once."""
 

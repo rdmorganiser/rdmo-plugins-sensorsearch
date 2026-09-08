@@ -13,6 +13,8 @@ import requests
 
 from rdmo import __version__
 
+from rdmo_sensorsearch.services.performance import count_event, measure_phase
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,6 +39,7 @@ class _RequestCache:
         with self._lock:
             cached = self._responses.get(key)
             if cached is not None:
+                count_event("http.cache_hit")
                 return deepcopy(cached)
 
             pending = self._pending.get(key)
@@ -48,6 +51,7 @@ class _RequestCache:
                 is_owner = False
 
         if not is_owner:
+            count_event("http.shared_wait")
             pending.event.wait()
             if pending.error is not None:
                 raise pending.error
@@ -92,6 +96,7 @@ def deduplicate_json_requests():
 
 
 def fetch_json(url: str, auth_token: str | None = None) -> dict | list:
+    count_event("http.requested")
     request_cache = _REQUEST_CACHE.get()
     if request_cache is not None:
         return request_cache.get_or_fetch(
@@ -101,6 +106,7 @@ def fetch_json(url: str, auth_token: str | None = None) -> dict | list:
     return _fetch_json_uncached(url, auth_token=auth_token)
 
 
+@measure_phase("http.executed")
 def _fetch_json_uncached(url: str, auth_token: str | None = None) -> dict | list:
     timeout = get_request_timeout()
     logger.debug("Requesting JSON from %s with timeout=%s", url, timeout)
@@ -115,6 +121,7 @@ def _fetch_json_uncached(url: str, auth_token: str | None = None) -> dict | list
             timeout=timeout,
         )
         response.raise_for_status()
+        count_event(f"http.status.{response.status_code}")
         logger.debug("Fetched data from %s with status=%s", url, response.status_code)
         json_data = response.json()
         if not json_data:
@@ -122,6 +129,7 @@ def _fetch_json_uncached(url: str, auth_token: str | None = None) -> dict | list
         return json_data
 
     except requests.exceptions.HTTPError as e:
+        count_event("http.error")
         status_code = getattr(e.response, "status_code", "unknown")
         response_text = getattr(e.response, "text", "")
         logger.error(
@@ -132,6 +140,7 @@ def _fetch_json_uncached(url: str, auth_token: str | None = None) -> dict | list
         )
         return {"errors": [str(e)]}
     except requests.exceptions.RequestException as e:
+        count_event("http.error")
         logger.error("Request failed for %s: %s", url, e)
         return {"errors": [str(e)]}
 

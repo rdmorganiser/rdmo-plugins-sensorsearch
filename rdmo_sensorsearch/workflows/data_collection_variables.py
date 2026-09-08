@@ -131,18 +131,21 @@ def _reconcile_data_collection_variables(
         logger.warning("Skipping data collection variable synchronization because one or more attributes are missing")
         return
 
+    selected_ids = store.selected_device_external_ids(settings.devices_attribute_uri)
+    requested_ids = set(selected_ids)
+    if add_instance_device and external_id:
+        requested_ids.add(external_id)
+    parameters_by_device = store.parameters_by_device(requested_ids)
     parameters_to_add: tuple[ParameterUnitPair, ...] = ()
     if add_instance_device and external_id:
-        parameters_to_add = store.parameters_for_device(external_id)
+        parameters_to_add = parameters_by_device[external_id]
         if not parameters_to_add:
             logger.debug("No parameters found for selected data collection device %s", external_id)
     elif add_instance_device:
         logger.debug("Skipping parameter creation without device external_id for value %s", value_id)
 
     desired_parameters = tuple(
-        parameter
-        for device_external_id in store.selected_device_external_ids(settings.devices_attribute_uri)
-        for parameter in store.parameters_for_device(device_external_id)
+        parameter for device_external_id in selected_ids for parameter in parameters_by_device[device_external_id]
     )
     plan = plan_data_collection_variable_reconciliation(
         parameters_to_add=parameters_to_add,

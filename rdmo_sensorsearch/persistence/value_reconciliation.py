@@ -10,11 +10,13 @@ from rdmo.projects.answers import AnswerTree
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerResult, deduplicate_collection_values
+from rdmo_sensorsearch.persistence.catalog_context import workflow_catalog_context
 from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBinding,
     CollectionBindingError,
     scope_from_value,
 )
+from rdmo_sensorsearch.services.performance import measure_phase
 from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
 
 logger = logging.getLogger(__name__)
@@ -23,6 +25,7 @@ logger = logging.getLogger(__name__)
 class _ScalarScopeResolver:
     """Reuse one project value index while resolving all fields in one result."""
 
+    @measure_phase("scalar.scope_setup")
     def __init__(self, instance):
         self.project = instance.project
         self.catalog = self.project.catalog
@@ -272,6 +275,7 @@ def _qs_scalar_for_scope(instance, attribute, set_prefix: str, set_index: int):
     return queryset
 
 
+@measure_phase("scalar.apply")
 def apply_mapped_values(instance, mapped_values: dict):
     if not mapped_values:
         return
@@ -432,6 +436,7 @@ def _apply_list(instance, attribute, items: list[Any]) -> None:
     delete_from(last_nonblank_index + 1)
 
 
+@workflow_catalog_context()
 def reconcile_handler_result(
     instance,
     handler,

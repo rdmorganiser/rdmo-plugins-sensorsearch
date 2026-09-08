@@ -7,16 +7,20 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from time import perf_counter
 
+from django.db.models import Q
+
 from rdmo.domain.models import Attribute
 from rdmo.projects.models import Project, Value
 
 from rdmo_sensorsearch.client import deduplicate_json_requests
 from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog
+from rdmo_sensorsearch.persistence.catalog_context import workflow_catalog_context
 from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBinding,
     CollectionBindingError,
     CollectionScope,
 )
+from rdmo_sensorsearch.services.performance import measure_phase
 from rdmo_sensorsearch.workflows.backend_value_sync import sync_backend_value_after_save
 from rdmo_sensorsearch.workflows.configuration_tabs import (
     clear_configuration_tab_from_deleted_source,
@@ -35,6 +39,7 @@ from rdmo_sensorsearch.workflows.device_details import (
     remove_device_detail_block_for_selected_device,
     remove_orphaned_device_detail_blocks,
 )
+from rdmo_sensorsearch.workflows.event_routing import is_relevant_attribute
 from rdmo_sensorsearch.workflows.metadata_refresh import (
     clear_refresh_state,
     clear_refresh_state_for_source,
@@ -61,25 +66,28 @@ class DeletedValueContext:
     external_id: str
 
     @classmethod
-    def from_value(cls, instance: Value) -> DeletedValueContext | None:
+    def from_value(cls, instance: Value, *, routing: tuple[str, str] | None = None) -> DeletedValueContext | None:
         if instance.project_id is None or instance.attribute_id is None:
             return None
-        project = Project.objects.select_related("catalog").filter(pk=instance.project_id).first()
-        attribute = Attribute.objects.filter(pk=instance.attribute_id).first()
-        if project is None or project.catalog is None or attribute is None:
-            return None
+        if routing is None:
+            project = Project.objects.select_related("catalog").filter(pk=instance.project_id).first()
+            attribute = Attribute.objects.filter(pk=instance.attribute_id).first()
+            if project is None or project.catalog is None or attribute is None:
+                return None
+            routing = project.catalog.uri, attribute.uri
         return cls(
             value_id=instance.pk,
             project_id=instance.project_id,
-            catalog_uri=project.catalog.uri,
+            catalog_uri=routing[0],
             attribute_id=instance.attribute_id,
-            attribute_uri=attribute.uri,
+            attribute_uri=routing[1],
             set_prefix=instance.set_prefix or "",
             set_index=instance.set_index,
             external_id=instance.external_id or "",
         )
 
 
+@measure_phase("callback.save.executed")
 def handle_value_saved(value_id: int, auth_token: str | None = None) -> None:
     instance = Value.objects.select_related("project__catalog", "attribute").filter(pk=value_id).first()
     if instance is None:
@@ -89,12 +97,15 @@ def handle_value_saved(value_id: int, auth_token: str | None = None) -> None:
         return
     if instance.project is None or instance.project.catalog is None or instance.attribute is None:
         return
+    if not is_relevant_attribute(instance.project.catalog.uri, instance.attribute.uri):
+        return
 
     stages = _save_stages(instance, auth_token)
     with deduplicate_json_requests():
         _run_stages("save", value_id, instance.project_id, stages)
 
 
+@measure_phase("callback.delete.executed")
 def handle_value_deleted(context: DeletedValueContext) -> None:
     project = Project.objects.select_related("catalog").filter(pk=context.project_id).first()
     if project is None or project.catalog is None:
@@ -102,6 +113,8 @@ def handle_value_deleted(context: DeletedValueContext) -> None:
             "Skipping sensorsearch delete handling because project %s no longer exists",
             context.project_id,
         )
+        return
+    if not is_relevant_attribute(project.catalog.uri, context.attribute_uri):
         return
     attribute = Attribute.objects.filter(pk=context.attribute_id).first()
 
@@ -119,6 +132,7 @@ def handle_value_deleted(context: DeletedValueContext) -> None:
     _run_stages("delete", context.value_id, context.project_id, stages)
 
 
+@workflow_catalog_context()
 def _run_stages(
     event: str,
     value_id: int | None,
@@ -129,7 +143,8 @@ def _run_stages(
     for stage_name, stage in stages:
         stage_started = perf_counter()
         try:
-            stage()
+            with measure_phase(f"stage.{event}.{stage_name}"):
+                stage()
         except Exception:
             logger.exception(
                 "Sensorsearch %s stage %s failed for value=%s project=%s",
@@ -355,12 +370,7 @@ def _selected_device_binding_and_scope(
 
 
 def _has_meaningful_collection_values(queryset) -> bool:
-    return (
-        queryset.exclude(text__exact="").exists()
-        or queryset.exclude(external_id__exact="").exists()
-        or queryset.filter(option__isnull=False).exists()
-        or queryset.exclude(file__exact="").exists()
-    )
+    return queryset.filter(~Q(text__exact="") | ~Q(external_id__exact="") | Q(option__isnull=False) | ~Q(file__exact="")).exists()
 
 
 def _log_inactive_selected_device_layout(

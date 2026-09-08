@@ -2201,9 +2201,7 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<optionsets>
 			<optionset dc:uri="https://rdmo.nfdi4earth.de/terms/options/interview-page-refresh"/>
 		</optionsets>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
+		<conditions/>
 	</question>
 	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-device">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
@@ -2212,15 +2210,6 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<dc:comment>Boolean action trigger for refreshing one device.</dc:comment>
 		<parent dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology"/>
 	</attribute>
-	<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device">
-		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
-		<uri_path>instruments-general/has-backend-device</uri_path>
-		<dc:comment>Shows local device refresh controls only when a backend device is selected.</dc:comment>
-		<source dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"/>
-		<relation>notempty</relation>
-		<target_text/>
-		<target_option/>
-	</condition>
 	<attribute dc:uri="https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords">
 		<uri_prefix>https://rdmo.nfdi.de/terms</uri_prefix>
 		<key>keywords</key>
@@ -2253,9 +2242,7 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<unit/>
 		<width>6</width>
 		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
+		<conditions/>
 	</question>
 	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-status">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
@@ -2289,9 +2276,7 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<unit/>
 		<width>6</width>
 		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
+		<conditions/>
 	</question>
 	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-timestamp">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>
@@ -2325,9 +2310,7 @@ Should be suitable for sensors that are in a sensor management system (SMS and O
 		<unit/>
 		<width/>
 		<optionsets/>
-		<conditions>
-			<condition dc:uri="https://rdmo.nfdi4earth.de/terms/conditions/instruments-general/has-backend-device"/>
-		</conditions>
+		<conditions/>
 	</question>
 	<attribute dc:uri="https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/refresh-message">
 		<uri_prefix>https://rdmo.nfdi4earth.de/terms</uri_prefix>

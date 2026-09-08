@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Any
 
 from django.db.models import Q
@@ -9,6 +11,7 @@ from django.db.models import Q
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.naming import device_detail_tab_label
+from rdmo_sensorsearch.persistence.catalog_context import get_catalog_context
 from rdmo_sensorsearch.services.device_details import (
     DeviceBlockPlan,
     DeviceBlockReference,
@@ -18,8 +21,40 @@ from rdmo_sensorsearch.services.device_details import (
     parse_device_block_key,
 )
 from rdmo_sensorsearch.services.device_metadata import DeviceBlockInstance, DeviceFetchResult
+from rdmo_sensorsearch.services.performance import measure_phase
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class DevicePlanningState:
+    """Detached read snapshot; never reuse after applying a reconciliation plan."""
+
+    root_uri: str
+    scope_prefix: str
+    blocks: dict[str, DeviceBlockReference]
+    next_index: int
+    rows: dict[tuple[str, str, int, bool], set[tuple[str, str]]]
+
+    def existing_blocks(self, configuration_key: str) -> dict[str, DeviceBlockReference]:
+        return {key: block for key, block in self.blocks.items() if parse_device_block_key(key)[0] == configuration_key}
+
+    def block_metadata_is_current(self, device, block_key, set_index, handler_binding, configuration_label) -> bool:
+        return (_device_root_text(configuration_label, device), block_key) in self.rows.get(
+            (self.root_uri, self.scope_prefix, set_index, True), ()
+        ) and (base_device_text(device.text), device.external_id) in self.rows.get(
+            (handler_binding.search_attribute_uri, self.scope_prefix, set_index, False), ()
+        )
+
+    def block_needs_refresh(
+        self, set_index, *, device_link_attribute_uri, usage_technology_attribute_uri, instrument_start_attribute_uri
+    ) -> bool:
+        scopes = (
+            (device_link_attribute_uri, self.scope_prefix, set_index, False),
+            (usage_technology_attribute_uri, self.scope_prefix, set_index, False),
+            (instrument_start_attribute_uri, str(set_index), 0, False),
+        )
+        return not all(any(text for text, _ in self.rows.get(scope, ())) for scope in scopes)
 
 
 class RDMODeviceDetailStore:
@@ -37,6 +72,54 @@ class RDMODeviceDetailStore:
         self.root_attribute = root_attribute
         self.scope_prefix = scope_prefix or ""
         self.value_model = value_model
+
+    @measure_phase("device.load_state")
+    def load_planning_state(self, attribute_uris: Iterable[str]) -> DevicePlanningState:
+        roots = list(
+            self.value_model.objects.filter(
+                project=self.project,
+                snapshot=None,
+                attribute=self.root_attribute,
+                set_collection=True,
+                set_prefix=self.scope_prefix,
+            )
+            .order_by("set_index", "id")
+            .values_list("set_index", "text", "external_id")
+        )
+        rows = defaultdict(set)
+        blocks = {}
+        for set_index, text, external_id in roots:
+            rows[(self.root_attribute.uri, self.scope_prefix, set_index, True)].add((text, external_id))
+            configuration_key, device_id = parse_device_block_key(external_id or "")
+            if configuration_key and device_id:
+                blocks[external_id] = DeviceBlockReference(set_index=set_index)
+
+        indexes = {index for index, _, _ in roots}
+        if indexes:
+            # Resolve URI identity in the same query as the required scalar state.
+            scalars = (
+                self.value_model.objects.filter(
+                    project=self.project,
+                    snapshot=None,
+                    attribute__uri__in=set(attribute_uris),
+                    set_collection=False,
+                )
+                .filter(
+                    Q(set_prefix=self.scope_prefix, set_index__in=indexes)
+                    | Q(set_prefix__in={str(index) for index in indexes}, set_index=0)
+                )
+                .order_by()
+                .values_list("attribute__uri", "set_prefix", "set_index", "text", "external_id")
+            )
+            for uri, prefix, index, text, external_id in scalars:
+                rows[(uri, prefix, index, False)].add((text, external_id))
+        return DevicePlanningState(
+            self.root_attribute.uri,
+            self.scope_prefix,
+            blocks,
+            max(indexes, default=-1) + 1,
+            dict(rows),
+        )
 
     def for_scope(self, scope_prefix: str) -> RDMODeviceDetailStore:
         return type(self)(
@@ -335,6 +418,7 @@ class RDMODeviceDetailStore:
                 orphaned_scopes.add((value.set_prefix or "", value.set_index))
         return orphaned_scopes
 
+    @measure_phase("device.compact")
     def compact(self, attribute_ids: set[int]) -> None:
         root_values = list(
             self.value_model.objects.filter(
@@ -394,12 +478,18 @@ def get_attribute_by_uri(attribute_uri: str):
 
 
 def catalog_attribute_ids(catalog: Any, page_uris: set[str]) -> set[int]:
+    context = get_catalog_context()
+    key = catalog.pk if hasattr(catalog, "pk") else id(catalog)
+    if context is not None and key in context.page_attributes:
+        pages = context.page_attributes[key]
+        return set().union(*(pages.get(uri, frozenset()) for uri in page_uris))
     catalog.prefetch_elements()
-    attribute_ids = set()
+    pages = defaultdict(set)
     for page in catalog.pages:
-        if page.uri in page_uris:
-            attribute_ids.update(_collect_attribute_ids(page))
-    return attribute_ids
+        pages[page.uri].update(_collect_attribute_ids(page))
+    if context is not None:
+        context.page_attributes[key] = {uri: frozenset(ids) for uri, ids in pages.items()}
+    return set().union(*(pages.get(uri, set()) for uri in page_uris))
 
 
 def _collect_attribute_ids(element: Any) -> set[int]:

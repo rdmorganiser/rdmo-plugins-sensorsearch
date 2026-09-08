@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterable
+from functools import partial
 from typing import Any
 
 from django.db import transaction
@@ -9,6 +10,7 @@ from rdmo.projects.models import Value
 from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog
 from rdmo_sensorsearch.handlers.sms_device_enrichment import SMSDeviceMetadataEnricher
 from rdmo_sensorsearch.naming import configuration_short_label
+from rdmo_sensorsearch.persistence.catalog_context import workflow_catalog_context
 from rdmo_sensorsearch.persistence.collection_binding import CollectionBinding, CollectionScope
 from rdmo_sensorsearch.persistence.device_details import (
     RDMODeviceDetailStore,
@@ -104,6 +106,7 @@ def reconcile_device_details_from_selected_devices(
     )
 
 
+@workflow_catalog_context()
 def reconcile_device_details(
     project,
     catalog,
@@ -168,32 +171,36 @@ def reconcile_device_details(
         )
 
     store = RDMODeviceDetailStore(project, root_attribute, scope_prefix)
-    existing_blocks = store.existing_blocks(configuration_key)
-    next_index = store.next_set_index()
+    planning_state = store.load_planning_state(
+        {
+            *(binding.search_attribute_uri for binding in get_handler_bindings_for_catalog(catalog.uri)),
+            detail_settings.device_link_attribute_uri,
+            detail_settings.usage_technology_attribute_uri,
+            detail_settings.instrument_start_attribute_uri,
+        }
+    )
 
     reconciliation_plan = plan_device_detail_reconciliation(
         selected_devices=selected_devices,
         configuration_key=configuration_key,
         configuration_external_id=configuration_identity.external_id,
         set_prefix=scope_prefix,
-        existing_blocks=existing_blocks,
-        next_set_index=next_index,
+        existing_blocks=planning_state.existing_blocks(configuration_key),
+        next_set_index=planning_state.next_index,
         resolve_handler=lambda external_id: _resolve_device_handler_binding(project.catalog.uri, external_id),
-        metadata_is_current=lambda device, block_key, set_index, handler_binding: store.block_metadata_is_current(
-            device,
-            block_key,
-            set_index,
-            handler_binding,
-            configuration_label,
+        metadata_is_current=partial(
+            planning_state.block_metadata_is_current,
+            configuration_label=configuration_label,
         ),
-        refresh_is_required=lambda set_index: store.block_needs_refresh(
-            set_index,
+        refresh_is_required=partial(
+            planning_state.block_needs_refresh,
             device_link_attribute_uri=detail_settings.device_link_attribute_uri,
             usage_technology_attribute_uri=detail_settings.usage_technology_attribute_uri,
             instrument_start_attribute_uri=detail_settings.instrument_start_attribute_uri,
         ),
         force_refresh=force_refresh,
     )
+    del planning_state
     plans = list(reconciliation_plan.blocks)
     stale_blocks = reconciliation_plan.stale_blocks
     planning_errors = [

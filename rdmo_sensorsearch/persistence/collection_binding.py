@@ -6,6 +6,8 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from rdmo_sensorsearch.persistence.catalog_context import get_catalog_context
+
 if TYPE_CHECKING:
     from rdmo.projects.models import Value
 
@@ -51,8 +53,17 @@ class CollectionBinding:
             question_filters["pages__uri"] = page_uri
             questionset_filters["pages__uri"] = page_uri
 
-        question_count = Question.objects.filter(**question_filters).distinct().count()
-        questionset_count = QuestionSet.objects.filter(**questionset_filters).distinct().count()
+        context = get_catalog_context()
+        key = (catalog_id, attribute.id, page_uri) if context is not None else None
+        counts = context.collection_counts.get(key) if context is not None else None
+        if counts is None:
+            counts = (
+                Question.objects.filter(**question_filters).distinct().count(),
+                QuestionSet.objects.filter(**questionset_filters).distinct().count(),
+            )
+            if context is not None:
+                context.collection_counts[key] = counts
+        question_count, questionset_count = counts
 
         matches = question_count + questionset_count
         if matches != 1:

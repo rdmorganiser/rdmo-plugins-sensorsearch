@@ -9,6 +9,7 @@ from typing import Any
 
 from rdmo_sensorsearch.handlers.base import HandlerResult
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, parse_external_id
+from rdmo_sensorsearch.services.performance import measure_phase
 from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,7 @@ class DeviceFetchBatchResult:
 PayloadEnricher = Callable[[dict[str, Any], DeviceBlockPlan], tuple[RefreshNotice, ...] | None]
 
 
+@measure_phase("device.fetch_batch")
 def fetch_device_metadata_batch(
     plans: Sequence[DeviceBlockPlan],
     *,
