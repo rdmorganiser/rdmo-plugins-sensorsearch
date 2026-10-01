@@ -26,8 +26,8 @@ def get_device_detail_settings(catalog_uri: str, *, config: PluginConfig) -> Dev
     profiles = config.device_detail_sync.catalogs
     for profile in profiles:
         if profile.scope.catalog_uris and catalog_uri in profile.scope.catalog_uris:
-            return DeviceDetailSettings(**profile.settings)
+            return profile.settings
     for profile in profiles:
         if not profile.scope.catalog_uris:
-            return DeviceDetailSettings(**profile.settings)
+            return profile.settings
     return DEFAULT_DEVICE_DETAIL_SETTINGS

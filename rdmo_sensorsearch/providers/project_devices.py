@@ -4,7 +4,8 @@ from rdmo.domain.models import Attribute
 from rdmo.options.providers import Provider
 from rdmo.projects.models import Value
 
-from rdmo_sensorsearch.config import catalog_matches, load_config
+from rdmo_sensorsearch.config import load_config_model
+from rdmo_sensorsearch.config_models.models import ProjectOptionsCatalogConfig
 from rdmo_sensorsearch.naming import canonical_device_label
 
 logger = logging.getLogger(__name__)
@@ -65,14 +66,14 @@ class BaseProjectAttributeOptionsProvider(Provider):
 
     def _get_source_attribute_uri(self, catalog_uri: str) -> str | None:
         catalog = self._get_catalog_config(catalog_uri)
-        return catalog.get("source_attribute_uri") if catalog else None
+        return catalog.source_attribute_uri if catalog else None
 
-    def _get_catalog_config(self, catalog_uri: str) -> dict | None:
-        plugin_config = load_config()
-        catalogs = plugin_config.get(self.config_section_name, {}).get("catalogs", [])
+    def _get_catalog_config(self, catalog_uri: str) -> ProjectOptionsCatalogConfig | None:
+        plugin_config = load_config_model()
+        catalogs = plugin_config.project_options(self.config_section_name).catalogs
 
         for catalog in catalogs:
-            if catalog_matches(catalog, catalog_uri):
+            if catalog.scope.matches(catalog_uri):
                 return catalog
 
         return None

@@ -101,8 +101,12 @@ class FakeBackendProvider:
 def _configure_provider(monkeypatch, config_section_name, providers, rows, min_search_len=3):
     monkeypatch.setattr(
         search_provider,
-        "load_config",
-        lambda: {config_section_name: {"min_search_len": min_search_len}},
+        "load_config_model",
+        lambda: SimpleNamespace(
+            search_provider=lambda section: SimpleNamespace(
+                minimum_search_length=min_search_len, filter_sms_devices_by_selected_configuration=False
+            )
+        ),
     )
     monkeypatch.setattr(search_provider, "get_config_file_path", lambda: "test-config.toml")
     monkeypatch.setattr(search_provider, "build_provider_instances", lambda key: providers)

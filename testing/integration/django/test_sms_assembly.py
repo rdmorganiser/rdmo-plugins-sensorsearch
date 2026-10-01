@@ -57,33 +57,46 @@ def test_provider_failure_returns_no_options(provider_class, method):
     assert provider.get_options(None, search="Sensor") == []
 
 
-def test_provider_factory_keeps_resource_urls_and_entry_overrides(monkeypatch):
-    requests = []
+def _sms_config(*, backend_settings=None, provider=None, catalog=None):
+    from rdmo_sensorsearch.config_models import PluginConfig
 
-    def fetch(url, auth_token=None):
-        requests.append(url)
-        return {"data": []}
-
-    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
-    monkeypatch.setattr(
-        provider_factory,
-        "load_config",
-        lambda: {
+    return PluginConfig.from_mapping(
+        {
+            "backends": [
+                {
+                    "name": "sms",
+                    "type": "sms",
+                    "base_url": "https://sms.example/api",
+                    "device_id_prefix": "test",
+                    "settings": backend_settings or {},
+                }
+            ],
             "DeviceSearchProvider": {
                 "provider_defaults": {"SensorManagementSystemDeviceProvider": {"max_hits": 5, "text_prefix": "Default"}},
-                "providers": {
-                    "SensorManagementSystemDeviceProvider": [
-                        {
-                            "base_url": "https://sms.example/custom/devices",
-                            "id_prefix": "test",
-                            "max_hits": 2,
-                            "query_url": "{base_url}?size={page_size}&query={query}",
-                        }
-                    ]
-                },
-            }
-        },
+                "providers": {"SensorManagementSystemDeviceProvider": [{"backend": "sms", **(provider or {})}]},
+            },
+            "handlers": {
+                "SensorManagementSystemDeviceHandler": {
+                    "instances": [{"backend": "sms"}],
+                    "defaults": {"search_attribute_uri": "search", "attribute_mapping": {"data.attributes.long_name": "name"}},
+                    "catalogs": [catalog or {"catalog_uri": "catalog"}],
+                }
+            },
+        }
     )
+
+
+def test_provider_factory_keeps_resource_urls_and_entry_overrides(monkeypatch):
+    requests = []
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: requests.append(url) or {"data": []})
+    config = _sms_config(
+        backend_settings={
+            "device_search_url": "https://sms.example/custom/devices",
+            "device_query_url": "{base_url}?size={page_size}&query={query}",
+        },
+        provider={"max_hits": 2},
+    )
+    monkeypatch.setattr(provider_factory, "load_config_model", lambda: config)
     (provider,) = provider_factory.build_provider_instances("DeviceSearchProvider")
     provider.auth_token = "token"
     assert provider.max_hits == 2 and provider.text_prefix == "Default"
@@ -103,27 +116,11 @@ def test_handler_factory_keeps_catalog_mapping_and_endpoint_overrides(monkeypatc
         )
 
     monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
-    config = {
-        "handlers": {
-            "SensorManagementSystemDeviceHandler": {
-                "defaults": {
-                    "search_attribute_uri": "search",
-                    "contact_url": "{base_url}/contacts/{id}",
-                    "attribute_mapping": {"data.attributes.long_name": "name"},
-                },
-                "backend_defaults": {"base_url": "https://sms.example/api"},
-                "backends": [{"id_prefix": "test"}],
-                "catalogs": [
-                    {
-                        "catalog_uri": "catalog",
-                        "device_url": "{base_url}/catalog-device/{id}",
-                        "attribute_mapping": {"data.attributes.serial_number": "serial"},
-                    }
-                ],
-            }
-        }
-    }
-    monkeypatch.setattr(handler_factory, "load_config", lambda: config)
+    config = _sms_config(
+        backend_settings={"device": {"device_url": "{base_url}/catalog-device/{id}", "contact_url": "{base_url}/contacts/{id}"}},
+        catalog={"catalog_uri": "catalog", "attribute_mapping": {"data.attributes.serial_number": "serial"}},
+    )
+    monkeypatch.setattr(handler_factory, "load_config_model", lambda: config)
     (binding,) = handler_factory.build_handlers_by_catalog()["catalog"]
     from rdmo_sensorsearch.contracts import HandlerExecutionContext
 
@@ -133,23 +130,8 @@ def test_handler_factory_keeps_catalog_mapping_and_endpoint_overrides(monkeypatc
     assert requests == ["https://sms.example/api/catalog-device/1", "https://sms.example/api/contacts/1"]
 
 
-def test_handler_factory_preserves_rejection_of_conflicting_constructor_settings(monkeypatch, caplog):
-    monkeypatch.setattr(
-        handler_factory,
-        "load_config",
-        lambda: {
-            "handlers": {
-                "SensorManagementSystemDeviceHandler": {
-                    "defaults": {"search_attribute_uri": "search", "incomplete_mount_chain_policy": "strict"},
-                    "backend_defaults": {
-                        "base_url": "https://sms.example/api",
-                        "incomplete_mount_chain_policy": "direct_device_offset",
-                    },
-                    "backends": [{"id_prefix": "test"}],
-                    "catalogs": [{"catalog_uri": "catalog"}],
-                }
-            }
-        },
-    )
-    assert handler_factory.build_handlers_by_catalog() == {}
-    assert "Multiple values for keyword argument 'incomplete_mount_chain_policy'" in caplog.text
+def test_connection_settings_in_catalogs_are_rejected_before_assembly():
+    from rdmo_sensorsearch.config_models import ConfigValidationError
+
+    with pytest.raises(ConfigValidationError, match=r"unknown setting.*incomplete_mount_chain_policy"):
+        _sms_config(catalog={"incomplete_mount_chain_policy": "strict"})
