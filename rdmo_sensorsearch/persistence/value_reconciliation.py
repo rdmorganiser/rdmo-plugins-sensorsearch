@@ -461,7 +461,7 @@ def reconcile_handler_result(
     handler,
     result: HandlerResult,
     excluded_attribute_uris: set[str] | None = None,
-) -> tuple:
+) -> None:
     collection_attribute_uris = {collection.attribute_uri for collection in result.collections}
     scalar_exclusions = set(excluded_attribute_uris or ())
     scalar_exclusions.update(collection_attribute_uris)
@@ -476,8 +476,6 @@ def reconcile_handler_result(
         with transaction.atomic(), mute_value_sync():
             for collection in result.collections:
                 _update_collection_assignment(instance, collection)
-
-    return tuple(result.post_actions)
 
 
 def _update_collection_assignment(instance, collection: CollectionAssignment):

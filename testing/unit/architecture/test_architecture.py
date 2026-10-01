@@ -92,3 +92,11 @@ def test_only_scope_adapter_imports_answer_tree():
         if "rdmo.projects.answers" in _imports(path) and path != PACKAGE_ROOT / "persistence" / "scope_resolver.py"
     }
     assert violations == set()
+
+
+def test_handlers_do_not_import_workflows():
+    assert {
+        str(path.relative_to(PACKAGE_ROOT))
+        for path in (PACKAGE_ROOT / "handlers").rglob("*.py")
+        if any(module.startswith("rdmo_sensorsearch.workflows") for module in _imports(path))
+    } == set()

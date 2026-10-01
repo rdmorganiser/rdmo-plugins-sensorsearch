@@ -8,7 +8,7 @@ from django.db import transaction
 from rdmo.domain.models import Attribute
 
 from rdmo_sensorsearch.config import load_config_model
-from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerExecutionContext, HandlerResult, RefreshDeviceDetails
 from rdmo_sensorsearch.handlers.catalog_registry import (
     get_handler_bindings_for_catalog,
     handler_bindings_by_catalog,
@@ -27,6 +27,7 @@ from rdmo_sensorsearch.services.refresh import (
 )
 from rdmo_sensorsearch.workflows.device_details import (
     get_selected_device_values_for_configuration_scope,
+    reconcile_device_details_from_selected_devices,
     reconcile_device_details_from_selected_values,
 )
 
@@ -60,7 +61,7 @@ def _device_nested_questionset_scope(instance) -> tuple[str, int]:
     return str(instance.set_index), 0
 
 
-def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
+def _reconcile_result(instance, handler, result: HandlerResult) -> None:
     detail_settings = get_device_detail_settings(instance.project.catalog.uri, config=load_config_model())
     scoped_attribute_uris = {
         attribute_uri
@@ -78,7 +79,7 @@ def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
         )
         if attribute_uri
     }
-    post_actions = reconcile_handler_result(
+    reconcile_handler_result(
         instance,
         handler,
         result,
@@ -94,7 +95,6 @@ def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
             scopes_to_set=[_device_nested_questionset_scope(instance)],
             scopes_to_clear=[(instance.set_prefix or "", instance.set_index)],
         )
-    return post_actions
 
 
 def sync_backend_value_after_save(instance, auth_token: str | None = None) -> None:
@@ -214,15 +214,15 @@ def refresh_value_from_backend(
                 collections=_preserved_collection_assignments(instance, binding.handler),
             )
         with transaction.atomic():
-            post_actions = _reconcile_result(instance, binding.handler, handler_output)
+            _reconcile_result(instance, binding.handler, handler_output)
     except Exception as error:
         logger.exception("Failed to apply backend data for external_id=%s", external_id)
         return _failed_refresh(external_id, f"Could not store backend data: {error}")
 
     try:
-        post_action_results = [post_action() for post_action in post_actions]
+        effect_results = [_execute_effect(instance, effect, auth_token) for effect in handler_output.effects]
         if preserve_existing_collections:
-            post_action_results.append(
+            effect_results.append(
                 _refresh_selected_configuration_devices(
                     instance,
                     binding.handler,
@@ -231,10 +231,10 @@ def refresh_value_from_backend(
                 )
             )
     except Exception as error:
-        logger.exception("Failed to run post-update actions for external_id=%s", external_id)
+        logger.exception("Failed to run backend effects for external_id=%s", external_id)
         return _failed_refresh(external_id, f"Could not complete backend update: {error}")
 
-    device_result = combine_refresh_results(result for result in post_action_results if isinstance(result, RefreshResult))
+    device_result = combine_refresh_results(result for result in effect_results if isinstance(result, RefreshResult))
     notices = tuple(handler_output.notices) + tuple(device_result.notices)
     for notice in notices:
         logger.info(
@@ -250,6 +250,24 @@ def refresh_value_from_backend(
         device_requested_count=device_result.requested_count,
         device_refreshed_count=device_result.refreshed_count,
         notices=notices,
+    )
+
+
+def _execute_effect(instance, effect: RefreshDeviceDetails, auth_token: str | None) -> RefreshResult:
+    if not isinstance(effect, RefreshDeviceDetails):
+        raise TypeError(f"Unsupported handler effect: {type(effect).__name__}.")
+    return reconcile_device_details_from_selected_devices(
+        project=instance.project,
+        catalog=instance.project.catalog,
+        scope_prefix=instance.set_prefix,
+        source_set_index=instance.set_index,
+        selected_devices=effect.selected_devices,
+        selected_devices_attribute_uri=effect.selected_devices_attribute_uri,
+        device_collection_attribute_uri=effect.device_collection_attribute_uri,
+        configuration_search_attribute_uri=instance.attribute.uri,
+        configuration_external_id=instance.external_id,
+        auth_token=auth_token,
+        force_refresh=True,
     )
 
 

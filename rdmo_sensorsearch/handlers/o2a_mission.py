@@ -1,17 +1,21 @@
 import logging
 from collections import defaultdict
 from datetime import timezone as dt_timezone
-from functools import partial
 from urllib.parse import urlsplit
 
 from django.utils import timezone as django_timezone
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerExecutionContext, HandlerResult, SelectedDevice
+from rdmo_sensorsearch.contracts import (
+    CollectionAssignment,
+    HandlerExecutionContext,
+    HandlerResult,
+    RefreshDeviceDetails,
+    SelectedDevice,
+)
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping, parse_datetime
 from rdmo_sensorsearch.naming import configuration_short_label
-from rdmo_sensorsearch.workflows.device_details import reconcile_device_details_from_selected_devices
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +67,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         self._normalize_datetimes(mapped_values)
 
         collections = []
-        post_actions = []
+        effects = []
         selected_devices_attribute_uri = getattr(self, "selected_devices_attribute_uri", None)
         preserve_existing_collections = bool(context and context.preserve_existing_collections)
         require_configuration_period = bool(context and context.require_configuration_period)
@@ -103,7 +107,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         )
 
         device_collection_attribute_uri = getattr(self, "device_collection_attribute_uri", None)
-        if instance is not None and device_collection_attribute_uri:
+        if device_collection_attribute_uri:
             selected_devices = [
                 SelectedDevice(
                     text=value["text"],
@@ -114,26 +118,18 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
                 for value in selected_device_values
                 if value.get("external_id")
             ]
-            post_actions.append(
-                partial(
-                    reconcile_device_details_from_selected_devices,
-                    project=instance.project,
-                    catalog=instance.project.catalog,
-                    scope_prefix=instance.set_prefix,
-                    source_set_index=instance.set_index,
-                    selected_devices=selected_devices,
+            effects.append(
+                RefreshDeviceDetails(
+                    selected_devices=tuple(selected_devices),
                     selected_devices_attribute_uri=selected_devices_attribute_uri,
                     device_collection_attribute_uri=device_collection_attribute_uri,
-                    configuration_search_attribute_uri=instance.attribute.uri,
-                    configuration_external_id=instance.external_id,
-                    force_refresh=True,
                 )
             )
 
         return HandlerResult(
             mapped_values=mapped_values,
             collections=tuple(collections),
-            post_actions=tuple(post_actions),
+            effects=tuple(effects),
         )
 
     def _set_mission_links(self, mapped_values: dict[str, str | None], mission_id: str) -> None:

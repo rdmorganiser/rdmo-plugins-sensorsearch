@@ -11,6 +11,7 @@ from rdmo_sensorsearch.contracts import (
     ConfigurationPeriod,
     HandlerExecutionContext,
     HandlerResult,
+    RefreshDeviceDetails,
     SelectedDevice,
 )
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
@@ -19,7 +20,6 @@ from rdmo_sensorsearch.handlers.jsonapi import fetch_paginated_jsonapi_collectio
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping, parse_datetime
 from rdmo_sensorsearch.handlers.sms_configuration_membership import SMSConfigurationMembershipResolver
 from rdmo_sensorsearch.handlers.sms_mounting import select_static_location_action
-from rdmo_sensorsearch.workflows.device_details import reconcile_device_details_from_selected_devices
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
             return {"errors": location_errors}
 
         collections = []
-        post_actions = []
+        effects = []
 
         if selected_devices_attribute_uri and mount_action_data is not None:
             selected_device_values, member_errors = self._build_selected_device_values(
@@ -193,7 +193,7 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
             )
 
             device_collection_attribute_uri = getattr(self, "device_collection_attribute_uri", None)
-            if instance is not None and device_collection_attribute_uri:
+            if device_collection_attribute_uri:
                 selected_devices = [
                     SelectedDevice(
                         text=value["text"],
@@ -209,27 +209,18 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
                     for value in selected_device_values
                     if value.get("external_id")
                 ]
-                post_actions.append(
-                    partial(
-                        reconcile_device_details_from_selected_devices,
-                        project=instance.project,
-                        catalog=instance.project.catalog,
-                        scope_prefix=instance.set_prefix,
-                        source_set_index=instance.set_index,
-                        selected_devices=selected_devices,
+                effects.append(
+                    RefreshDeviceDetails(
+                        selected_devices=tuple(selected_devices),
                         selected_devices_attribute_uri=selected_devices_attribute_uri,
                         device_collection_attribute_uri=device_collection_attribute_uri,
-                        configuration_search_attribute_uri=instance.attribute.uri,
-                        configuration_external_id=instance.external_id,
-                        auth_token=auth_token,
-                        force_refresh=True,
                     )
                 )
 
         return HandlerResult(
             mapped_values=mapped_values,
             collections=tuple(collections),
-            post_actions=tuple(post_actions),
+            effects=tuple(effects),
         )
 
     def _set_configuration_links(self, mapped_values: dict[str, str | None], configuration_data: dict) -> None:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from datetime import timezone as dt_timezone
@@ -83,10 +83,19 @@ class MergedTextScalar:
 
 
 @dataclass(frozen=True)
+class RefreshDeviceDetails:
+    """Describe follow-up work; workflows supply storage and authentication."""
+
+    selected_devices: tuple[SelectedDevice, ...]
+    selected_devices_attribute_uri: str
+    device_collection_attribute_uri: str
+
+
+@dataclass(frozen=True)
 class HandlerResult:
     mapped_values: Mapping[str, Any] = field(default_factory=dict)
     collections: tuple[CollectionAssignment, ...] = ()
-    post_actions: tuple[Callable[[], Any], ...] = ()
+    effects: tuple[RefreshDeviceDetails, ...] = ()
     notices: tuple[RefreshNotice, ...] = ()
 
 

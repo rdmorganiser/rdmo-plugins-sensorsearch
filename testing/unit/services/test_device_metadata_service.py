@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerResult, RefreshNotice, SelectedDevice
+from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerResult, RefreshDeviceDetails, RefreshNotice, SelectedDevice
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan
 from rdmo_sensorsearch.services.device_metadata import fetch_device_metadata_batch
 
@@ -135,6 +135,11 @@ def test_fetch_service_passes_authentication_and_copies_context_into_worker():
         ("kitsms:1", {"errors": ["not found", "not authorized"]}, "not found; not authorized"),
         ("kitsms:2", "unexpected", "Device handler returned unexpected payload type: str."),
         (
+            "kitsms:4",
+            HandlerResult(effects=(RefreshDeviceDetails((), "selected", "root"),)),
+            "Sensor handlers cannot return collections or effects during block sync.",
+        ),
+        (
             "kitsms:3",
             HandlerResult(
                 collections=(
@@ -144,7 +149,7 @@ def test_fetch_service_passes_authentication_and_copies_context_into_worker():
                     ),
                 )
             ),
-            "Sensor handlers cannot return collections or post-actions during block sync.",
+            "Sensor handlers cannot return collections or effects during block sync.",
         ),
     ),
 )

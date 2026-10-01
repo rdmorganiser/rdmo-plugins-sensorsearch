@@ -81,7 +81,7 @@ decisions directly unit-testable.
 
 The metadata fetch service propagates the current Python context into each
 worker, passes an authentication token only to handlers that declare support,
-and rejects handler results containing nested collections or post-actions.
+and rejects handler results containing nested collections or effects.
 Backend-specific enrichment remains an injected callback; the SMS adapter uses
 it to add mount periods and resolved location values without making the generic
 fetch service depend on SMS endpoints or Earth Sensor attribute URIs.
@@ -152,8 +152,13 @@ unexpected failure is logged per concern and does not suppress later concerns.
 Configured handler bindings are owned by `handlers/catalog_registry.py`.
 Signals, handlers, and workflows use that registry directly; lower-level
 packages must not import signal adapters merely to resolve a handler. The
-registry is initialized lazily so handler class imports cannot create a cycle
-while configuration handlers import shared workflows.
+registry is initialized lazily. Handlers return declarative
+`RefreshDeviceDetails` effects instead of importing workflows or capturing RDMO
+models in callbacks. `workflows/backend_value_sync.py` interprets those effects
+after its scalar/collection write transaction completes, supplying project,
+scope, configuration identity and authentication. Persistence only writes data.
+A storage failure prevents effects; a follow-up failure leaves the already
+stored metadata intact and reports the existing failed-refresh result.
 
 Device block external IDs use this internal identity format:
 

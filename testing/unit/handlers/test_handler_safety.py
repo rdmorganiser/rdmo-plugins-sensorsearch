@@ -1156,3 +1156,38 @@ def test_o2a_mission_exposes_the_backend_period_for_preserved_devices():
     )
 
     assert period == ("2026-07-01 10:00", "2026-07-02 12:00")
+
+
+@pytest.mark.parametrize("backend", ("sms", "o2a"))
+@pytest.mark.parametrize("member_values", ([], [{"text": "Sensor", "external_id": "sensor:1", "instrument_start": "2026-01-01"}]))
+def test_configuration_handlers_describe_device_effects_without_interview_models(monkeypatch, backend, member_values):
+    module = sms_configuration_handler_module if backend == "sms" else o2a_mission_handler_module
+    handler_class = module.SensorManagementSystemConfigurationHandler if backend == "sms" else module.O2ARegistryMissionHandler
+    monkeypatch.setattr(module, "fetch_json", lambda *args, **kwargs: {"data": {"id": "1"}, "name": "Mission"})
+    handler = handler_class(
+        attribute_mapping={},
+        id_prefix="configuration",
+        base_url="https://backend.example",
+        selected_devices_attribute_uri="selected",
+        selected_devices_page_uri="page",
+        device_collection_attribute_uri="root",
+    )
+    if backend == "sms":
+        monkeypatch.setattr(handler, "_fetch_jsonapi_collection", lambda *args, **kwargs: {"data": []})
+    else:
+        monkeypatch.setattr(handler, "_fetch_mission_items", lambda *args, **kwargs: {"records": []})
+    monkeypatch.setattr(handler, "_build_selected_device_values", lambda **kwargs: (member_values, []))
+    result = handler.handle("1")
+    assert result.collections[0].values == tuple(member_values)
+    assert len(result.effects) == 1
+    effect = result.effects[0]
+    assert isinstance(effect, contracts.RefreshDeviceDetails)
+    assert (effect.selected_devices_attribute_uri, effect.device_collection_attribute_uri) == ("selected", "root")
+    assert tuple(device.external_id for device in effect.selected_devices) == tuple(
+        value["external_id"] for value in member_values
+    )
+    if member_values:
+        assert effect.selected_devices[0].instrument_start == "2026-01-01"
+        assert effect.selected_devices[0].mount_location_resolved == (backend == "sms")
+    preserved = handler.handle("1", context=contracts.HandlerExecutionContext(preserve_existing_collections=True))
+    assert preserved.collections == preserved.effects == ()

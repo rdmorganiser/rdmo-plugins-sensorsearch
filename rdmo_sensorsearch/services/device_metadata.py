@@ -147,10 +147,10 @@ def _fetch_device_metadata(
             external_id=plan.block_key,
             message=f"Device handler returned unexpected payload type: {type(handler_result).__name__}.",
         )
-    if handler_result.collections or handler_result.post_actions:
+    if handler_result.collections or handler_result.effects:
         return DeviceFetchError(
             external_id=plan.block_key,
-            message="Sensor handlers cannot return collections or post-actions during block sync.",
+            message="Sensor handlers cannot return collections or effects during block sync.",
         )
 
     mapped_values = dict(handler_result.mapped_values)
