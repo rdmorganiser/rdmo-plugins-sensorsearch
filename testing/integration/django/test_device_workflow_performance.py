@@ -9,8 +9,8 @@ from rdmo.projects.models import Value
 from rdmo.questions.models import Question
 
 from rdmo_sensorsearch import client
-from rdmo_sensorsearch.handlers.base import HandlerResult
-from rdmo_sensorsearch.services.device_details import ConfigurationIdentity, SelectedDevice
+from rdmo_sensorsearch.contracts import HandlerResult, SelectedDevice
+from rdmo_sensorsearch.services.device_details import ConfigurationIdentity
 from rdmo_sensorsearch.services.performance import capture_performance
 from rdmo_sensorsearch.workflows import device_details
 from testing.performance.fixtures import make_workload
@@ -74,7 +74,7 @@ def device_workflow(monkeypatch):
             return ()
 
     binding = SimpleNamespace(id_prefix="sms", search_attribute_uri=a["search"].uri, handler=Handler())
-    monkeypatch.setattr(device_details, "get_device_detail_settings", lambda uri: settings)
+    monkeypatch.setattr(device_details, "get_device_detail_settings", lambda uri, **kwargs: settings)
     monkeypatch.setattr(device_details, "get_handler_bindings_for_catalog", lambda uri: [binding])
     monkeypatch.setattr(
         device_details,

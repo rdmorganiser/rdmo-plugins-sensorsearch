@@ -10,10 +10,10 @@ from rdmo.options.models import Option
 from rdmo.projects.models import Project, Snapshot, Value
 from rdmo.questions.models import Question
 
+from rdmo_sensorsearch.contracts import SelectedDevice
 from rdmo_sensorsearch.handlers import sms_device, sms_device_enrichment
 from rdmo_sensorsearch.persistence.value_reconciliation import apply_mapped_values
 from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
-from rdmo_sensorsearch.services.device_details import SelectedDevice
 from rdmo_sensorsearch.services.refresh import RefreshAction, RefreshKind
 from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
 from rdmo_sensorsearch.workflows import backend_value_sync, device_details, metadata_refresh

@@ -27,6 +27,17 @@ New decision logic should normally enter `services/`. Signal receivers should
 remain transaction and framework adapters; they should not become the only
 place where a synchronization rule can be tested.
 
+`contracts.py` owns the immutable data shared between these layers: handler
+results and execution context, collection assignments, selected devices,
+configuration periods, device settings, and notices. It imports only the
+standard library. Consumers import these types directly rather than depending
+on their former implementation packages. Scalar reconciliation accepts the
+small `ScalarScopeResolver` protocol declared there.
+
+Device-profile selection is a pure service receiving an explicit `PluginConfig`.
+Workflows load deployment configuration before calling it, so services do not
+acquire an indirect Django dependency through the configuration loader.
+
 ## Configuration model
 
 `rdmo_sensorsearch.config_models` remains the public import path for

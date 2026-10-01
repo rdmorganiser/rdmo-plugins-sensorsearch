@@ -5,10 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerResult
-from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, SelectedDevice
+from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerResult, RefreshNotice, SelectedDevice
+from rdmo_sensorsearch.services.device_details import DeviceBlockPlan
 from rdmo_sensorsearch.services.device_metadata import fetch_device_metadata_batch
-from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 START_ATTRIBUTE_URI = "attribute:start"
 END_ATTRIBUTE_URI = "attribute:end"

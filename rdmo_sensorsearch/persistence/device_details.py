@@ -10,12 +10,12 @@ from django.db.models import Q
 
 from rdmo.projects.models import Value
 
+from rdmo_sensorsearch.contracts import SelectedDevice
 from rdmo_sensorsearch.naming import device_detail_tab_label
 from rdmo_sensorsearch.persistence.catalog_context import get_catalog_context
 from rdmo_sensorsearch.services.device_details import (
     DeviceBlockPlan,
     DeviceBlockReference,
-    SelectedDevice,
     base_device_text,
     configuration_key_from_device_block,
     parse_device_block_key,

@@ -7,7 +7,8 @@ from django.db import transaction
 
 from rdmo.domain.models import Attribute
 
-from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.config import load_config_model
+from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers.catalog_registry import (
     get_handler_bindings_for_catalog,
     handler_bindings_by_catalog,
@@ -60,7 +61,7 @@ def _device_nested_questionset_scope(instance) -> tuple[str, int]:
 
 
 def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
-    detail_settings = get_device_detail_settings(instance.project.catalog.uri)
+    detail_settings = get_device_detail_settings(instance.project.catalog.uri, config=load_config_model())
     scoped_attribute_uris = {
         attribute_uri
         for attribute_uri in (
@@ -180,7 +181,7 @@ def refresh_value_from_backend(
     context = HandlerExecutionContext(
         preserve_existing_collections=preserve_existing_collections,
         require_configuration_period=require_configuration_period,
-        device_detail_settings=get_device_detail_settings(catalog.uri),
+        device_detail_settings=get_device_detail_settings(catalog.uri, config=load_config_model()),
     )
     try:
         if getattr(binding.handler, "uses_auth_token", False):

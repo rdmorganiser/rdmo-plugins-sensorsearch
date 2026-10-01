@@ -4,18 +4,13 @@ from urllib.parse import urljoin, urlsplit
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import (
-    BackendRecordHandler,
-    HandlerExecutionContext,
-    HandlerResult,
-    MergedTextScalar,
-)
+from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerResult, MergedTextScalar, RefreshNotice
+from rdmo_sensorsearch.handlers.base import BackendRecordHandler
 from rdmo_sensorsearch.handlers.jsonapi import fetch_paginated_jsonapi_collection
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
 from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location, select_latest_device_mount_period
 from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
 from rdmo_sensorsearch.services.device_details import parse_external_id
-from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 logger = logging.getLogger(__name__)
 

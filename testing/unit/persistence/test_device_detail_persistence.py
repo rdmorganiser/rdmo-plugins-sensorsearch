@@ -4,8 +4,9 @@ from types import ModuleType, SimpleNamespace
 
 import pytest
 
+from rdmo_sensorsearch.contracts import SelectedDevice
 from rdmo_sensorsearch.naming import device_detail_tab_label
-from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, SelectedDevice
+from rdmo_sensorsearch.services.device_details import DeviceBlockPlan
 from rdmo_sensorsearch.services.device_metadata import DeviceFetchResult
 
 

@@ -8,12 +8,8 @@ from django.db import transaction
 from rdmo.domain.models import Attribute
 from rdmo.projects.models import Value
 
-from rdmo_sensorsearch.handlers.base import (
-    CollectionAssignment,
-    HandlerResult,
-    MergedTextScalar,
-    deduplicate_collection_values,
-)
+from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerResult, MergedTextScalar, ScalarScopeResolver
+from rdmo_sensorsearch.handlers.base import deduplicate_collection_values
 from rdmo_sensorsearch.persistence.catalog_context import workflow_catalog_context
 from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBinding,
@@ -301,7 +297,7 @@ def apply_mapped_values(instance, mapped_values: dict):
 
     with transaction.atomic(), mute_value_sync():
         attributes = _attributes_by_uri(mapped_values)
-        scope_resolver: RDMOAnswerTreeScopeResolver | None = None
+        scope_resolver: ScalarScopeResolver | None = None
         scope_cache: dict[int, list[tuple[str, int]]] = {}
         for attribute_uri, value in mapped_values.items():
             attribute = attributes.get(attribute_uri)
@@ -578,7 +574,7 @@ def _normalize_set_prefix(set_prefix: str | None) -> str:
     return set_prefix or ""
 
 
-def _scalar_scopes(instance, attribute, resolver: RDMOAnswerTreeScopeResolver | None = None) -> list[tuple[str, int]]:
+def _scalar_scopes(instance, attribute, resolver: ScalarScopeResolver | None = None) -> list[tuple[str, int]]:
     if resolver is None:
         resolver = RDMOAnswerTreeScopeResolver(instance.project)
     return resolver.resolve(

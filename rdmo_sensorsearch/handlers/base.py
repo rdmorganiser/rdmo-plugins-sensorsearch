@@ -1,42 +1,9 @@
 import logging
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from collections.abc import Mapping
 from typing import Any
 from urllib.parse import urlsplit
 
-from rdmo_sensorsearch.services.refresh import RefreshNotice
-
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class CollectionAssignment:
-    attribute_uri: str
-    page_uri: str
-    values: tuple[dict[str, Any], ...] = ()
-    replace_existing: bool = True
-
-
-@dataclass(frozen=True)
-class MergedTextScalar:
-    """Append names to a creatable option answer; an empty tuple preserves it."""
-
-    values: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True)
-class HandlerResult:
-    mapped_values: Mapping[str, Any] = field(default_factory=dict)
-    collections: tuple[CollectionAssignment, ...] = ()
-    post_actions: tuple[Callable[[], Any], ...] = ()
-    notices: tuple[RefreshNotice, ...] = ()
-
-
-@dataclass(frozen=True)
-class HandlerExecutionContext:
-    preserve_existing_collections: bool = False
-    require_configuration_period: bool = False
-    device_detail_settings: Any | None = None
 
 
 def deduplicate_collection_values(values: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...]:

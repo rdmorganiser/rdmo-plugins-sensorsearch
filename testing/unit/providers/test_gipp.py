@@ -84,7 +84,7 @@ def test_handler_uses_current_gipp_hostname(monkeypatch):
     result = handler.handle("1")
 
     assert requested_urls == ["https://gipp.gfz.de/instruments/rest/1.json"]
-    assert isinstance(result, handler_base.HandlerResult)
+    assert isinstance(result, import_module("rdmo_sensorsearch.contracts").HandlerResult)
 
 
 def test_handler_propagates_backend_errors(monkeypatch):

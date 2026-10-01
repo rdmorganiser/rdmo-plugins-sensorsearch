@@ -6,21 +6,19 @@ from urllib.parse import urljoin
 from django.utils import timezone as django_timezone
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import (
-    BackendRecordHandler,
+from rdmo_sensorsearch.contracts import (
     CollectionAssignment,
+    ConfigurationPeriod,
     HandlerExecutionContext,
     HandlerResult,
+    SelectedDevice,
 )
-from rdmo_sensorsearch.handlers.configuration_period import (
-    ConfigurationPeriod,
-    read_configuration_period,
-)
+from rdmo_sensorsearch.handlers.base import BackendRecordHandler
+from rdmo_sensorsearch.handlers.configuration_period import read_configuration_period
 from rdmo_sensorsearch.handlers.jsonapi import fetch_paginated_jsonapi_collection
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping, parse_datetime
 from rdmo_sensorsearch.handlers.sms_configuration_membership import SMSConfigurationMembershipResolver
 from rdmo_sensorsearch.handlers.sms_mounting import select_static_location_action
-from rdmo_sensorsearch.services.device_details import SelectedDevice
 from rdmo_sensorsearch.workflows.device_details import reconcile_device_details_from_selected_devices
 
 logger = logging.getLogger(__name__)

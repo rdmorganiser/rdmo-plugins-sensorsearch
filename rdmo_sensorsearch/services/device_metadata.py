@@ -7,10 +7,9 @@ from contextvars import copy_context
 from dataclasses import dataclass
 from typing import Any
 
-from rdmo_sensorsearch.handlers.base import HandlerResult
+from rdmo_sensorsearch.contracts import HandlerResult, RefreshNotice
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, parse_external_id
 from rdmo_sensorsearch.services.performance import measure_phase
-from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 logger = logging.getLogger(__name__)
 

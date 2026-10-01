@@ -1,10 +1,10 @@
 import pytest
 
+from rdmo_sensorsearch.contracts import RefreshNotice
 from rdmo_sensorsearch.services.refresh import (
     RefreshAction,
     RefreshError,
     RefreshKind,
-    RefreshNotice,
     RefreshResult,
     combine_refresh_results,
     format_refresh_message,

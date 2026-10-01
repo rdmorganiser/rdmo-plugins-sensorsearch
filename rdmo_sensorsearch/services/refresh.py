@@ -4,6 +4,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
 
+from rdmo_sensorsearch.contracts import RefreshNotice
+
 
 class RefreshKind(str, Enum):
     CONFIGURATION = "configuration"
@@ -51,15 +53,6 @@ class RefreshAction:
 class RefreshError:
     external_id: str
     message: str
-
-
-@dataclass(frozen=True)
-class RefreshNotice:
-    """Nonfatal synchronization detail suitable for logs and aggregated feedback."""
-
-    code: str
-    external_id: str = ""
-    details: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)

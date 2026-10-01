@@ -8,6 +8,7 @@ django.conf = django_conf
 rdmo = sys.modules.setdefault("rdmo", ModuleType("rdmo"))
 rdmo.__version__ = getattr(rdmo, "__version__", "test")
 
+from rdmo_sensorsearch.contracts import SelectedDevice  # noqa: E402
 from rdmo_sensorsearch.handlers import sms_device_enrichment as enrichment_module  # noqa: E402
 from rdmo_sensorsearch.handlers.sms_device_enrichment import (  # noqa: E402
     INSTRUMENT_END_ATTRIBUTE_URI,
@@ -19,7 +20,7 @@ from rdmo_sensorsearch.handlers.sms_device_enrichment import (  # noqa: E402
     SMSDeviceMetadataEnricher,
 )
 from rdmo_sensorsearch.handlers.sms_mounting import MountLocationNoticeCode  # noqa: E402
-from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, SelectedDevice  # noqa: E402
+from rdmo_sensorsearch.services.device_details import DeviceBlockPlan  # noqa: E402
 
 
 def _plan(device: SelectedDevice, handler, configuration_external_id="sms-configuration:27"):

@@ -50,6 +50,7 @@ _install_host_application_stubs()
 
 client = import_module("rdmo_sensorsearch.client")
 config_module = import_module("rdmo_sensorsearch.config")
+contracts = import_module("rdmo_sensorsearch.contracts")
 handler_base = import_module("rdmo_sensorsearch.handlers.base")
 catalog_registry_module = import_module("rdmo_sensorsearch.handlers.catalog_registry")
 configuration_period = import_module("rdmo_sensorsearch.handlers.configuration_period")
@@ -271,7 +272,7 @@ def test_sms_owner_relationship_join_preserves_other_contact_mappings(monkeypatc
 
     result = _sms_owner_handler().handle("42")
 
-    assert result.mapped_values["attribute:owner"] == handler_base.MergedTextScalar(("Owner institute",))
+    assert result.mapped_values["attribute:owner"] == contracts.MergedTextScalar(("Owner institute",))
     assert result.mapped_values["attribute:responsible"] == ["1", "unrelated", "2"]
     assert result.notices == ()
 
@@ -344,7 +345,7 @@ def test_sms_owner_pagination_joins_contacts_across_pages_and_reuses_authenticat
     monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch)
     result = _sms_owner_handler().handle("42", auth_token="test-token")
 
-    assert result.mapped_values["attribute:owner"] == handler_base.MergedTextScalar(("Institute A", "Institute B"))
+    assert result.mapped_values["attribute:owner"] == contracts.MergedTextScalar(("Institute A", "Institute B"))
     assert requests == [
         ("https://sms.example/backend/api/v1/devices/42?include=device_properties", "test-token"),
         (
@@ -377,7 +378,7 @@ def test_sms_no_owner_returns_an_explicit_preserving_scalar(monkeypatch):
     responses = iter([{"data": {"id": "42"}}, {"data": []}])
     monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
 
-    assert _sms_owner_handler().handle("42").mapped_values["attribute:owner"] == handler_base.MergedTextScalar()
+    assert _sms_owner_handler().handle("42").mapped_values["attribute:owner"] == contracts.MergedTextScalar()
 
 
 def test_sms_contact_pagination_failure_discards_partial_results(monkeypatch):
@@ -847,10 +848,10 @@ def test_sms_configuration_refresh_can_preserve_the_current_device_set(monkeypat
 
     result = handler.handle(
         "49",
-        context=handler_base.HandlerExecutionContext(preserve_existing_collections=True),
+        context=contracts.HandlerExecutionContext(preserve_existing_collections=True),
     )
 
-    assert result == handler_base.HandlerResult(
+    assert result == contracts.HandlerResult(
         mapped_values={
             "configuration:description": "Updated",
             "configuration:start": "2020-01-01 00:00",
@@ -888,10 +889,10 @@ def test_sms_configuration_selection_syncs_immediately_without_a_membership_filt
 
     result = handler.handle("49")
 
-    assert result == handler_base.HandlerResult(
+    assert result == contracts.HandlerResult(
         mapped_values={"configuration:description": "Configuration"},
         collections=(
-            handler_base.CollectionAssignment(
+            contracts.CollectionAssignment(
                 attribute_uri="selected-devices",
                 page_uri="device-page",
                 values=(),
@@ -925,7 +926,7 @@ def test_sms_membership_filter_fails_closed_when_the_period_is_invalid(monkeypat
     result = handler.handle(
         "49",
         instance=SimpleNamespace(),
-        context=handler_base.HandlerExecutionContext(require_configuration_period=True),
+        context=contracts.HandlerExecutionContext(require_configuration_period=True),
     )
 
     assert result == {"errors": ["The end date must not be earlier than the start date."]}
@@ -947,7 +948,7 @@ def test_sms_membership_filter_action_requires_explicit_enablement(monkeypatch):
     result = handler.handle(
         "49",
         instance=SimpleNamespace(),
-        context=handler_base.HandlerExecutionContext(require_configuration_period=True),
+        context=contracts.HandlerExecutionContext(require_configuration_period=True),
     )
 
     assert result == {"errors": ["SMS membership filtering is not enabled for this catalog."]}
@@ -1040,10 +1041,10 @@ def test_o2a_mission_refresh_can_preserve_the_current_device_set(monkeypatch):
 
     result = handler.handle(
         "30",
-        context=handler_base.HandlerExecutionContext(preserve_existing_collections=True),
+        context=contracts.HandlerExecutionContext(preserve_existing_collections=True),
     )
 
-    assert result == handler_base.HandlerResult(
+    assert result == contracts.HandlerResult(
         mapped_values={
             "configuration:name": "Updated mission",
             "configuration:start": "2020-01-01 00:00",
@@ -1073,10 +1074,10 @@ def test_o2a_mission_selection_syncs_immediately(monkeypatch):
 
     result = handler.handle("30")
 
-    assert result == handler_base.HandlerResult(
+    assert result == contracts.HandlerResult(
         mapped_values={"configuration:name": "Mission"},
         collections=(
-            handler_base.CollectionAssignment(
+            contracts.CollectionAssignment(
                 attribute_uri="selected-devices",
                 page_uri="device-page",
                 values=(),
@@ -1132,7 +1133,7 @@ def test_o2a_mission_rejects_historical_membership_filtering(monkeypatch):
     result = handler.handle(
         "30",
         instance=SimpleNamespace(),
-        context=handler_base.HandlerExecutionContext(require_configuration_period=True),
+        context=contracts.HandlerExecutionContext(require_configuration_period=True),
     )
 
     assert result == {"errors": ["O2A Registry does not support historical mission-membership filtering."]}

@@ -1,6 +1,7 @@
 import logging
 
-from rdmo_sensorsearch.handlers.base import BackendRecordHandler, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.handlers.base import BackendRecordHandler
 
 from ..client import fetch_json
 from .parser import evaluate_jmespath_mapping

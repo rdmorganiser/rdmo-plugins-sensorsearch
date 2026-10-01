@@ -2,7 +2,8 @@ import logging
 from urllib.parse import urlsplit
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import BackendRecordHandler, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.handlers.base import BackendRecordHandler
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
 
 logger = logging.getLogger(__name__)

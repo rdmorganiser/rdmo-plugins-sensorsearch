@@ -3,15 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from rdmo_sensorsearch.handlers.configuration_period import ConfigurationPeriod
+from rdmo_sensorsearch.contracts import ConfigurationPeriod, RefreshNotice, SelectedDevice
 from rdmo_sensorsearch.handlers.sms_mounting import (
     format_sms_timepoint,
     parse_sms_timepoint,
     resolve_mount_location,
 )
 from rdmo_sensorsearch.naming import configuration_short_label
-from rdmo_sensorsearch.services.device_details import SelectedDevice
-from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 DeviceFetcher = Callable[[str], tuple[dict | None, list[str]]]
 MountActionFetcher = Callable[[str], tuple[dict | None, list[str]]]

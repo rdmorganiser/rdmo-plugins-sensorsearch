@@ -7,6 +7,8 @@ from django.db import transaction
 
 from rdmo.projects.models import Value
 
+from rdmo_sensorsearch.config import load_config_model
+from rdmo_sensorsearch.contracts import SelectedDevice
 from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog
 from rdmo_sensorsearch.handlers.sms_device_enrichment import SMSDeviceMetadataEnricher
 from rdmo_sensorsearch.naming import configuration_short_label
@@ -20,7 +22,6 @@ from rdmo_sensorsearch.persistence.device_details import (
 from rdmo_sensorsearch.services.device_detail_profile import get_device_detail_settings
 from rdmo_sensorsearch.services.device_details import (
     ConfigurationIdentity,
-    SelectedDevice,
     compose_device_block_key,
     parse_external_id,
     plan_device_detail_reconciliation,
@@ -122,7 +123,7 @@ def reconcile_device_details(
 ) -> RefreshResult:
     scope_prefix = scope_prefix or ""
     source_set_index = source_set_index or 0
-    detail_settings = get_device_detail_settings(catalog.uri)
+    detail_settings = get_device_detail_settings(catalog.uri, config=load_config_model())
     selected_devices = unique_selected_devices(selected_devices)
     configuration_identity = _resolve_configuration_identity(
         project=project,
@@ -298,7 +299,7 @@ def remove_device_detail_block_for_selected_device(
     if not device_external_id:
         return False
 
-    detail_settings = get_device_detail_settings(catalog.uri)
+    detail_settings = get_device_detail_settings(catalog.uri, config=load_config_model())
     configuration_identity = _resolve_configuration_identity(
         project=project,
         scope_prefix=scope_prefix,
@@ -347,7 +348,7 @@ def remove_orphaned_device_detail_blocks(
     configuration_search_attribute_uris: Iterable[str],
     device_collection_attribute_uri: str,
 ) -> int:
-    detail_settings = get_device_detail_settings(catalog.uri)
+    detail_settings = get_device_detail_settings(catalog.uri, config=load_config_model())
     root_attribute = get_attribute_by_uri(device_collection_attribute_uri)
     if root_attribute is None:
         logger.warning("Device collection root attribute not found: %s", device_collection_attribute_uri)
