@@ -3,18 +3,6 @@ from datetime import timezone as dt_timezone
 
 from rdmo_sensorsearch.contracts import ConfigurationPeriod
 from rdmo_sensorsearch.handlers.parser import parse_datetime
-from rdmo_sensorsearch.project_values import get_scoped_project_value
-
-
-def read_configuration_period(
-    instance,
-    start_attribute_uri: str,
-    end_attribute_uri: str,
-) -> tuple[ConfigurationPeriod | None, str | None]:
-    return parse_configuration_period(
-        get_scoped_project_value(instance, start_attribute_uri),
-        get_scoped_project_value(instance, end_attribute_uri),
-    )
 
 
 def parse_configuration_period(

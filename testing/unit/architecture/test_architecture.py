@@ -100,3 +100,17 @@ def test_handlers_do_not_import_workflows():
         for path in (PACKAGE_ROOT / "handlers").rglob("*.py")
         if any(module.startswith("rdmo_sensorsearch.workflows") for module in _imports(path))
     } == set()
+
+
+def test_handlers_do_not_import_storage_or_frameworks():
+    forbidden = (
+        "rdmo_sensorsearch.persistence",
+        "rdmo_sensorsearch.project_values",
+        "rdmo",
+        "django",
+    )
+    assert {
+        str(path.relative_to(PACKAGE_ROOT))
+        for path in (PACKAGE_ROOT / "handlers").rglob("*.py")
+        if any(module == prefix or module.startswith(prefix + ".") for module in _imports(path) for prefix in forbidden)
+    } == set()

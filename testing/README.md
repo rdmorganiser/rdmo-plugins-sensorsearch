@@ -19,7 +19,7 @@ not included in the plugin wheel.
 - `performance/` contains synthetic fixtures and opt-in measurement helpers.
   The associated regression tests run in `integration/django/` with the normal
   Django suite and assert query counts, output parity, and callback behavior.
-  Set `SENSORSEARCH_BENCHMARK_OUTPUT=/tmp/sensorsearch-benchmarks.ndjson` to
+Set `SENSORSEARCH_BENCHMARK_OUTPUT=/tmp/sensorsearch-benchmarks.ndjson` to
   additionally record five warm-ups and twenty measured samples per scenario.
   Use a fresh output path per run; results append. The full benchmark run also
   repeats metadata writes and 1,000-row deletes and can take several minutes.
@@ -27,6 +27,20 @@ not included in the plugin wheel.
 
 See [the performance review](../docs/performance-review.md) for the environment,
 measurement boundaries, results, and remaining deployment checks.
+
+## RDMO compatibility matrix
+
+Install the `dev` extra and run `tox` from the repository root. Its three
+environments run the unit suite, the Django suite on RDMO 2.5.1, and the Django
+suite on upstream commit `2da60cfe4c895aa3af20a0ca96fb74bd40059d05` (the merge of
+PR #1752). This tests both `AnswerTree` APIs against real RDMO installations;
+unit tests also exercise initialization errors and unsupported signatures.
+The first matrix run needs network access to install dependencies. Django tests
+use isolated SQLite databases and mocked backend HTTP.
+
+Set `SENSORSEARCH_TEST_PYTHON` to the configured interpreter path to select the
+base interpreter. `SENSORSEARCH_TOX_WORK_DIR` can place environments outside the
+checkout. Run `tox -e django-new` or `tox -e django-old` to select one RDMO target.
 
 ## SMS owner and location interview verification
 

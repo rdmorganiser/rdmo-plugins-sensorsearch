@@ -3,8 +3,6 @@ from datetime import timezone as dt_timezone
 from functools import partial
 from urllib.parse import urljoin
 
-from django.utils import timezone as django_timezone
-
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.contracts import (
     CollectionAssignment,
@@ -15,7 +13,6 @@ from rdmo_sensorsearch.contracts import (
     SelectedDevice,
 )
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
-from rdmo_sensorsearch.handlers.configuration_period import read_configuration_period
 from rdmo_sensorsearch.handlers.jsonapi import fetch_paginated_jsonapi_collection
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping, parse_datetime
 from rdmo_sensorsearch.handlers.sms_configuration_membership import SMSConfigurationMembershipResolver
@@ -57,9 +54,9 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
     def handle(
         self,
         backend_id: str,
-        instance=None,
+        *,
         auth_token: str | None = None,
-        context: HandlerExecutionContext | None = None,
+        context: HandlerExecutionContext,
     ) -> dict | HandlerResult:
         configuration_data = fetch_json(
             self.configuration_url.format(base_url=self.base_url, id=backend_id),
@@ -88,16 +85,12 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
         configuration_period = None
         if require_configuration_period and not membership_filter_enabled:
             return {"errors": ["SMS membership filtering is not enabled for this catalog."]}
-        if require_configuration_period and (instance is None or not filter_start_attribute_uri or not filter_end_attribute_uri):
+        if require_configuration_period and (not filter_start_attribute_uri or not filter_end_attribute_uri):
             return {"errors": ["The SMS membership filter inputs are not configured for this catalog."]}
         if require_configuration_period:
-            configuration_period, period_error = read_configuration_period(
-                instance,
-                filter_start_attribute_uri,
-                filter_end_attribute_uri,
-            )
-            if period_error:
-                return {"errors": [period_error]}
+            configuration_period = context.configuration_period
+            if configuration_period is None:
+                return {"errors": ["A validated configuration period is required for SMS membership filtering."]}
 
         mount_action_data = None
         platform_mount_action_data = None
@@ -282,10 +275,10 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
             if parsed_value is None:
                 continue
 
-            if django_timezone.is_aware(parsed_value):
+            if parsed_value.tzinfo is not None:
                 utc_value = parsed_value.astimezone(dt_timezone.utc)
             else:
-                utc_value = django_timezone.make_aware(parsed_value, dt_timezone.utc)
+                utc_value = parsed_value.replace(tzinfo=dt_timezone.utc)
 
             mapped_values[attribute_uri] = utc_value.strftime("%Y-%m-%d %H:%M")
 

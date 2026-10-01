@@ -22,7 +22,7 @@ from testing.integration.django.test_metadata_refresh import earth_sensor_catalo
 pytestmark = pytest.mark.django_db
 OWNER_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner"
 SEARCH_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
-ROOT_URI = sms_device.DEVICE_COLLECTION_ATTRIBUTE_URI
+ROOT_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 CONFIG_SEARCH_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configuration-search"
 SELECTED_URI = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 SITE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.site_name_attribute_uri
@@ -281,7 +281,7 @@ def test_configuration_derived_import_and_forced_refresh_merge_owner_in_device_b
 
 
 def test_merge_ignores_snapshots_and_normal_scalar_clearing_still_works(sms_project):
-    from rdmo_sensorsearch.handlers.base import MergedTextScalar
+    from rdmo_sensorsearch.contracts import MergedTextScalar
 
     project = sms_project.project
     source = _device_source(project)

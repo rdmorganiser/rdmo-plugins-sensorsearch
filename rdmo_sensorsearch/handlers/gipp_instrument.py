@@ -25,7 +25,7 @@ class GIPPInstrumentHandler(BackendRecordHandler):
 
     json_url = "{base_url}/{id}.json"
 
-    def handle(self, backend_id, instance=None, context: HandlerExecutionContext | None = None):
+    def handle(self, backend_id: str, *, context: HandlerExecutionContext, auth_token: str | None = None):
         """
         Synchronizes one GIPP instrument with its RDMO value.
 

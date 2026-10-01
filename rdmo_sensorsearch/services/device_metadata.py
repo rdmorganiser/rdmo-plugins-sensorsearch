@@ -7,23 +7,13 @@ from contextvars import copy_context
 from dataclasses import dataclass
 from typing import Any
 
-from rdmo_sensorsearch.contracts import HandlerResult, RefreshNotice
+from rdmo_sensorsearch.contracts import DeviceDetailSettings, HandlerExecutionContext, HandlerResult, RefreshNotice
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, parse_external_id
 from rdmo_sensorsearch.services.performance import measure_phase
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_DEVICE_FETCH_WORKERS = 4
-
-
-@dataclass(frozen=True)
-class DeviceBlockInstance:
-    """Minimal RDMO-like context passed to a device handler."""
-
-    project: Any
-    set_prefix: str
-    set_index: int
-    attribute_id: int
 
 
 @dataclass(frozen=True)
@@ -52,7 +42,7 @@ PayloadEnricher = Callable[[dict[str, Any], DeviceBlockPlan], tuple[RefreshNotic
 def fetch_device_metadata_batch(
     plans: Sequence[DeviceBlockPlan],
     *,
-    root_attribute_id: int,
+    device_detail_settings: DeviceDetailSettings,
     scoped_attribute_uris: tuple[str, ...],
     auth_token: str | None = None,
     enrich_payload: PayloadEnricher | None = None,
@@ -75,7 +65,7 @@ def fetch_device_metadata_batch(
                 copy_context().run,
                 _fetch_device_metadata,
                 plan,
-                root_attribute_id,
+                device_detail_settings,
                 scoped_attribute_uris,
                 auth_token,
                 enrich_payload,
@@ -103,7 +93,7 @@ def fetch_device_metadata_batch(
 
 def _fetch_device_metadata(
     plan: DeviceBlockPlan,
-    root_attribute_id: int,
+    device_detail_settings: DeviceDetailSettings,
     scoped_attribute_uris: tuple[str, ...],
     auth_token: str | None,
     enrich_payload: PayloadEnricher | None,
@@ -115,21 +105,17 @@ def _fetch_device_metadata(
             message="Could not parse external device ID.",
         )
 
-    instance = DeviceBlockInstance(
-        project=None,
-        set_prefix="",
-        set_index=plan.set_index,
-        attribute_id=root_attribute_id,
-    )
+    # Bulk mounting belongs to the injected enricher; no direct mount lookup.
+    context = HandlerExecutionContext(device_detail_settings=device_detail_settings)
     handler = plan.handler_binding.handler
     if getattr(handler, "uses_auth_token", False):
         handler_result = handler.handle(
             backend_id=device_id,
-            instance=instance,
+            context=context,
             auth_token=auth_token,
         )
     else:
-        handler_result = handler.handle(backend_id=device_id, instance=instance)
+        handler_result = handler.handle(backend_id=device_id, context=context)
 
     if isinstance(handler_result, dict) and "errors" in handler_result:
         logger.error("Device handler returned errors for %s: %s", plan.device.external_id, handler_result["errors"])

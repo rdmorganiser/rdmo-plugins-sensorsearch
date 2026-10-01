@@ -4,6 +4,7 @@ import sys
 from importlib import import_module
 from types import ModuleType, SimpleNamespace
 
+from rdmo_sensorsearch.contracts import HandlerExecutionContext
 from testing.paths import REPOSITORY_ROOT
 
 
@@ -81,7 +82,7 @@ def test_handler_uses_current_gipp_hostname(monkeypatch):
     monkeypatch.setattr(gipp_handler_module, "fetch_json", fetch_json)
 
     handler = gipp_handler_module.GIPPInstrumentHandler(attribute_mapping={"Instrument.code": "uri"})
-    result = handler.handle("1")
+    result = handler.handle("1", context=HandlerExecutionContext())
 
     assert requested_urls == ["https://gipp.gfz.de/instruments/rest/1.json"]
     assert isinstance(result, import_module("rdmo_sensorsearch.contracts").HandlerResult)
@@ -95,6 +96,6 @@ def test_handler_propagates_backend_errors(monkeypatch):
     )
     handler = gipp_handler_module.GIPPInstrumentHandler(attribute_mapping={"Instrument.code": "uri"})
 
-    result = handler.handle("1")
+    result = handler.handle("1", context=HandlerExecutionContext())
 
     assert result == {"errors": ["instrument unavailable"]}

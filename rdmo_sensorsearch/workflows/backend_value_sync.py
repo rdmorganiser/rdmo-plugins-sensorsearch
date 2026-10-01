@@ -15,6 +15,11 @@ from rdmo_sensorsearch.handlers.catalog_registry import (
 )
 from rdmo_sensorsearch.naming import canonical_device_label
 from rdmo_sensorsearch.persistence.collection_binding import CollectionBinding, CollectionBindingError, CollectionScope
+from rdmo_sensorsearch.persistence.handler_context import (
+    DEFAULT_DEVICE_COLLECTION_ATTRIBUTE_URI,
+    device_configuration_reference,
+    read_configuration_period,
+)
 from rdmo_sensorsearch.persistence.value_reconciliation import (
     reconcile_handler_result,
     replace_scalar_value_in_scopes,
@@ -178,21 +183,21 @@ def refresh_value_from_backend(
         return _failed_refresh(external_id, "Multiple matching backend handlers are configured.")
 
     binding = bindings[0]
-    context = HandlerExecutionContext(
-        preserve_existing_collections=preserve_existing_collections,
-        require_configuration_period=require_configuration_period,
-        device_detail_settings=get_device_detail_settings(catalog.uri, config=load_config_model()),
-    )
     try:
+        context = _handler_execution_context(
+            instance,
+            binding.handler,
+            preserve_existing_collections=preserve_existing_collections,
+            require_configuration_period=require_configuration_period,
+        )
         if getattr(binding.handler, "uses_auth_token", False):
             handler_output = binding.handler.handle(
                 backend_id=backend_id,
-                instance=instance,
                 auth_token=auth_token,
                 context=context,
             )
         else:
-            handler_output = binding.handler.handle(backend_id=backend_id, instance=instance, context=context)
+            handler_output = binding.handler.handle(backend_id=backend_id, context=context)
     except Exception as error:
         logger.exception(
             "Handler %s failed while processing external_id=%s for catalog=%s",
@@ -253,6 +258,32 @@ def refresh_value_from_backend(
     )
 
 
+def _handler_execution_context(
+    instance, handler, *, preserve_existing_collections: bool, require_configuration_period: bool
+) -> HandlerExecutionContext:
+    period = None
+    if require_configuration_period and getattr(handler, "membership_filter_enabled", False):
+        start_uri = getattr(handler, "membership_filter_start_attribute_uri", None)
+        end_uri = getattr(handler, "membership_filter_end_attribute_uri", None)
+        if not start_uri or not end_uri:
+            raise ValueError("The SMS membership filter inputs are not configured for this catalog.")
+        period, error = read_configuration_period(instance, start_uri, end_uri)
+        if error:
+            raise ValueError(error)
+    configuration_external_id = None
+    if getattr(handler, "supports_mount_period_lookup", False):
+        configuration_external_id = device_configuration_reference(
+            instance, getattr(handler, "device_collection_attribute_uri", DEFAULT_DEVICE_COLLECTION_ATTRIBUTE_URI)
+        )
+    return HandlerExecutionContext(
+        preserve_existing_collections=preserve_existing_collections,
+        require_configuration_period=require_configuration_period,
+        device_detail_settings=get_device_detail_settings(instance.project.catalog.uri, config=load_config_model()),
+        configuration_external_id=configuration_external_id,
+        configuration_period=period,
+    )
+
+
 def _execute_effect(instance, effect: RefreshDeviceDetails, auth_token: str | None) -> RefreshResult:
     if not isinstance(effect, RefreshDeviceDetails):
         raise TypeError(f"Unsupported handler effect: {type(effect).__name__}.")
@@ -308,9 +339,7 @@ def _refresh_selected_configuration_devices(
         scope.set_index,
     )
     period_resolver = getattr(handler, "get_member_device_period", None)
-    instrument_start, instrument_end = (
-        period_resolver(instance, configuration_values) if callable(period_resolver) else (None, None)
-    )
+    instrument_start, instrument_end = period_resolver(configuration_values) if callable(period_resolver) else (None, None)
     return reconcile_device_details_from_selected_values(
         project=instance.project,
         catalog=instance.project.catalog,

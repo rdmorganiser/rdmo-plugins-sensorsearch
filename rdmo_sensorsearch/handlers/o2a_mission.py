@@ -3,8 +3,6 @@ from collections import defaultdict
 from datetime import timezone as dt_timezone
 from urllib.parse import urlsplit
 
-from django.utils import timezone as django_timezone
-
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.contracts import (
     CollectionAssignment,
@@ -49,8 +47,9 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
     def handle(
         self,
         backend_id: str,
-        instance=None,
-        context: HandlerExecutionContext | None = None,
+        *,
+        context: HandlerExecutionContext,
+        auth_token: str | None = None,
     ) -> dict | HandlerResult:
         mission_data = fetch_json(self.mission_url.format(base_url=self.base_url, id=backend_id))
         if isinstance(mission_data, dict) and "errors" in mission_data:
@@ -163,7 +162,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
             if formatted is not None:
                 mapped_values[attribute_uri] = formatted
 
-    def get_member_device_period(self, _instance, mapped_values=None) -> tuple[str | None, str | None]:
+    def get_member_device_period(self, mapped_values=None) -> tuple[str | None, str | None]:
         mapped_values = mapped_values or {}
         start_attribute_uri = self.attribute_mapping.get(self.mission_start_date_path)
         end_attribute_uri = self.attribute_mapping.get(self.mission_end_date_path)
@@ -292,8 +291,8 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         parsed = parse_datetime(value) if isinstance(value, str) and value else None
         if parsed is None:
             return None
-        if django_timezone.is_aware(parsed):
+        if parsed.tzinfo is not None:
             utc_value = parsed.astimezone(dt_timezone.utc)
         else:
-            utc_value = django_timezone.make_aware(parsed, dt_timezone.utc)
+            utc_value = parsed.replace(tzinfo=dt_timezone.utc)
         return utc_value.strftime(self.datetime_output_format)

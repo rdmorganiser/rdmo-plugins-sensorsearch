@@ -217,7 +217,7 @@ def reconcile_device_details(
     )
     fetch_batch = fetch_device_metadata_batch(
         plans,
-        root_attribute_id=root_attribute.id,
+        device_detail_settings=detail_settings,
         scoped_attribute_uris=metadata_enricher.scoped_attribute_uris,
         auth_token=auth_token,
         enrich_payload=metadata_enricher,

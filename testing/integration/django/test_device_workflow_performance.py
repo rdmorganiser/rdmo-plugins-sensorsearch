@@ -46,7 +46,9 @@ def device_workflow(monkeypatch):
     class Handler:
         materialize_device_details = True
 
-        def handle(self, backend_id, instance):
+        def handle(self, backend_id, *, context, auth_token=None):
+            assert context.device_detail_settings == settings
+            assert context.configuration_external_id is None
             client.fetch_json("https://backend.example/configuration")
             response = client.fetch_json(f"https://backend.example/devices/{backend_id}")
             if backend_id in failed_ids:

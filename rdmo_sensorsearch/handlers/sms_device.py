@@ -1,8 +1,6 @@
 import logging
 from urllib.parse import urljoin, urlsplit
 
-from rdmo.projects.models import Value
-
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerResult, MergedTextScalar, RefreshNotice
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
@@ -14,7 +12,6 @@ from rdmo_sensorsearch.services.device_details import parse_external_id
 
 logger = logging.getLogger(__name__)
 
-DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"
 DEVICE_LINK_ATTRIBUTE_URI = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
 INSTRUMENT_START_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_start_attribute_uri
 INSTRUMENT_END_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_end_attribute_uri
@@ -81,9 +78,9 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
     def handle(
         self,
         backend_id: str,
-        instance=None,
+        *,
         auth_token: str | None = None,
-        context: HandlerExecutionContext | None = None,
+        context: HandlerExecutionContext,
     ) -> dict | HandlerResult:
         """
         Synchronizes one SMS device with its RDMO value.
@@ -148,7 +145,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         mount_metadata_errors = self._set_mount_metadata(
             mapped_values,
             backend_id,
-            instance,
+            context.configuration_external_id,
             auth_token=auth_token,
             notice_sink=notices,
             detail_settings=detail_settings,
@@ -202,12 +199,11 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         self,
         mapped_values: dict,
         device_id: str,
-        instance=None,
+        configuration_external_id: str | None = None,
         auth_token: str | None = None,
         notice_sink: list[RefreshNotice] | None = None,
         detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
     ) -> list[str]:
-        configuration_external_id = self._resolve_configuration_external_id(instance)
         if not configuration_external_id:
             return []
 
@@ -276,31 +272,6 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         )
         mapped_values[detail_settings.site_name_attribute_uri] = location.site_name if location.site_name is not None else ""
         return []
-
-    def _resolve_configuration_external_id(self, instance) -> str | None:
-        if instance is None or instance.project is None:
-            return None
-
-        root_value = (
-            Value.objects.filter(
-                project=instance.project,
-                snapshot=None,
-                attribute__uri=getattr(self, "device_collection_attribute_uri", DEVICE_COLLECTION_ATTRIBUTE_URI),
-                set_prefix=instance.set_prefix or "",
-                set_index=instance.set_index,
-                set_collection=True,
-            )
-            .exclude(external_id__isnull=True)
-            .exclude(external_id__exact="")
-            .order_by("-id")
-            .first()
-        )
-        if root_value is None or not isinstance(root_value.external_id, str):
-            return None
-        if "||" not in root_value.external_id:
-            return None
-        configuration_external_id, _ = root_value.external_id.split("||", 1)
-        return configuration_external_id or None
 
     def _fetch_device_mount_actions(
         self,

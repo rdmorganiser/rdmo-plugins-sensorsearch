@@ -104,3 +104,5 @@ class HandlerExecutionContext:
     preserve_existing_collections: bool = False
     require_configuration_period: bool = False
     device_detail_settings: DeviceDetailSettings | None = None
+    configuration_external_id: str | None = None
+    configuration_period: ConfigurationPeriod | None = None

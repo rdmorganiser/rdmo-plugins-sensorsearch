@@ -17,7 +17,7 @@ must not rename them.
 | --- | --- | --- |
 | `config_models/` | Define, parse, and validate the complete TOML schema and its cross-references. | No |
 | `providers/` | Turn user search text into backend options. | Only aggregate/project-aware adapters |
-| `handlers/` | Fetch one selected backend record and return `HandlerResult`. | Only where interview context is required |
+| `handlers/` | Fetch one selected backend record using immutable context and return data/effects. | No |
 | `services/` | Hold backend-neutral domain data, deterministic decisions, and synchronization context state. | No |
 | `persistence/` | Query and mutate RDMO values through workflow-specific storage adapters. | Yes |
 | `workflows/` | Coordinate complete synchronization use cases shared by handlers and signal adapters. | Yes |
@@ -183,7 +183,7 @@ When adding a synchronization feature:
 6. add pure service tests and at least one adapter/handler regression test.
 
 Avoid importing a signal module merely to obtain a domain dataclass. Shared
-types such as `SelectedDevice` belong in `services/`, allowing handlers to use
+types such as `SelectedDevice` belong in `contracts.py`, allowing handlers to use
 them without depending on signal registration or Django save hooks.
 
 ## Current refactoring boundary
@@ -198,6 +198,24 @@ scheduling. Shared handler registration, refresh result types, collection
 binding, value reconciliation, and recursive-signal context also live outside
 the signal package. Architecture tests prevent handlers, services, and
 workflows from acquiring reverse dependencies on signal adapters.
+
+Handlers expose `handle(backend_id, *, context, auth_token=None)` and never
+receive RDMO model instances. Workflows prepare `HandlerExecutionContext`;
+`persistence/handler_context.py` reads configuration roots and membership dates
+from the exact live collection scope, selecting the newest matching row. Invalid
+membership periods fail before backend fetching. The handler keeps backend
+capability checks and receives only the validated period and configuration
+reference.
+
+Bulk metadata fetching receives catalog-specific device settings explicitly.
+Its worker context has no configuration reference, so direct handlers do not
+repeat mount lookups already owned by the injected bulk enricher. The small
+value context used by scalar writes lives privately in persistence.
+
+Architecture tests prohibit services from importing implementation layers or
+the configuration loader, handlers from importing workflows/storage/frameworks,
+and any runtime module other than the scope adapter from importing `AnswerTree`.
+They inspect nested packages and relative imports as well as absolute imports.
 
 This is an internal module boundary, not a catalog migration. The Earth Sensor
 question, attribute, page, option-set, and condition URIs stay unchanged.

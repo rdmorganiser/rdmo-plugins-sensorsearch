@@ -1,4 +1,5 @@
 from contextvars import ContextVar
+from dataclasses import replace
 from threading import Lock
 from time import sleep
 from types import SimpleNamespace
@@ -6,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerResult, RefreshDeviceDetails, RefreshNotice, SelectedDevice
+from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan
 from rdmo_sensorsearch.services.device_metadata import fetch_device_metadata_batch
 
@@ -45,6 +47,7 @@ class RecordingHandler:
 
 
 def test_fetch_service_invokes_only_refresh_plans_and_extracts_scoped_values():
+    settings = replace(DEFAULT_DEVICE_DETAIL_SETTINGS, device_link_attribute_uri="attribute:custom-link")
     handler = RecordingHandler(
         HandlerResult(
             mapped_values={
@@ -65,7 +68,7 @@ def test_fetch_service_invokes_only_refresh_plans_and_extracts_scoped_values():
             _plan("kitsms:324", handler, set_index=4),
             _plan("kitsms:325", skipped_handler, set_index=5, needs_refresh=False),
         ),
-        root_attribute_id=17,
+        device_detail_settings=settings,
         scoped_attribute_uris=(START_ATTRIBUTE_URI, END_ATTRIBUTE_URI),
         enrich_payload=enrich,
     )
@@ -80,9 +83,9 @@ def test_fetch_service_invokes_only_refresh_plans_and_extracts_scoped_values():
     assert enrichment_calls == ["cfg:1||kitsms:324"]
     assert skipped_handler.calls == []
     assert handler.calls[0]["backend_id"] == "324"
-    assert handler.calls[0]["instance"].project is None
-    assert handler.calls[0]["instance"].attribute_id == 17
-    assert handler.calls[0]["instance"].set_index == 4
+    assert "instance" not in handler.calls[0]
+    assert handler.calls[0]["context"].configuration_external_id is None
+    assert handler.calls[0]["context"].device_detail_settings is settings
     assert "auth_token" not in handler.calls[0]
 
 
@@ -93,7 +96,7 @@ def test_fetch_service_combines_handler_and_enrichment_notices():
 
     result = fetch_device_metadata_batch(
         (_plan("kitsms:324", handler),),
-        root_attribute_id=17,
+        device_detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
         scoped_attribute_uris=(),
         enrich_payload=lambda _mapped_values, _plan: (enrichment_notice,),
     )
@@ -118,7 +121,7 @@ def test_fetch_service_passes_authentication_and_copies_context_into_worker():
     request_marker.set("request-42")
     result = fetch_device_metadata_batch(
         (_plan("kitsms:42", ContextHandler()),),
-        root_attribute_id=1,
+        device_detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
         scoped_attribute_uris=(),
         auth_token="secret-token",
     )
@@ -160,7 +163,7 @@ def test_fetch_service_converts_invalid_handler_results_to_structured_errors(
 ):
     result = fetch_device_metadata_batch(
         (_plan(external_id, RecordingHandler(handler_result)),),
-        root_attribute_id=1,
+        device_detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
         scoped_attribute_uris=(),
     )
 
@@ -179,7 +182,7 @@ def test_fetch_service_isolates_handler_exceptions_per_device():
             _plan("kitsms:1", failing_handler),
             _plan("kitsms:2", successful_handler),
         ),
-        root_attribute_id=1,
+        device_detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
         scoped_attribute_uris=(),
     )
 
@@ -192,7 +195,7 @@ def test_fetch_service_rejects_an_external_id_without_a_backend_value():
 
     result = fetch_device_metadata_batch(
         (_plan("kitsms:", handler),),
-        root_attribute_id=1,
+        device_detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
         scoped_attribute_uris=(),
     )
 
@@ -220,7 +223,7 @@ def test_fetch_service_bounds_parallel_handler_calls():
 
     result = fetch_device_metadata_batch(
         tuple(_plan(f"kitsms:{index}", SlowHandler()) for index in range(4)),
-        root_attribute_id=1,
+        device_detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
         scoped_attribute_uris=(),
         max_workers=2,
     )
@@ -233,7 +236,7 @@ def test_fetch_service_rejects_a_nonpositive_worker_limit():
     with pytest.raises(ValueError, match="max_workers must be greater than zero"):
         fetch_device_metadata_batch(
             (_plan("kitsms:1", RecordingHandler(HandlerResult())),),
-            root_attribute_id=1,
+            device_detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
             scoped_attribute_uris=(),
             max_workers=0,
         )

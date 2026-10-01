@@ -20,10 +20,20 @@ from rdmo_sensorsearch.services.device_details import (
     configuration_key_from_device_block,
     parse_device_block_key,
 )
-from rdmo_sensorsearch.services.device_metadata import DeviceBlockInstance, DeviceFetchResult
+from rdmo_sensorsearch.services.device_metadata import DeviceFetchResult
 from rdmo_sensorsearch.services.performance import measure_phase
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _DeviceBlockValueContext:
+    """Value scope used only by the shared RDMO reconciliation writer."""
+
+    project: Any
+    set_prefix: str
+    set_index: int
+    attribute_id: int
 
 
 @dataclass(frozen=True)
@@ -353,8 +363,8 @@ class RDMODeviceDetailStore:
                 scopes_to_clear=[(self.scope_prefix, plan.set_index)],
             )
 
-    def block_instance(self, set_index: int) -> DeviceBlockInstance:
-        return DeviceBlockInstance(
+    def block_instance(self, set_index: int) -> _DeviceBlockValueContext:
+        return _DeviceBlockValueContext(
             project=self.project,
             set_prefix=self.scope_prefix,
             set_index=set_index,
