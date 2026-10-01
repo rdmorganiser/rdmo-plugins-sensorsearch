@@ -6,7 +6,6 @@ from typing import Any
 from django.db import transaction
 
 from rdmo.domain.models import Attribute
-from rdmo.projects.answers import AnswerTree
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.handlers.base import (
@@ -21,34 +20,11 @@ from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBindingError,
     scope_from_value,
 )
+from rdmo_sensorsearch.persistence.scope_resolver import RDMOAnswerTreeScopeResolver
 from rdmo_sensorsearch.services.performance import measure_phase
 from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
 
 logger = logging.getLogger(__name__)
-
-
-class _ScalarScopeResolver:
-    """Reuse one project value index while resolving all fields in one result."""
-
-    @measure_phase("scalar.scope_setup")
-    def __init__(self, instance):
-        self.project = instance.project
-        self.catalog = self.project.catalog
-        self.catalog.prefetch_elements()
-        values = self.project.values.filter(snapshot=None).select_related("attribute")
-        self.answer_tree = AnswerTree(self.catalog, values)
-        self._scopes_by_key: dict[tuple[int, int, str, int], list[tuple[str, int]]] = {}
-
-    def resolve(self, instance, attribute) -> list[tuple[str, int]]:
-        base_scope = (_normalize_set_prefix(instance.set_prefix), instance.set_index)
-        key = (instance.attribute_id, attribute.id, *base_scope)
-        cached = self._scopes_by_key.get(key)
-        if cached is not None:
-            return cached
-
-        scopes = _scalar_scopes_via_answer_tree(instance, attribute, answer_tree=self.answer_tree)
-        self._scopes_by_key[key] = scopes
-        return scopes
 
 
 def _attributes_by_uri(attribute_uris) -> dict[str, Attribute]:
@@ -325,7 +301,7 @@ def apply_mapped_values(instance, mapped_values: dict):
 
     with transaction.atomic(), mute_value_sync():
         attributes = _attributes_by_uri(mapped_values)
-        scope_resolver: _ScalarScopeResolver | None = None
+        scope_resolver: RDMOAnswerTreeScopeResolver | None = None
         scope_cache: dict[int, list[tuple[str, int]]] = {}
         for attribute_uri, value in mapped_values.items():
             attribute = attributes.get(attribute_uri)
@@ -337,7 +313,7 @@ def apply_mapped_values(instance, mapped_values: dict):
                 continue
 
             if scope_resolver is None:
-                scope_resolver = _ScalarScopeResolver(instance)
+                scope_resolver = RDMOAnswerTreeScopeResolver(instance.project)
             scopes = scope_cache.setdefault(attribute.id, _scalar_scopes(instance, attribute, scope_resolver))
             if not scopes:
                 scopes = [(_normalize_set_prefix(instance.set_prefix), instance.set_index)]
@@ -602,38 +578,14 @@ def _normalize_set_prefix(set_prefix: str | None) -> str:
     return set_prefix or ""
 
 
-def _scalar_scopes(instance, attribute, resolver: _ScalarScopeResolver | None = None) -> list[tuple[str, int]]:
+def _scalar_scopes(instance, attribute, resolver: RDMOAnswerTreeScopeResolver | None = None) -> list[tuple[str, int]]:
     if resolver is None:
-        resolver = _ScalarScopeResolver(instance)
-    return resolver.resolve(instance, attribute)
-
-
-def _scalar_scopes_via_answer_tree(instance, attribute, *, answer_tree=None) -> list[tuple[str, int]]:
-    base_scope = (_normalize_set_prefix(instance.set_prefix), instance.set_index)
-    project = instance.project
-    catalog = project.catalog
-
-    if answer_tree is None:
-        catalog.prefetch_elements()
-        values = project.values.filter(snapshot=None).select_related("attribute")
-        answer_tree = AnswerTree(catalog, values)
-
-    discovered_scopes: list[tuple[str, int]] = []
-    for page in catalog.pages:
-        if not _element_contains_attribute(page, instance.attribute_id):
-            continue
-        if not _element_contains_attribute(page, attribute.id):
-            continue
-
-        page_sets = answer_tree.compute_element_sets(page, parent_set=None)
-        for page_set in page_sets:
-            trigger_scopes = _collect_question_scopes(answer_tree, page, page_set, instance.attribute_id)
-            if base_scope not in trigger_scopes:
-                continue
-
-            discovered_scopes.extend(_collect_question_scopes(answer_tree, page, page_set, attribute.id))
-
-    return _unique_scopes(discovered_scopes, base_scope)
+        resolver = RDMOAnswerTreeScopeResolver(instance.project)
+    return resolver.resolve(
+        instance.attribute_id,
+        attribute.id,
+        (_normalize_set_prefix(instance.set_prefix), instance.set_index),
+    )
 
 
 def _unique_scopes(discovered_scopes: list[tuple[str, int]], base_scope: tuple[str, int]) -> list[tuple[str, int]]:
@@ -642,31 +594,3 @@ def _unique_scopes(discovered_scopes: list[tuple[str, int]], base_scope: tuple[s
         if scope not in ordered_scopes:
             ordered_scopes.append(scope)
     return ordered_scopes
-
-
-def _element_contains_attribute(element, attribute_id: int) -> bool:
-    if getattr(element, "attribute_id", None) == attribute_id:
-        return True
-    return any(getattr(descendant, "attribute_id", None) == attribute_id for descendant in element.descendants)
-
-
-def _collect_question_scopes(
-    answer_tree: AnswerTree,
-    element,
-    parent_set: tuple[str, int],
-    attribute_id: int,
-) -> list[tuple[str, int]]:
-    scopes: list[tuple[str, int]] = []
-    for child in element.elements:
-        child_type = child._meta.model_name
-        if child_type == "question":
-            if child.attribute_id == attribute_id:
-                scopes.append(parent_set)
-            continue
-
-        if child_type == "questionset":
-            child_sets = answer_tree.compute_element_sets(child, parent_set)
-            for child_set in child_sets:
-                scopes.extend(_collect_question_scopes(answer_tree, child, child_set, attribute_id))
-
-    return scopes

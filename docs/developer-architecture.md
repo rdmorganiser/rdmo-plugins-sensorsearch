@@ -111,6 +111,14 @@ list, and handler collection results. It uses
 `persistence/collection_binding.py` to distinguish collection Questions from
 collection QuestionSets and to calculate their RDMO value scopes.
 
+`persistence/scope_resolver.py` is the only adapter that imports RDMO's
+`AnswerTree`. It supports both the 2.5.1 constructor taking values and the API
+introduced by RDMO PR #1752, which takes values in `compute()`. Constructor
+signature inspection selects the API before initialization; actual failures
+propagate without retrying a different constructor. One resolver indexes live
+values once per reconciliation and caches scope lookups, retaining source-scope
+fallback and excluding snapshots.
+
 `services/synchronization_context.py` owns the `ContextVar` that temporarily
 mutes recursive value save/delete synchronization. It is safe to nest the
 context manager, and the previous state is restored even when a persistence
