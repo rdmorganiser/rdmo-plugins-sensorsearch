@@ -10,8 +10,10 @@ from rdmo.options.models import Option
 from rdmo.projects.models import Project, Snapshot, Value
 from rdmo.questions.models import Question
 
+from rdmo_sensorsearch import backend_assembly
 from rdmo_sensorsearch.contracts import SelectedDevice
-from rdmo_sensorsearch.handlers import sms_device, sms_device_enrichment
+from rdmo_sensorsearch.handlers import sms_device_enrichment
+from rdmo_sensorsearch.handlers.catalog_registry import clear_handler_registry
 from rdmo_sensorsearch.persistence.value_reconciliation import apply_mapped_values
 from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
 from rdmo_sensorsearch.services.refresh import RefreshAction, RefreshKind
@@ -117,9 +119,11 @@ def sms_project(earth_sensor_catalog, monkeypatch):
             }
         raise AssertionError(f"Unexpected SMS request: {url}")
 
-    monkeypatch.setattr(sms_device, "fetch_json", fetch)
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
     monkeypatch.setattr(sms_device_enrichment, "fetch_json", fetch)
-    return state
+    clear_handler_registry()
+    yield state
+    clear_handler_registry()
 
 
 def _answer(project, uri=OWNER_URI, index=0):

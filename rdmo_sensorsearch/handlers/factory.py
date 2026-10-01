@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 
+from rdmo_sensorsearch.backend_assembly import sms_constructor_kwargs
 from rdmo_sensorsearch.config import catalog_uri_values, load_config, merge_config
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
 from rdmo_sensorsearch.handlers.catalog_registry import WILDCARD_CATALOG_URI
@@ -72,8 +73,13 @@ def build_handlers_by_catalog() -> dict:
                 # No backends defined, single handler instance using class defaults
                 try:
                     instance = handler_cls(
-                        attribute_mapping=attribute_mapping,
-                        **catalog_extra_kwargs,
+                        **sms_constructor_kwargs(
+                            handler_name,
+                            {
+                                "attribute_mapping": attribute_mapping,
+                                **catalog_extra_kwargs,
+                            },
+                        )
                     )
                     binding = HandlerBinding(
                         id_prefix=instance.id_prefix,
@@ -97,11 +103,16 @@ def build_handlers_by_catalog() -> dict:
 
                 try:
                     instance = handler_cls(
-                        attribute_mapping=attribute_mapping,
-                        id_prefix=id_prefix,
-                        base_url=base_url,
-                        **backend_extra_kwargs,
-                        **catalog_extra_kwargs,
+                        **sms_constructor_kwargs(
+                            handler_name,
+                            {
+                                "attribute_mapping": attribute_mapping,
+                                "id_prefix": id_prefix,
+                                "base_url": base_url,
+                                **backend_extra_kwargs,
+                                **catalog_extra_kwargs,
+                            },
+                        )
                     )
                     binding = HandlerBinding(
                         id_prefix=instance.id_prefix,

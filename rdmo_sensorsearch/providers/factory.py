@@ -1,5 +1,6 @@
 import logging
 
+from rdmo_sensorsearch.backend_assembly import sms_constructor_kwargs
 from rdmo_sensorsearch.config import load_config, merge_config
 from rdmo_sensorsearch.providers.registry import PROVIDER_REGISTRY
 
@@ -36,7 +37,7 @@ def build_provider_instances(config_section_name: str) -> list:
     for provider_name, provider_config in flattened_provider_definitions:
         try:
             provider_cls = PROVIDER_REGISTRY[provider_name]
-            instances.append(provider_cls(**provider_config))
+            instances.append(provider_cls(**sms_constructor_kwargs(provider_name, provider_config)))
         except KeyError:
             logger.error("Provider class %s not found in registry", provider_name)
         except TypeError as e:

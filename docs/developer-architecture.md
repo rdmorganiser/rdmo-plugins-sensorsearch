@@ -91,6 +91,15 @@ handler. Network response handling stays in the two handler adapters.
 
 ## SMS configuration synchronization
 
+SMS search providers and the device handler receive capabilities assembled by
+the existing factories. `backends/sms/` owns device/contact requests, owner
+normalization, frontend links and direct mount lookups. Its transport is an
+injected callable, with authentication passed per call. `BackendSuccess` and
+`BackendFailure` distinguish empty successful metadata from failures; mapping
+documents retain their existing JSON and `sms_owner_organizations` paths.
+`backend_assembly.py` translates existing deployment settings without changing
+TOML or stored identifiers.
+
 `handlers/sms_configuration.py` remains the backend-record adapter, but no
 longer owns all supporting algorithms. `handlers/jsonapi.py` performs bounded
 JSON:API pagination and duplicate-page detection.

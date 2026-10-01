@@ -33,6 +33,10 @@ catalog_registry_module = import_module("rdmo_sensorsearch.handlers.catalog_regi
 configuration_period = import_module("rdmo_sensorsearch.handlers.configuration_period")
 o2a_item_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_item")
 o2a_mission_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_mission")
+backend_assembly = import_module("rdmo_sensorsearch.backend_assembly")
+sms_device_backend = import_module("rdmo_sensorsearch.backends.sms.device")
+from testing.sms_helpers import make_sms_device_handler  # noqa: E402
+
 sms_device_handler_module = import_module("rdmo_sensorsearch.handlers.sms_device")
 sms_configuration_handler_module = import_module("rdmo_sensorsearch.handlers.sms_configuration")
 sms_configuration_membership_module = import_module("rdmo_sensorsearch.handlers.sms_configuration_membership")
@@ -68,7 +72,7 @@ def test_catalog_handler_registry_builds_without_signal_import_cycle(monkeypatch
 
 
 def test_handler_builds_authoritative_values_for_its_complete_ownership():
-    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
+    handler = make_sms_device_handler(
         attribute_mapping={
             "data.attributes.name": "attribute:name",
             "included[].attributes.unit": "attribute:units",
@@ -91,7 +95,7 @@ def test_handler_builds_authoritative_values_for_its_complete_ownership():
 
 
 def test_handler_authoritative_values_honor_scope_exclusions():
-    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
+    handler = make_sms_device_handler(
         attribute_mapping={"data.attributes.name": "attribute:name"},
         managed_attribute_uris=["attribute:scoped"],
         base_url="https://sms.example/api",
@@ -201,8 +205,8 @@ def test_sms_device_refresh_fails_when_contact_request_fails(monkeypatch):
             {"errors": ["contacts unavailable"]},
         )
     )
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
-    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
+    handler = make_sms_device_handler(
         attribute_mapping={},
         base_url="https://sms.example/api",
     )
@@ -230,7 +234,7 @@ def _owner_contact(contact_id, organization, *, resource_type="contact"):
 
 
 def _sms_owner_handler():
-    return sms_device_handler_module.SensorManagementSystemDeviceHandler(
+    return make_sms_device_handler(
         attribute_mapping={
             "sms_owner_organizations": "attribute:owner",
             "included[?type==`contact`].attributes.family_name": "attribute:responsible",
@@ -245,7 +249,7 @@ def test_sms_owner_relationship_join_preserves_other_contact_mappings(monkeypatc
     contacts = [_owner_contact("1", "Not owner"), _owner_contact("2", "Wrong type", resource_type="device")]
     contacts.extend([_owner_contact("unrelated", "Unrelated"), _owner_contact("2", " Owner institute ")])
     responses = iter([{"data": {"id": "42"}}, {"data": roles, "included": contacts}])
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
 
     result = _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext())
 
@@ -267,7 +271,7 @@ def test_sms_owner_names_are_trimmed_deduplicated_and_kept_in_role_order():
         ],
     }
 
-    assert sms_device_handler_module.extract_owner_organizations(payload) == (("Institute A", "Institute B"), ())
+    assert sms_device_backend.extract_owner_organizations(payload) == (("Institute A", "Institute B"), ())
 
 
 @pytest.mark.parametrize("reference", [None, {}, {"type": "device", "id": "1"}, {"type": "contact", "id": "absent"}])
@@ -275,7 +279,7 @@ def test_sms_unresolved_owner_contacts_return_nonfatal_notices(reference):
     role = _owner_role("1")
     role["relationships"]["contact"]["data"] = reference
 
-    names, notices = sms_device_handler_module.extract_owner_organizations(
+    names, notices = sms_device_backend.extract_owner_organizations(
         {"data": [role], "included": [_owner_contact("1", "Institute")]},
         "example-sms:42",
     )
@@ -319,7 +323,7 @@ def test_sms_owner_pagination_joins_contacts_across_pages_and_reuses_authenticat
         requests.append((url, auth_token))
         return next(responses)
 
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch)
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
     result = _sms_owner_handler().handle("42", auth_token="test-token", context=contracts.HandlerExecutionContext())
 
     assert result.mapped_values["attribute:owner"] == contracts.MergedTextScalar(("Institute A", "Institute B"))
@@ -346,14 +350,14 @@ def test_sms_owner_pagination_joins_contacts_across_pages_and_reuses_authenticat
 )
 def test_sms_malformed_contact_pages_fail_instead_of_returning_authoritative_metadata(monkeypatch, payload):
     responses = iter([{"data": {"id": "42"}}, payload])
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
 
     assert "errors" in _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext())
 
 
 def test_sms_no_owner_returns_an_explicit_preserving_scalar(monkeypatch):
     responses = iter([{"data": {"id": "42"}}, {"data": []}])
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
 
     assert (
         _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()).mapped_values["attribute:owner"]
@@ -369,7 +373,7 @@ def test_sms_contact_pagination_failure_discards_partial_results(monkeypatch):
             {"errors": ["second page unavailable"]},
         ]
     )
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
 
     assert _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()) == {
         "errors": ["second page unavailable"]
@@ -379,7 +383,7 @@ def test_sms_contact_pagination_failure_discards_partial_results(monkeypatch):
 def test_sms_owner_contact_missing_relationship_preserves_other_resolved_owners():
     missing = _owner_role("missing")
     missing.pop("relationships")
-    names, notices = sms_device_handler_module.extract_owner_organizations(
+    names, notices = sms_device_backend.extract_owner_organizations(
         {
             "data": [missing, _owner_role("1", role_id="role-2")],
             "included": [_owner_contact("1", "Institute")],
@@ -400,7 +404,7 @@ def test_sms_contact_pagination_rejects_other_backends_and_repeated_pages(monkey
             return {"data": {"id": "42"}}
         return {"data": [_owner_role("1")], "links": {"next": next_link}}
 
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch)
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
 
     assert "errors" in _sms_owner_handler().handle("42", auth_token="test-token", context=contracts.HandlerExecutionContext())
     assert all(url.startswith("https://sms.example/") for url in calls)
@@ -416,7 +420,7 @@ def test_sms_contact_pagination_limit_discards_incomplete_results(monkeypatch):
         pages.append(url)
         return {"data": [_owner_role("1", role_id=str(len(pages)))], "links": {"next": "roles?page=next"}}
 
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch)
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
 
     assert _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()) == {
         "errors": ["SMS contact roles collection pagination exceeded 100 pages."]
@@ -466,8 +470,8 @@ def test_sms_device_refresh_maps_station_height_depth_and_site(monkeypatch):
             }
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch_json)
-    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch_json)
+    handler = make_sms_device_handler(
         attribute_mapping={},
         base_url="https://sms.example/api",
     )
