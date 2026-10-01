@@ -71,3 +71,35 @@ def test_mount_failure_is_typed_and_empty_mount_is_successful():
     assert backend.get_mount_period("1", "2") == BackendFailure(("SMS mount action request for device 1 failed: Unavailable",))
     backend = SMSBackend(fetch=lambda *args, **kwargs: {"data": []}, device_settings=SMSDeviceSettings("https://sms.example/api"))
     assert backend.get_mount_period("1", "2") == BackendSuccess(None)
+
+
+def test_partial_mount_failure_preserves_strict_and_best_effort_request_policies():
+    requests = []
+    action = {
+        "id": "mount",
+        "attributes": {"begin_date": "2025-01-01T00:00:00Z", "offset_z": -1},
+        "relationships": {
+            "device": {"data": {"id": "1"}},
+            "configuration": {"data": {"id": "2"}},
+            "parent_platform": {"data": None},
+            "parent_device": {"data": None},
+        },
+    }
+
+    def fetch(url, auth_token=None):
+        requests.append(url)
+        if "platform-mount-actions" in url:
+            return {"errors": ["Unavailable"]}
+        if "static-location-actions" in url:
+            return {"data": [{"id": "site", "attributes": {"begin_date": "2024-01-01T00:00:00Z", "z": 100, "label": "Plot"}}]}
+        return {"data": [action]}
+
+    backend = SMSBackend(fetch=fetch, device_settings=SMSDeviceSettings("https://sms.example/api"))
+    strict = backend.get_mount_location("1", "2")
+    assert isinstance(strict, BackendFailure)
+    assert len(requests) == 2 and not any("static-location-actions" in url for url in requests)
+    requests.clear()
+    partial = backend.get_mount_location("1", "2", best_effort=True)
+    assert isinstance(partial, BackendSuccess) and len(requests) == 3
+    assert partial.value.site_name == "Plot" and partial.value.station_height_amsl == 100
+    assert partial.diagnostics == ("SMS platform mount request for configuration 2 failed: Unavailable",)

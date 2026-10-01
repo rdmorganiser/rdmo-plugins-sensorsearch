@@ -3,7 +3,7 @@
 from dataclasses import fields
 
 from rdmo_sensorsearch.backends.sms.backend import SMSBackend
-from rdmo_sensorsearch.backends.sms.settings import SMSDeviceSettings, SMSSearchSettings
+from rdmo_sensorsearch.backends.sms.settings import SMSConfigurationSettings, SMSDeviceSettings, SMSSearchSettings
 from rdmo_sensorsearch.client import fetch_json
 
 SMS_DEVICE_SEARCH_URL = "{base_url}?q={query}"
@@ -20,7 +20,15 @@ def sms_constructor_kwargs(class_name: str, settings: dict) -> dict:
         names = {field.name for field in fields(SMSDeviceSettings)}
         values = {key: value for key, value in result.items() if key in names}
         result["backend"] = SMSBackend(fetch=fetch_json, device_settings=SMSDeviceSettings(**values))
-        for name in {"device_url", "contact_url", "backend_link_marker"}:
+        for name in names - {"base_url"}:
+            result.pop(name, None)
+    elif class_name == "SensorManagementSystemConfigurationHandler":
+        names = {field.name for field in fields(SMSConfigurationSettings)}
+        values = {key: value for key, value in result.items() if key in names}
+        path = values.get("configuration_self_link_path", "data.links.self")
+        values["self_link_fallback_enabled"] = path in result.get("attribute_mapping", {})
+        result["backend"] = SMSBackend(fetch=fetch_json, configuration_settings=SMSConfigurationSettings(**values))
+        for name in names - {"base_url"}:
             result.pop(name, None)
     elif class_name in {"SensorManagementSystemDeviceProvider", "SensorManagementSystemConfigurationProvider"}:
         default_url = (

@@ -115,6 +115,7 @@ T = TypeVar("T")
 class BackendSuccess(Generic[T]):
     value: T
     notices: tuple[RefreshNotice, ...] = ()
+    diagnostics: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -143,6 +144,7 @@ class ConfigurationMetadata:
     document: dict[str, Any]
     api_link: str | None = None
     frontend_link: str | None = None
+    identifier: str | None = None
 
 
 @dataclass(frozen=True)
@@ -176,6 +178,12 @@ class StaticLocation:
     longitude: Any
 
 
+@dataclass(frozen=True)
+class ConfigurationMembership:
+    members: tuple[ConfigurationMember, ...]
+    static_location: StaticLocation | None = None
+
+
 class DeviceSearch(Protocol):
     def search_devices(
         self, query: str, *, limit: int, auth_token: str | None = None
@@ -204,7 +212,13 @@ class DeviceMountSource(Protocol):
     ) -> BackendResult[MountPeriod | None]: ...
 
     def get_mount_location(
-        self, device_id: str, configuration_id: str, *, period: MountPeriod | None = None, auth_token: str | None = None
+        self,
+        device_id: str,
+        configuration_id: str,
+        *,
+        period: MountPeriod | None = None,
+        best_effort: bool = False,
+        auth_token: str | None = None,
     ) -> BackendResult[MountLocation | None]: ...
 
 
@@ -215,7 +229,7 @@ class DeviceSource(DeviceMetadataSource, DeviceMountSource, Protocol):
 class ConfigurationSource(ConfigurationMetadataSource, Protocol):
     def get_configuration_members(
         self, configuration: ConfigurationMetadata, *, period: ConfigurationPeriod | None = None, auth_token: str | None = None
-    ) -> BackendResult[tuple[ConfigurationMember, ...]]: ...
+    ) -> BackendResult[ConfigurationMembership]: ...
 
     def get_static_location(
         self, configuration_id: str, *, auth_token: str | None = None

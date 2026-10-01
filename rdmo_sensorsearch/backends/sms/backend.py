@@ -1,16 +1,21 @@
 from urllib.parse import quote
 
+from rdmo_sensorsearch.backends.sms.configuration import SMSConfigurationAPI
 from rdmo_sensorsearch.backends.sms.device import SMSDeviceAPI
-from rdmo_sensorsearch.backends.sms.settings import SMSDeviceSettings, SMSSearchSettings
+from rdmo_sensorsearch.backends.sms.settings import SMSConfigurationSettings, SMSDeviceSettings, SMSSearchSettings
 from rdmo_sensorsearch.backends.sms.transport import JSONFetcher, request_json
 from rdmo_sensorsearch.contracts import (
     BackendFailure,
     BackendResult,
     BackendSuccess,
+    ConfigurationMembership,
+    ConfigurationMetadata,
+    ConfigurationPeriod,
     DeviceMetadata,
     MountLocation,
     MountPeriod,
     SearchRecord,
+    StaticLocation,
 )
 
 
@@ -23,10 +28,12 @@ class SMSBackend:
         fetch: JSONFetcher,
         device_settings: SMSDeviceSettings | None = None,
         search_settings: SMSSearchSettings | None = None,
+        configuration_settings: SMSConfigurationSettings | None = None,
     ):
         self._fetch = fetch
         self._device = SMSDeviceAPI(device_settings, fetch) if device_settings is not None else None
         self._search_settings = search_settings
+        self._configuration = SMSConfigurationAPI(configuration_settings, fetch) if configuration_settings is not None else None
 
     def get_device(self, device_id: str, *, auth_token: str | None = None) -> BackendResult[DeviceMetadata]:
         if self._device is None:
@@ -68,8 +75,35 @@ class SMSBackend:
         return self._device.get_mount_period(device_id, configuration_id, serial_number=serial_number, auth_token=auth_token)
 
     def get_mount_location(
-        self, device_id: str, configuration_id: str, *, period: MountPeriod | None = None, auth_token: str | None = None
+        self,
+        device_id: str,
+        configuration_id: str,
+        *,
+        period: MountPeriod | None = None,
+        best_effort: bool = False,
+        auth_token: str | None = None,
     ) -> BackendResult[MountLocation | None]:
         if self._device is None:
             raise ValueError("Device metadata endpoints are not configured.")
-        return self._device.get_mount_location(device_id, configuration_id, period=period, auth_token=auth_token)
+        return self._device.get_mount_location(
+            device_id, configuration_id, period=period, best_effort=best_effort, auth_token=auth_token
+        )
+
+    def get_configuration(self, configuration_id: str, *, auth_token: str | None = None) -> BackendResult[ConfigurationMetadata]:
+        if self._configuration is None:
+            raise ValueError("Configuration metadata endpoints are not configured.")
+        return self._configuration.get_configuration(configuration_id, auth_token=auth_token)
+
+    def get_configuration_members(
+        self, configuration: ConfigurationMetadata, *, period: ConfigurationPeriod | None = None, auth_token: str | None = None
+    ) -> BackendResult[ConfigurationMembership]:
+        if self._configuration is None:
+            raise ValueError("Configuration metadata endpoints are not configured.")
+        return self._configuration.get_configuration_members(configuration, period=period, auth_token=auth_token)
+
+    def get_static_location(
+        self, configuration_id: str, *, auth_token: str | None = None
+    ) -> BackendResult[StaticLocation | None]:
+        if self._configuration is None:
+            raise ValueError("Configuration metadata endpoints are not configured.")
+        return self._configuration.get_static_location(configuration_id, auth_token=auth_token)

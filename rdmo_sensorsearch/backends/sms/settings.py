@@ -55,6 +55,7 @@ class SMSConfigurationSettings:
     static_location_action_page_size: int = 100
     max_collection_pages: int = 1000
     configuration_self_link_path: str = "data.links.self"
+    self_link_fallback_enabled: bool = False
     frontend_link_suffix: str | None = None
     backend_link_marker: str = "/backend/api/v1/"
     static_location_end_tolerance_seconds: int = 0

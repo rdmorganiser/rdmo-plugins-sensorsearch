@@ -100,13 +100,20 @@ documents retain their existing JSON and `sms_owner_organizations` paths.
 `backend_assembly.py` translates existing deployment settings without changing
 TOML or stored identifiers.
 
-`handlers/sms_configuration.py` remains the backend-record adapter, but no
-longer owns all supporting algorithms. `handlers/jsonapi.py` performs bounded
-JSON:API pagination and duplicate-page detection.
-`handlers/sms_configuration_membership.py` selects the latest device mounts
-overlapping the optional user period, resolves member metadata through injected
-fetch callbacks, and produces typed `SMSConfigurationMember` values. It reuses
-the time and mount-location calculations in `handlers/sms_mounting.py`.
+The configuration handler consumes typed configuration and membership results.
+The SMS backend owns bounded JSON:API pagination, duplicate-page detection,
+contact joins, membership selection, and mount/location calculations. Member
+records carry backend-local IDs and normalized metadata; the handler supplies
+configured prefixes, option labels, catalog mappings, collections and effects.
+Static locations fetched for membership also supply configuration coordinates,
+without a second request.
+
+The bulk enricher is a catalog adapter over injected mount capabilities. Supplied
+member metadata takes precedence and avoids requests. Direct refresh fails on
+mount-request errors; bulk refresh requests best-effort resolution, logs typed
+failure diagnostics and retains the previous partial-data policy. Authentication
+and cache lifetime remain outside the backend; adapters have no mutable
+request-specific state.
 
 ## Data-collection variable synchronization
 

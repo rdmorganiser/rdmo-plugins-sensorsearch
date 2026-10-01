@@ -124,7 +124,13 @@ class SMSDeviceAPI:
         return BackendSuccess(MountPeriod(start, end, period.action, tuple(actions.value)))
 
     def get_mount_location(
-        self, device_id: str, configuration_id: str, *, period: MountPeriod | None = None, auth_token: str | None = None
+        self,
+        device_id: str,
+        configuration_id: str,
+        *,
+        period: MountPeriod | None = None,
+        best_effort: bool = False,
+        auth_token: str | None = None,
     ) -> BackendResult[MountLocation | None]:
         settings = self.settings
         devices = self._actions(
@@ -140,13 +146,20 @@ class SMSDeviceAPI:
         platforms = self._actions(
             settings.configuration_platform_mount_actions_url, configuration_id, "configuration", "platform mount", auth_token
         )
+        diagnostics = []
         if isinstance(platforms, BackendFailure):
-            return platforms
+            if not best_effort:
+                return platforms
+            diagnostics.extend(platforms.errors)
+            platforms = BackendSuccess([])
         locations = self._actions(
             settings.configuration_static_location_actions_url, configuration_id, "configuration", "static location", auth_token
         )
         if isinstance(locations, BackendFailure):
-            return locations
+            if not best_effort:
+                return locations
+            diagnostics.extend(locations.errors)
+            locations = BackendSuccess([])
         location = resolve_mount_location(
             action,
             devices.value or (list(period.device_actions) if period is not None else []),
@@ -156,7 +169,9 @@ class SMSDeviceAPI:
             incomplete_mount_chain_policy=settings.incomplete_mount_chain_policy,
         )
         return BackendSuccess(
-            MountLocation(location.station_height_amsl, location.vertical_surface_offset, location.site_name), location.notices
+            MountLocation(location.station_height_amsl, location.vertical_surface_offset, location.site_name),
+            location.notices,
+            tuple(diagnostics),
         )
 
     def _actions(
