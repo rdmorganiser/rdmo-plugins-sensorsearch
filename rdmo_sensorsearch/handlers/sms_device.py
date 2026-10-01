@@ -4,7 +4,13 @@ from urllib.parse import urljoin, urlsplit
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import BackendRecordHandler, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.handlers.base import (
+    BackendRecordHandler,
+    HandlerExecutionContext,
+    HandlerResult,
+    MergedTextScalar,
+)
+from rdmo_sensorsearch.handlers.jsonapi import fetch_paginated_jsonapi_collection
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
 from rdmo_sensorsearch.handlers.sms_mounting import resolve_mount_location, select_latest_device_mount_period
 from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
@@ -20,6 +26,34 @@ INSTRUMENT_END_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_end_att
 INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.instrument_location_amsl_attribute_uri
 SURFACE_OFFSET_Z_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.surface_offset_z_attribute_uri
 SITE_NAME_ATTRIBUTE_URI = DEFAULT_DEVICE_DETAIL_SETTINGS.site_name_attribute_uri
+OWNER_ORGANIZATIONS_PATH = "sms_owner_organizations"
+
+
+def extract_owner_organizations(
+    payload: dict,
+    external_id: str = "",
+) -> tuple[tuple[str, ...], tuple[RefreshNotice, ...]]:
+    """Join Owner roles to included contacts, independently of array order."""
+    contacts = {(item.get("type"), item.get("id")): item for item in payload.get("included", []) if item.get("type") == "contact"}
+    names = []
+    notices = []
+    for role in payload["data"]:
+        if role.get("type") != "device_contact_role" or role.get("attributes", {}).get("role_name") != "Owner":
+            continue
+        relationship = role.get("relationships", {}).get("contact")
+        reference = relationship.get("data") if isinstance(relationship, dict) else None
+        contact = None
+        if isinstance(reference, dict) and reference.get("type") == "contact" and isinstance(reference.get("id"), str):
+            contact = contacts.get(("contact", reference["id"]))
+        if contact is None:
+            notices.append(RefreshNotice("owner_contact_unresolved", external_id, (("role_id", str(role.get("id", ""))),)))
+            continue
+        organization = contact.get("attributes", {}).get("organization")
+        if isinstance(organization, str) and organization.strip():
+            name = organization.strip()
+            if name not in names:
+                names.append(name)
+    return tuple(names), tuple(notices)
 
 
 class SensorManagementSystemDeviceHandler(BackendRecordHandler):
@@ -37,7 +71,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
 
     # URL templates with placeholders
     device_url = "{base_url}/devices/{id}?include=device_properties"
-    contact_url = "{base_url}/devices/{id}/device-contact-roles?include=contact"
+    contact_url = "{base_url}/devices/{id}/device-contact-roles?include=contact&page[size]={page_size}&page[number]={page_number}"
     configuration_device_mount_actions_url = (
         "{base_url}/device-mount-actions?filter[configuration_id]={id}"
         "&page[size]=10000&include=parent_platform,parent_device,configuration"
@@ -78,26 +112,44 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             return {"errors": [f"SMS device request for device {backend_id} returned no device data."]}
 
         # contacts can not be included in the first request with the include parameter
-        contact_data = fetch_json(self.contact_url.format(base_url=self.base_url, id=backend_id), auth_token=auth_token)
-        if isinstance(contact_data, dict) and "errors" in contact_data:
+        contact_data = fetch_paginated_jsonapi_collection(
+            url_template=self.contact_url,
+            base_url=self.base_url,
+            object_id=backend_id,
+            page_size=100,
+            max_pages=100,
+            fetch_page=lambda url: self._fetch_contact_page(url, backend_id, auth_token),
+            error_label="SMS contact roles",
+            next_link_base_url=self.contact_url.format(
+                base_url=self.base_url,
+                id=backend_id,
+                page_size=100,
+                page_number=1,
+            ),
+        )
+        if "errors" in contact_data:
             return contact_data
-        if not isinstance(contact_data, dict):
-            return {"errors": [f"Unexpected SMS contact payload for device {backend_id}: {type(contact_data).__name__}"]}
 
         # add the included contact data to the data
         data["included"] = [*data.get("included", []), *contact_data.get("included", [])]
+        external_id = f"{self._id_prefix}:{backend_id}" if self._id_prefix else backend_id
+        owner_names, owner_notices = extract_owner_organizations(contact_data, external_id)
+        data[OWNER_ORGANIZATIONS_PATH] = list(owner_names)
 
         if not data:
             logger.debug("Empty data returned for ID %s", backend_id)
 
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, data)
+        owner_attribute_uri = self.attribute_mapping.get(OWNER_ORGANIZATIONS_PATH)
+        if owner_attribute_uri:
+            mapped_values[owner_attribute_uri] = MergedTextScalar(owner_names)
         detail_settings = (context.device_detail_settings if context is not None else None) or DEFAULT_DEVICE_DETAIL_SETTINGS
         self._set_frontend_device_link(
             mapped_values,
             data,
             getattr(self, "device_link_attribute_uri", detail_settings.device_link_attribute_uri),
         )
-        notices = []
+        notices = list(owner_notices)
         mount_metadata_errors = self._set_mount_metadata(
             mapped_values,
             backend_id,
@@ -109,6 +161,28 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         if mount_metadata_errors:
             return {"errors": mount_metadata_errors}
         return HandlerResult(mapped_values=mapped_values, notices=tuple(notices))
+
+    def _fetch_contact_page(self, url: str, backend_id: str, auth_token: str | None) -> dict:
+        # Follow pagination only on the configured backend, including when a token is used.
+        if urlsplit(url)[:2] != urlsplit(self.base_url)[:2]:
+            return {"errors": ["SMS contact pagination points to a different backend."]}
+        payload = fetch_json(url, auth_token=auth_token)
+        if isinstance(payload, dict) and "errors" in payload:
+            return payload
+        if not isinstance(payload, dict):
+            return {"errors": [f"Unexpected SMS contact payload for device {backend_id}: {type(payload).__name__}"]}
+        for key in ("data", "included"):
+            records = payload.get(key, [] if key == "included" else None)
+            if not isinstance(records, list) or any(
+                not isinstance(record, dict)
+                or not isinstance(record.get("type"), str)
+                or not isinstance(record.get("id"), str)
+                or not isinstance(record.get("attributes", {}), dict)
+                or not isinstance(record.get("relationships", {}), dict)
+                for record in records
+            ):
+                return {"errors": [f"Malformed SMS contact {key} for device {backend_id}."]}
+        return payload
 
     def _set_frontend_device_link(self, mapped_values: dict, device_data: dict, device_link_attribute_uri: str) -> None:
         raw_self_link = device_data.get("data", {}).get("links", {}).get("self")

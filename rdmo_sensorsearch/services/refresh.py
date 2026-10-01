@@ -136,9 +136,13 @@ def _format_device_refresh_count(count: int) -> str:
 
 def _append_notice_summary(message: str, notices: tuple[RefreshNotice, ...]) -> str:
     summaries = _summarize_notices(notices)
-    if not summaries:
-        return message
-    return f"{message} Location metadata: {'; '.join(summaries)}."
+    if summaries:
+        message = f"{message} Location metadata: {'; '.join(summaries)}."
+    owner_devices = {notice.external_id or notice.details for notice in notices if notice.code == "owner_contact_unresolved"}
+    if owner_devices:
+        summary = _format_notice_count("owner contact unavailable", len(owner_devices))
+        message = f"{message} Owner metadata: {summary}."
+    return message
 
 
 def _summarize_notices(notices: tuple[RefreshNotice, ...]) -> list[str]:

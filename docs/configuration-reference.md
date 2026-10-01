@@ -249,6 +249,38 @@ This handler fetches one SMS device. Multiple `backends` associate SMS
 SMS mount enrichment can derive a device's active period, site name, and
 vertical position. See [Operations and limitations](operations-and-limitations.md#sms-location-height-and-depth).
 
+The derived mapping input `sms_owner_organizations` contains the distinct,
+trimmed `attributes.organization` names of contacts linked to device roles
+whose `role_name` is exactly `Owner`. The handler joins contacts by resource
+type and ID; other contacts remain available to responsible-person mappings.
+Contact roles are paginated with 100 records per page and a 100-page limit,
+using the configured backend and the same authentication as the device request.
+Endpoint overrides for `contact_url` can use `{base_url}`, `{id}`, `{page_size}`,
+and `{page_number}`. Keep the page placeholders to support APIs that omit a
+next-page link. Relative next-page links resolve against the contact endpoint.
+
+```toml
+[handlers.SensorManagementSystemDeviceHandler.catalogs.attribute_mapping]
+"sms_owner_organizations" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner"
+```
+
+This exact mapping key opts its configured target into scalar name merging,
+rather than the normal array-to-collection behavior. Use a single optional
+`select_creatable` question with `value_type=option` and provider `ror` for the
+target. Existing names are retained first, with new names appended using `; `.
+Semicolons delimit names; matching is exact after trimming, without fuzzy
+institution matching. A successful response without usable Owner names
+preserves the answer. Failed or malformed contact requests do not persist
+device metadata; unresolved Owner contact references produce nonfatal feedback.
+When a merge changes the answer, its ROR identifier and option are cleared,
+and the result is stored as free text. Unchanged ROR answers remain intact.
+Normal selection clearing and device-block deletion still clear managed data.
+
+Update both exact and wildcard catalog profiles if they share this field, then
+regenerate the development catalog and profile. Existing deployment overrides
+must add the mapping and import the updated owner question; a plugin upgrade
+alone does not change an already imported catalog.
+
 ### `SensorManagementSystemConfigurationHandler`
 
 This handler fetches one SMS configuration and its mounted devices.

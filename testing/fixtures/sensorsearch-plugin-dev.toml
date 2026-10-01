@@ -151,6 +151,7 @@ managed_attribute_uris = [
 "included[?type==`device_property`].attributes.property_name" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/name"
 "included[?type==`device_property`].attributes.unit_name" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/unit"
 "included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/responsible_person/name"
+"sms_owner_organizations" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/owner"
 
 # Earth-Sensor catalog https://example.com/terms/questions/plugin-dev/sensorsearch
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
@@ -177,6 +178,7 @@ managed_attribute_uris = [
 "included[?type==`device_property`].attributes.property_name" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/name"
 "included[?type==`device_property`].attributes.unit_name" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/unit"
 "included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/responsible_person/name"
+"sms_owner_organizations" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/owner"
 
 
 [handlers.SensorManagementSystemConfigurationHandler]

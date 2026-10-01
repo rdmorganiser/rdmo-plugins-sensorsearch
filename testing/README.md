@@ -27,3 +27,33 @@ not included in the plugin wheel.
 
 See [the performance review](../docs/performance-review.md) for the environment,
 measurement boundaries, results, and remaining deployment checks.
+
+## SMS owner and location interview verification
+
+Automated SMS regressions mock backend responses and use the real catalog and
+RDMO models. The interactive widget also needs a check in the target RDMO
+installation after importing the updated catalog and deploying its mappings:
+
+1. Select an SMS device with an Owner contact and configuration/static-location
+   context. Open its device block on page 2.4: question 2.4.4 must show the
+   configuration's site label and 2.4.6 must show the organisation name.
+2. Reload the interview. Confirm the imported owner remains selected, the
+   dropdown still offers ROR suggestions, and an arbitrary free-text name can
+   be entered and saved.
+3. Start with a ROR-backed owner matching the SMS name. Refresh and reload;
+   confirm the label and ROR identifier remain intact. With a different manual
+   name or several SMS institutions, refresh must retain existing names and
+   append distinct names with `; `. The combined free-text answer must have
+   no ROR identifier or static option attached.
+4. Repeat the refresh, then remove Owner roles in a test backend. Confirm names
+   are not duplicated or removed. A failed contact request must leave all
+   existing metadata intact. Missing referenced contacts must produce owner
+   feedback independently of any location feedback.
+5. Import the same device through two configurations with different site
+   labels. Refresh individual devices and all devices; check each block keeps
+   its own site and manual owner answer. A standalone device without
+   configuration context must not acquire either configuration's site.
+
+Record the plugin/RDMO versions, catalog/profile used, device/configuration IDs,
+and outcomes. These interactive checks are separate from the mocked regression
+suite and require an actual interview deployment.

@@ -18,6 +18,13 @@ class CollectionAssignment:
 
 
 @dataclass(frozen=True)
+class MergedTextScalar:
+    """Append names to a creatable option answer; an empty tuple preserves it."""
+
+    values: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class HandlerResult:
     mapped_values: Mapping[str, Any] = field(default_factory=dict)
     collections: tuple[CollectionAssignment, ...] = ()

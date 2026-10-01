@@ -146,6 +146,25 @@ def test_success_message_aggregates_location_notices_without_changing_status():
     )
 
 
+def test_owner_notices_have_separate_feedback_and_are_counted_once_per_device():
+    result = RefreshResult(
+        1,
+        1,
+        notices=(
+            RefreshNotice("owner_contact_unresolved", "gfzsms:42", (("role_id", "1"),)),
+            RefreshNotice("owner_contact_unresolved", "gfzsms:42", (("role_id", "2"),)),
+            RefreshNotice("static_location_not_found", "gfzsms:42"),
+        ),
+    )
+
+    message = format_refresh_message(RefreshKind.DEVICE, result)
+
+    assert result.status == "success"
+    assert message.endswith(
+        "Location metadata: static location unavailable for 1 device. Owner metadata: owner contact unavailable for 1 device."
+    )
+
+
 def test_duplicate_location_notices_are_counted_once_per_device_and_details():
     notice = RefreshNotice(
         "static_location_end_tolerance_used",

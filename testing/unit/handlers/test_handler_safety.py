@@ -6,6 +6,8 @@ from threading import Lock
 from time import sleep
 from types import ModuleType, SimpleNamespace
 
+import pytest
+
 from testing.paths import REPOSITORY_ROOT
 
 
@@ -230,6 +232,211 @@ def test_sms_device_refresh_fails_when_contact_request_fails(monkeypatch):
     result = handler.handle("7")
 
     assert result == {"errors": ["contacts unavailable"]}
+
+
+def _owner_role(contact_id, *, role_id="role-1", role_name="Owner"):
+    return {
+        "type": "device_contact_role",
+        "id": role_id,
+        "attributes": {"role_name": role_name},
+        "relationships": {"contact": {"data": {"type": "contact", "id": contact_id}}},
+    }
+
+
+def _owner_contact(contact_id, organization, *, resource_type="contact"):
+    return {
+        "type": resource_type,
+        "id": contact_id,
+        "attributes": {"organization": organization, "family_name": contact_id, "given_name": "Person"},
+    }
+
+
+def _sms_owner_handler():
+    return sms_device_handler_module.SensorManagementSystemDeviceHandler(
+        attribute_mapping={
+            "sms_owner_organizations": "attribute:owner",
+            "included[?type==`contact`].attributes.family_name": "attribute:responsible",
+        },
+        id_prefix="example-sms",
+        base_url="https://sms.example/backend/api/v1",
+    )
+
+
+def test_sms_owner_relationship_join_preserves_other_contact_mappings(monkeypatch):
+    roles = [_owner_role("2"), _owner_role("1", role_id="role-2", role_name="PI")]
+    contacts = [_owner_contact("1", "Not owner"), _owner_contact("2", "Wrong type", resource_type="device")]
+    contacts.extend([_owner_contact("unrelated", "Unrelated"), _owner_contact("2", " Owner institute ")])
+    responses = iter([{"data": {"id": "42"}}, {"data": roles, "included": contacts}])
+    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
+
+    result = _sms_owner_handler().handle("42")
+
+    assert result.mapped_values["attribute:owner"] == handler_base.MergedTextScalar(("Owner institute",))
+    assert result.mapped_values["attribute:responsible"] == ["1", "unrelated", "2"]
+    assert result.notices == ()
+
+
+def test_sms_owner_names_are_trimmed_deduplicated_and_kept_in_role_order():
+    payload = {
+        "data": [_owner_role(str(i), role_id=str(i)) for i in range(6)],
+        "included": [
+            _owner_contact("5", None),
+            _owner_contact("4", "  "),
+            _owner_contact("3", "Institute A"),
+            _owner_contact("2", "Institute B"),
+            _owner_contact("1", " Institute A "),
+            {"type": "contact", "id": "0", "attributes": {}},
+        ],
+    }
+
+    assert sms_device_handler_module.extract_owner_organizations(payload) == (("Institute A", "Institute B"), ())
+
+
+@pytest.mark.parametrize("reference", [None, {}, {"type": "device", "id": "1"}, {"type": "contact", "id": "absent"}])
+def test_sms_unresolved_owner_contacts_return_nonfatal_notices(reference):
+    role = _owner_role("1")
+    role["relationships"]["contact"]["data"] = reference
+
+    names, notices = sms_device_handler_module.extract_owner_organizations(
+        {"data": [role], "included": [_owner_contact("1", "Institute")]},
+        "example-sms:42",
+    )
+
+    assert names == ()
+    assert notices[0].code == "owner_contact_unresolved"
+    assert notices[0].external_id == "example-sms:42"
+
+
+@pytest.mark.parametrize(
+    ("next_link", "expected_next_url"),
+    [
+        ("/backend/api/v1/roles?page[number]=2", "https://sms.example/backend/api/v1/roles?page[number]=2"),
+        (
+            "?include=contact&page[number]=2",
+            "https://sms.example/backend/api/v1/devices/42/device-contact-roles?include=contact&page[number]=2",
+        ),
+    ],
+)
+def test_sms_owner_pagination_joins_contacts_across_pages_and_reuses_authentication(
+    monkeypatch,
+    next_link,
+    expected_next_url,
+):
+    requests = []
+    responses = iter(
+        [
+            {"data": {"id": "42"}},
+            {"data": [_owner_role("1")], "links": {"next": next_link}},
+            {
+                "data": [_owner_role("2", role_id="role-2")],
+                "included": [
+                    _owner_contact("2", "Institute B"),
+                    _owner_contact("1", "Institute A"),
+                ],
+            },
+        ]
+    )
+
+    def fetch(url, auth_token=None):
+        requests.append((url, auth_token))
+        return next(responses)
+
+    monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch)
+    result = _sms_owner_handler().handle("42", auth_token="test-token")
+
+    assert result.mapped_values["attribute:owner"] == handler_base.MergedTextScalar(("Institute A", "Institute B"))
+    assert requests == [
+        ("https://sms.example/backend/api/v1/devices/42?include=device_properties", "test-token"),
+        (
+            "https://sms.example/backend/api/v1/devices/42/device-contact-roles?include=contact&page[size]=100&page[number]=1",
+            "test-token",
+        ),
+        (expected_next_url, "test-token"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        None,
+        {},
+        {"data": {}},
+        {"data": [None]},
+        {"data": [], "included": {}},
+        {"data": [], "included": [{"type": "contact", "id": "1", "attributes": None}]},
+    ],
+)
+def test_sms_malformed_contact_pages_fail_instead_of_returning_authoritative_metadata(monkeypatch, payload):
+    responses = iter([{"data": {"id": "42"}}, payload])
+    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
+
+    assert "errors" in _sms_owner_handler().handle("42")
+
+
+def test_sms_no_owner_returns_an_explicit_preserving_scalar(monkeypatch):
+    responses = iter([{"data": {"id": "42"}}, {"data": []}])
+    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
+
+    assert _sms_owner_handler().handle("42").mapped_values["attribute:owner"] == handler_base.MergedTextScalar()
+
+
+def test_sms_contact_pagination_failure_discards_partial_results(monkeypatch):
+    responses = iter(
+        [
+            {"data": {"id": "42"}},
+            {"data": [_owner_role("1")], "included": [_owner_contact("1", "Institute")], "links": {"next": "roles?page=2"}},
+            {"errors": ["second page unavailable"]},
+        ]
+    )
+    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
+
+    assert _sms_owner_handler().handle("42") == {"errors": ["second page unavailable"]}
+
+
+def test_sms_owner_contact_missing_relationship_preserves_other_resolved_owners():
+    missing = _owner_role("missing")
+    missing.pop("relationships")
+    names, notices = sms_device_handler_module.extract_owner_organizations(
+        {
+            "data": [missing, _owner_role("1", role_id="role-2")],
+            "included": [_owner_contact("1", "Institute")],
+        }
+    )
+
+    assert names == ("Institute",)
+    assert len(notices) == 1 and notices[0].code == "owner_contact_unresolved"
+
+
+@pytest.mark.parametrize("next_link", ["https://other.example/contacts", "roles?page=1"])
+def test_sms_contact_pagination_rejects_other_backends_and_repeated_pages(monkeypatch, next_link):
+    calls = []
+
+    def fetch(url, auth_token=None):
+        calls.append(url)
+        if "/devices/42?" in url:
+            return {"data": {"id": "42"}}
+        return {"data": [_owner_role("1")], "links": {"next": next_link}}
+
+    monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch)
+
+    assert "errors" in _sms_owner_handler().handle("42", auth_token="test-token")
+    assert all(url.startswith("https://sms.example/") for url in calls)
+    assert len(calls) <= 3
+
+
+def test_sms_contact_pagination_limit_discards_incomplete_results(monkeypatch):
+    pages = []
+
+    def fetch(url, auth_token=None):
+        if "/devices/42?" in url:
+            return {"data": {"id": "42"}}
+        pages.append(url)
+        return {"data": [_owner_role("1", role_id=str(len(pages)))], "links": {"next": "roles?page=next"}}
+
+    monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch)
+
+    assert _sms_owner_handler().handle("42") == {"errors": ["SMS contact roles collection pagination exceeded 100 pages."]}
+    assert len(pages) == 100
 
 
 def test_sms_device_refresh_maps_station_height_depth_and_site(monkeypatch):
