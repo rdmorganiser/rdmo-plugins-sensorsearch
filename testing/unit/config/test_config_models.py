@@ -26,20 +26,23 @@ def _config_data():
         return tomllib.load(config_file)
 
 
-def test_configuration_model_exposes_typed_sections_and_read_only_raw_data():
+def test_configuration_model_exposes_typed_sections_and_read_only_backend_definitions():
     config = PluginConfig.from_mapping(_config_data())
 
     assert config.device_search.minimum_search_length == 3
     assert config.device_search.filter_sms_devices_by_selected_configuration is False
     assert not any(action.require_configuration_period for action in config.metadata_refresh.actions)
-    assert config.handlers["SensorManagementSystemConfigurationHandler"].id_prefixes == (
+    assert tuple(
+        config.backend(instance.backend).configuration_id_prefix
+        for instance in config.handlers["SensorManagementSystemConfigurationHandler"].instances
+    ) == (
         "gfzcfg",
         "kitcfg",
         "ufzcfg",
     )
 
     with pytest.raises(TypeError):
-        config.raw["unexpected"] = {}
+        config.backends["unexpected"] = None
 
 
 def test_unknown_top_level_section_is_rejected_with_its_path():
@@ -77,20 +80,19 @@ def test_invalid_setting_type_is_rejected():
 def test_duplicate_provider_prefix_is_rejected():
     data = _config_data()
     providers = data["DeviceSearchProvider"]["providers"]["SensorManagementSystemDeviceProvider"]
-    providers[1]["id_prefix"] = providers[0]["id_prefix"]
+    providers[1]["backend"] = providers[0]["backend"]
 
-    with pytest.raises(ConfigValidationError, match=r"providers: duplicate id_prefix 'gfzsms'"):
+    with pytest.raises(ConfigValidationError, match=r"duplicate backend binding 'gfz'"):
         PluginConfig.from_mapping(data)
 
 
 def test_provider_prefix_without_matching_handler_is_rejected():
     data = _config_data()
-    providers = data["DeviceSearchProvider"]["providers"]["SensorManagementSystemDeviceProvider"]
-    providers[0]["id_prefix"] = "unmatchedsms"
+    data["handlers"]["SensorManagementSystemDeviceHandler"]["instances"].pop(0)
 
     with pytest.raises(
         ConfigValidationError,
-        match=r"providers\.SensorManagementSystemDeviceProvider: id_prefix 'unmatchedsms' has no matching",
+        match=r"providers\.SensorManagementSystemDeviceProvider: backend 'gfz' has no matching",
     ):
         PluginConfig.from_mapping(data)
 
@@ -172,13 +174,9 @@ def test_o2a_membership_filter_settings_are_rejected_until_supported():
         PluginConfig.from_mapping(data)
 
 
-def test_o2a_mission_member_prefix_must_match_the_item_handler():
+def test_o2a_mission_requires_an_item_handler_for_the_same_backend():
     data = _config_data()
-    data["handlers"]["O2ARegistryMissionHandler"]["defaults"]["item_id_prefix"] = "unknownitems"
-
-    with pytest.raises(
-        ConfigValidationError,
-        match=r"handlers\.O2ARegistryMissionHandler\.defaults\.item_id_prefix: "
-        r"'unknownitems' has no matching O2A item handler",
-    ):
+    del data["handlers"]["O2ARegistryItemHandler"]
+    del data["DeviceSearchProvider"]["providers"]["O2ARegistryItemProvider"]
+    with pytest.raises(ConfigValidationError, match="has no matching O2ARegistryItemHandler"):
         PluginConfig.from_mapping(data)
