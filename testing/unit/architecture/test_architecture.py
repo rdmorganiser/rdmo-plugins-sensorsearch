@@ -30,7 +30,7 @@ def _signal_imports(path: Path) -> list[str]:
     return [module for module in _imports(path) if module.startswith("rdmo_sensorsearch.signals")]
 
 
-@pytest.mark.parametrize("package_name", ("config_models", "handlers", "services", "workflows"))
+@pytest.mark.parametrize("package_name", ("config_models", "handlers", "services", "workflows", "backends"))
 def test_lower_level_packages_do_not_import_signal_adapters(package_name):
     violations = {
         str(path.relative_to(PACKAGE_ROOT)): _signal_imports(path)
@@ -41,7 +41,7 @@ def test_lower_level_packages_do_not_import_signal_adapters(package_name):
     assert violations == {}
 
 
-@pytest.mark.parametrize("package_name", ("config_models", "services"))
+@pytest.mark.parametrize("package_name", ("config_models", "services", "backends"))
 def test_framework_independent_packages_do_not_import_django_or_rdmo_models(package_name):
     violations = {}
     for path in sorted((PACKAGE_ROOT / package_name).rglob("*.py")):
@@ -72,6 +72,7 @@ def test_services_do_not_import_implementation_layers_or_configuration_loader():
             "persistence",
             "signals",
             "config",
+            "backends",
         )
     )
     violations = {
@@ -112,5 +113,43 @@ def test_handlers_do_not_import_storage_or_frameworks():
     assert {
         str(path.relative_to(PACKAGE_ROOT))
         for path in (PACKAGE_ROOT / "handlers").rglob("*.py")
+        if any(module == prefix or module.startswith(prefix + ".") for module in _imports(path) for prefix in forbidden)
+    } == set()
+
+
+def test_backends_do_not_import_consumers_or_deployment_infrastructure():
+    forbidden = tuple(
+        f"rdmo_sensorsearch.{name}"
+        for name in (
+            "handlers",
+            "providers",
+            "workflows",
+            "persistence",
+            "signals",
+            "config",
+            "client",
+            "auth",
+            "backend_assembly",
+        )
+    )
+    assert {
+        str(path.relative_to(PACKAGE_ROOT))
+        for path in (PACKAGE_ROOT / "backends").rglob("*.py")
+        if any(module == prefix or module.startswith(prefix + ".") for module in _imports(path) for prefix in forbidden)
+    } == set()
+
+
+def test_sms_consumers_use_capabilities_without_direct_transport_or_concrete_backend_imports():
+    consumers = [
+        PACKAGE_ROOT / "handlers" / "sms_device.py",
+        PACKAGE_ROOT / "handlers" / "sms_configuration.py",
+        PACKAGE_ROOT / "handlers" / "sms_device_enrichment.py",
+        PACKAGE_ROOT / "providers" / "sms_device.py",
+        PACKAGE_ROOT / "providers" / "sms_configuration.py",
+    ]
+    forbidden = ("rdmo_sensorsearch.client", "rdmo_sensorsearch.backends", "rdmo_sensorsearch.backend_assembly", "requests")
+    assert {
+        str(path.relative_to(PACKAGE_ROOT))
+        for path in consumers
         if any(module == prefix or module.startswith(prefix + ".") for module in _imports(path) for prefix in forbidden)
     } == set()

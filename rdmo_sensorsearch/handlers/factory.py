@@ -102,16 +102,17 @@ def build_handlers_by_catalog() -> dict:
                 }
 
                 try:
+                    # The former separate keyword expansions rejected collisions.
+                    # Preserve that behavior when assembling one injected argument map.
+                    constructor_settings = _constructor_settings(
+                        {"attribute_mapping": attribute_mapping, "id_prefix": id_prefix, "base_url": base_url},
+                        backend_extra_kwargs,
+                        catalog_extra_kwargs,
+                    )
                     instance = handler_cls(
                         **sms_constructor_kwargs(
                             handler_name,
-                            {
-                                "attribute_mapping": attribute_mapping,
-                                "id_prefix": id_prefix,
-                                "base_url": base_url,
-                                **backend_extra_kwargs,
-                                **catalog_extra_kwargs,
-                            },
+                            constructor_settings,
                         )
                     )
                     binding = HandlerBinding(
@@ -125,6 +126,16 @@ def build_handlers_by_catalog() -> dict:
                     logger.error("Failed to instantiate handler %s with id_prefix=%s: %s", handler_name, id_prefix, e)
 
     return handlers_by_catalog
+
+
+def _constructor_settings(*sections: dict) -> dict:
+    settings = {}
+    for section in sections:
+        for key, value in section.items():
+            if key in settings:
+                raise TypeError(f"Multiple values for keyword argument '{key}'.")
+            settings[key] = value
+    return settings
 
 
 def _register_handler_binding(

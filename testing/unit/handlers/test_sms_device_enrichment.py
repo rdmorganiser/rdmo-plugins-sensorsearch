@@ -10,6 +10,7 @@ rdmo.__version__ = getattr(rdmo, "__version__", "test")
 
 from rdmo_sensorsearch import backend_assembly  # noqa: E402
 from rdmo_sensorsearch.backends.sms.backend import SMSBackend  # noqa: E402
+from rdmo_sensorsearch.backends.sms.mounting import MountLocationNoticeCode  # noqa: E402
 from rdmo_sensorsearch.backends.sms.settings import SMSDeviceSettings  # noqa: E402
 from rdmo_sensorsearch.contracts import SelectedDevice  # noqa: E402
 from rdmo_sensorsearch.handlers.sms_device_enrichment import (  # noqa: E402
@@ -21,7 +22,6 @@ from rdmo_sensorsearch.handlers.sms_device_enrichment import (  # noqa: E402
     SURFACE_OFFSET_Z_ATTRIBUTE_URI,
     SMSDeviceMetadataEnricher,
 )
-from rdmo_sensorsearch.handlers.sms_mounting import MountLocationNoticeCode  # noqa: E402
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan  # noqa: E402
 
 

@@ -15,9 +15,6 @@ class SensorManagementSystemConfigurationProvider(BaseRemoteSearchProvider):
     searches them by label and returns one option per matching configuration.
     """
 
-    # Match the SMS frontend configuration search more closely. `q` performs
-    # the free-text search; the other flags keep the result set aligned with
-    # the public UI behavior.
     uses_auth_token = True
 
     option_id = "{id_prefix}:{id}"
@@ -40,8 +37,6 @@ class SensorManagementSystemConfigurationProvider(BaseRemoteSearchProvider):
             logger.debug("SMS search failed: %s", response.errors)
             return []
         records = response.value
-
-        return []
 
         return [
             {

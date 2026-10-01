@@ -16,6 +16,7 @@ must not rename them.
 | Area | Responsibility | May depend on Django models? |
 | --- | --- | --- |
 | `config_models/` | Define, parse, and validate the complete TOML schema and its cross-references. | No |
+| `backends/` | Fetch and normalize external records through injected transport capabilities. | No |
 | `providers/` | Turn user search text into backend options. | Only aggregate/project-aware adapters |
 | `handlers/` | Fetch one selected backend record using immutable context and return data/effects. | No |
 | `services/` | Hold backend-neutral domain data, deterministic decisions, and synchronization context state. | No |
@@ -69,7 +70,7 @@ Device-detail materialization now has an explicit planning boundary:
    using a bounded worker pool, and converts handler responses into structured
    payloads or per-device errors.
 5. `handlers/sms_device_enrichment.py` is injected into that generic fetch
-   service and resolves SMS mount periods, height/depth, and site metadata.
+   service and applies mount metadata returned by injected backend capabilities.
 6. `persistence/device_details.py` applies the plan through an
    `RDMODeviceDetailStore` inside the transaction controlled by the workflow,
    while recursive post-save processing is muted.
@@ -82,12 +83,12 @@ decisions directly unit-testable.
 The metadata fetch service propagates the current Python context into each
 worker, passes an authentication token only to handlers that declare support,
 and rejects handler results containing nested collections or effects.
-Backend-specific enrichment remains an injected callback; the SMS adapter uses
-it to add mount periods and resolved location values without making the generic
+Backend-specific enrichment remains an injected callback; the catalog adapter
+uses it to add mount periods and resolved location values without making the generic
 fetch service depend on SMS endpoints or Earth Sensor attribute URIs.
-`handlers/sms_mounting.py` contains the deterministic mount-period selection
-and mount-chain calculations shared by the bulk enricher and direct SMS device
-handler. Network response handling stays in the two handler adapters.
+`backends/sms/mounting.py` contains the deterministic mount-period selection
+and mount-chain calculations shared by backend period/location capabilities.
+Network response handling stays in the SMS backend.
 
 ## SMS configuration synchronization
 
@@ -195,7 +196,8 @@ When adding a synchronization feature:
 3. inject framework or network lookups through narrow callbacks or adapters;
 4. keep Django transaction control in `workflows/` and RDMO `Value` mutations
    in `persistence/`;
-5. keep API fetching and record-specific interpretation in `handlers/`;
+5. keep API fetching and record-specific interpretation in backend adapters,
+   with handlers applying catalog mappings and declaring effects;
 6. add pure service tests and at least one adapter/handler regression test.
 
 Avoid importing a signal module merely to obtain a domain dataclass. Shared
@@ -208,8 +210,8 @@ Device planning, bounded metadata fetching, SMS mount enrichment, device-block
 persistence, backend-value synchronization, metadata refresh,
 configuration-tab updates, device-detail orchestration, and data-collection
 variable reconciliation have been extracted from the signal package. The SMS
-configuration handler delegates pagination and membership resolution to focused
-handler components. Signal receivers retain event adaptation and transaction
+configuration handler consumes normalized membership and location results from
+an injected SMS backend. Signal receivers retain event adaptation and transaction
 scheduling. Shared handler registration, refresh result types, collection
 binding, value reconciliation, and recursive-signal context also live outside
 the signal package. Architecture tests prevent handlers, services, and
@@ -231,6 +233,8 @@ value context used by scalar writes lives privately in persistence.
 Architecture tests prohibit services from importing implementation layers or
 the configuration loader, handlers from importing workflows/storage/frameworks,
 and any runtime module other than the scope adapter from importing `AnswerTree`.
+They also prohibit concrete backend and HTTP-client imports in SMS consumers,
+and framework, consumer, or deployment-loader imports in backend adapters.
 They inspect nested packages and relative imports as well as absolute imports.
 
 This is an internal module boundary, not a catalog migration. The Earth Sensor
