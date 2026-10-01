@@ -153,3 +153,30 @@ def test_sms_consumers_use_capabilities_without_direct_transport_or_concrete_bac
         for path in consumers
         if any(module == prefix or module.startswith(prefix + ".") for module in _imports(path) for prefix in forbidden)
     } == set()
+
+
+def test_runtime_does_not_read_raw_or_serialize_configuration():
+    violations = []
+    for path in PACKAGE_ROOT.rglob("*.py"):
+        if "config_models" in path.parts:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute) and node.attr == "raw":
+                violations.append(str(path.relative_to(PACKAGE_ROOT)))
+            if isinstance(node, ast.ImportFrom) and node.module == "rdmo_sensorsearch.config":
+                if any(alias.name == "load_config" for alias in node.names):
+                    violations.append(str(path.relative_to(PACKAGE_ROOT)))
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "asdict":
+                violations.append(str(path.relative_to(PACKAGE_ROOT)))
+    assert violations == []
+
+
+def test_assembly_and_search_routing_do_not_infer_backend_types_from_class_names():
+    for relative in ("backend_assembly.py", "handlers/factory.py", "providers/factory.py", "providers/search.py"):
+        tree = ast.parse((PACKAGE_ROOT / relative).read_text(encoding="utf-8"))
+        assert not any(
+            isinstance(node, ast.Compare)
+            and any(isinstance(child, ast.Attribute) and child.attr == "__name__" for child in ast.walk(node))
+            for node in ast.walk(tree)
+        )

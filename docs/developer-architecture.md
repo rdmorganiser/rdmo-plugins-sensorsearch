@@ -42,7 +42,8 @@ acquire an indirect Django dependency through the configuration loader.
 ## Configuration model
 
 `rdmo_sensorsearch.config_models` remains the public import path for
-`PluginConfig`, `ConfigValidationError`, and the section dataclasses. Its
+`PluginConfig`, `BackendDefinition`, and `ConfigValidationError`. Section and
+settings types live in their explicit submodules. Its
 implementation is grouped by responsibility:
 
 - `contracts.py` contains supported provider/handler names, defaults, and
@@ -98,8 +99,21 @@ normalization, frontend links and direct mount lookups. Its transport is an
 injected callable, with authentication passed per call. `BackendSuccess` and
 `BackendFailure` distinguish empty successful metadata from failures; mapping
 documents retain their existing JSON and `sms_owner_organizations` paths.
-`backend_assembly.py` translates existing deployment settings without changing
-TOML or stored identifiers.
+`backend_assembly.py` receives typed definitions and consumer profiles. Its
+builder registry is keyed by the explicit backend type; consumer builders
+request device, configuration, or search capabilities. SMS constructs an
+injected adapter; O2A and GIPP receive typed connection bindings while retaining
+their current API implementations. No runtime consumer reads `.raw`, calls the
+removed mapping loader, or serializes configuration back into constructor
+kwargs. The TOML was migrated once; persisted identifiers remain unchanged.
+
+Backend definitions distinguish installation names from device/configuration
+namespaces. Search filtering uses those declared relationships, not prefix
+suffix conventions. Authentication remains request-specific. Catalog mappings,
+labels, and workflow capability flags stay with consumers; endpoint templates
+and SMS mount policies stay in backend-specific settings. Definition validation
+precedes reference/capability checks, and configuration-only tooling imports no
+Django or RDMO modules.
 
 The configuration handler consumes typed configuration and membership results.
 The SMS backend owns bounded JSON:API pagination, duplicate-page detection,
