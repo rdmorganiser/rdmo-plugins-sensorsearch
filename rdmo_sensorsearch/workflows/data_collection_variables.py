@@ -7,7 +7,7 @@ from django.db import transaction
 
 from rdmo.projects.models import Value
 
-from rdmo_sensorsearch.config import catalog_matches, load_config
+from rdmo_sensorsearch.config import load_config_model
 from rdmo_sensorsearch.persistence.data_collection_variables import RDMODataCollectionVariableStore
 from rdmo_sensorsearch.services.data_collection_variables import (
     ParameterUnitPair,
@@ -36,19 +36,17 @@ class DataCollectionVariableSyncSettings:
 
 
 def get_data_collection_variable_sync_settings(catalog_uri: str) -> DataCollectionVariableSyncSettings | None:
-    for catalog_config in load_config().get("DataCollectionVariableSync", {}).get("catalogs", []):
-        if not catalog_matches(catalog_config, catalog_uri):
-            continue
-        return DataCollectionVariableSyncSettings(
-            devices_attribute_uri=catalog_config.get("devices_attribute_uri", DATA_COLLECTION_DEVICES_ATTRIBUTE_URI),
-            device_collection_attribute_uri=catalog_config.get(
-                "device_collection_attribute_uri", DEVICE_COLLECTION_ATTRIBUTE_URI
-            ),
-            parameter_name_attribute_uri=catalog_config.get("parameter_name_attribute_uri", DEVICE_PARAMETER_NAME_ATTRIBUTE_URI),
-            parameter_unit_attribute_uri=catalog_config.get("parameter_unit_attribute_uri", DEVICE_PARAMETER_UNIT_ATTRIBUTE_URI),
-            variable_attribute_uri=catalog_config.get("variable_attribute_uri", DATA_COLLECTION_VARIABLE_ATTRIBUTE_URI),
-            unit_attribute_uri=catalog_config.get("unit_attribute_uri", DATA_COLLECTION_UNIT_ATTRIBUTE_URI),
-        )
+    for catalog in load_config_model().data_collection_variable_sync.catalogs:
+        if catalog.scope.matches(catalog_uri):
+            settings = catalog.settings
+            return DataCollectionVariableSyncSettings(
+                devices_attribute_uri=settings.devices_attribute_uri,
+                device_collection_attribute_uri=settings.device_collection_attribute_uri,
+                parameter_name_attribute_uri=settings.parameter_name_attribute_uri,
+                parameter_unit_attribute_uri=settings.parameter_unit_attribute_uri,
+                variable_attribute_uri=settings.variable_attribute_uri,
+                unit_attribute_uri=settings.unit_attribute_uri,
+            )
     return None
 
 

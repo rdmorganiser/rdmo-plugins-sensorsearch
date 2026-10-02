@@ -97,30 +97,15 @@ def test_wheel_build_packages_the_authoritative_deployment_configuration():
     }
 
 
-def _backend(config, section, id_prefix):
-    entries = config[section]
-    if isinstance(entries, dict):
-        entries = entries["backends"]
-    return next(backend for backend in entries if backend["id_prefix"] == id_prefix)
-
-
-def test_gfz_sms_handlers_and_providers_use_the_same_current_host():
+def test_gfz_sms_connection_is_defined_once():
     for path in CONFIG_PATHS:
-        config = _load_config(path)
-        handler_urls = (
-            _backend(config["handlers"], "SensorManagementSystemDeviceHandler", "gfzsms")["base_url"],
-            _backend(config["handlers"], "SensorManagementSystemConfigurationHandler", "gfzcfg")["base_url"],
-        )
-        provider_urls = (
-            _backend(config["DeviceSearchProvider"]["providers"], "SensorManagementSystemDeviceProvider", "gfzsms")["base_url"],
-            _backend(
-                config["ConfigurationSearchProvider"]["providers"],
-                "SensorManagementSystemConfigurationProvider",
-                "gfzcfg",
-            )["base_url"],
-        )
-
-        assert {urlsplit(url).hostname for url in (*handler_urls, *provider_urls)} == {"sensors.gfz.de"}
+        config = PluginConfig.from_mapping(_load_config(path))
+        backend = config.backend("gfz")
+        assert urlsplit(backend.base_url).hostname == "sensors.gfz.de"
+        for name in ("SensorManagementSystemDeviceHandler", "SensorManagementSystemConfigurationHandler"):
+            assert config.handlers[name].instances[0].backend == "gfz"
+        for section in (config.device_search, config.configuration_search):
+            assert any(provider.backend == "gfz" for provider in section.providers)
 
 
 def test_data_collection_variable_sync_is_explicitly_catalog_scoped():
@@ -157,22 +142,13 @@ def test_handlers_declare_additional_owned_attributes_as_managed():
 
 
 def test_configuration_providers_use_compact_backend_labels():
-    expected_prefixes = {
-        "gfzcfg": "GFZ Cfg",
-        "kitcfg": "KIT Cfg",
-        "ufzcfg": "UFZ Cfg",
-        "o2amission": "O2A M",
-    }
-
+    expected = {"gfzcfg": "GFZ Cfg", "kitcfg": "KIT Cfg", "ufzcfg": "UFZ Cfg", "o2amission": "O2A M"}
     for path in CONFIG_PATHS:
-        config = _load_config(path)
-        providers = config["ConfigurationSearchProvider"]["providers"]
-
-        for id_prefix, expected_prefix in expected_prefixes.items():
-            provider_name = (
-                "O2ARegistryMissionProvider" if id_prefix == "o2amission" else "SensorManagementSystemConfigurationProvider"
-            )
-            assert _backend(providers, provider_name, id_prefix)["text_prefix"] == expected_prefix
+        config = PluginConfig.from_mapping(_load_config(path))
+        assert {
+            config.backend(provider.backend).configuration_id_prefix: provider.settings.text_prefix
+            for provider in config.configuration_search.providers
+        } == expected
 
 
 def test_configuration_handlers_define_the_shared_tab_collection_attribute():
@@ -246,27 +222,22 @@ def test_sms_membership_filter_can_be_enabled_as_an_explicit_extension():
     parsed = PluginConfig.from_mapping(config)
 
     sms_catalog = parsed.handlers["SensorManagementSystemConfigurationHandler"].catalogs[0]
-    assert sms_catalog.settings["membership_filter_enabled"] is True
+    assert sms_catalog.settings.membership_filter_enabled is True
     assert parsed.metadata_refresh.actions[-1].require_configuration_period is True
 
 
-def test_sms_handlers_share_mount_location_resolution_settings():
-    config = _load_config(CONFIG_PATHS[0])
-    handlers = config["handlers"]
-
-    for handler_name in (
-        "SensorManagementSystemDeviceHandler",
-        "SensorManagementSystemConfigurationHandler",
-    ):
-        defaults = handlers[handler_name]["defaults"]
-        assert defaults["static_location_end_tolerance_seconds"] == 120
-        assert defaults["incomplete_mount_chain_policy"] == "direct_device_offset"
+def test_sms_mount_location_resolution_settings_are_shared_backend_settings():
+    config = PluginConfig.from_mapping(_load_config(CONFIG_PATHS[0]))
+    for name in ("gfz", "kit", "ufz"):
+        settings = config.backend(name).settings
+        assert settings.static_location_end_tolerance_seconds == 120
+        assert settings.incomplete_mount_chain_policy == "direct_device_offset"
 
 
 @pytest.mark.parametrize("invalid_value", (-1, True, "120", 1.5))
 def test_mount_location_tolerance_validation_rejects_invalid_values(invalid_value):
     config = deepcopy(_load_config(CONFIG_PATHS[0]))
-    config["handlers"]["SensorManagementSystemDeviceHandler"]["defaults"]["static_location_end_tolerance_seconds"] = invalid_value
+    config["backends"][0]["settings"]["static_location_end_tolerance_seconds"] = invalid_value
 
     with pytest.raises(ValueError, match="static_location_end_tolerance_seconds"):
         PluginConfig.from_mapping(config)
@@ -274,14 +245,14 @@ def test_mount_location_tolerance_validation_rejects_invalid_values(invalid_valu
 
 def test_mount_location_tolerance_validation_accepts_zero():
     config = deepcopy(_load_config(CONFIG_PATHS[0]))
-    config["handlers"]["SensorManagementSystemDeviceHandler"]["defaults"]["static_location_end_tolerance_seconds"] = 0
+    config["backends"][0]["settings"]["static_location_end_tolerance_seconds"] = 0
 
     PluginConfig.from_mapping(config)
 
 
 def test_incomplete_mount_chain_policy_validation_rejects_unknown_value():
     config = deepcopy(_load_config(CONFIG_PATHS[0]))
-    config["handlers"]["SensorManagementSystemConfigurationHandler"]["defaults"]["incomplete_mount_chain_policy"] = "guess"
+    config["backends"][0]["settings"]["incomplete_mount_chain_policy"] = "guess"
 
     with pytest.raises(ValueError, match=r"incomplete_mount_chain_policy.*direct_device_offset, strict"):
         PluginConfig.from_mapping(config)
@@ -290,8 +261,8 @@ def test_incomplete_mount_chain_policy_validation_rejects_unknown_value():
 @pytest.mark.parametrize("policy", ("strict", "direct_device_offset"))
 def test_incomplete_mount_chain_policy_validation_accepts_supported_values(policy):
     config = deepcopy(_load_config(CONFIG_PATHS[0]))
-    config["handlers"]["SensorManagementSystemConfigurationHandler"]["defaults"]["incomplete_mount_chain_policy"] = policy
+    config["backends"][0]["settings"]["incomplete_mount_chain_policy"] = policy
 
     parsed = PluginConfig.from_mapping(config)
 
-    assert parsed.handlers["SensorManagementSystemConfigurationHandler"].defaults["incomplete_mount_chain_policy"] == policy
+    assert parsed.backend("gfz").settings.incomplete_mount_chain_policy == policy

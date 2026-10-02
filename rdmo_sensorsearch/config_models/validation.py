@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
-from types import MappingProxyType
+from collections.abc import Mapping
 from typing import Any
 
 from rdmo_sensorsearch.config_models.contracts import PROVIDER_HANDLER_NAMES
@@ -15,44 +14,57 @@ class ConfigValidationError(ValueError):
         super().__init__(f"{path}: {message}")
 
 
-def validate_prefix_contract(config: PluginConfig) -> None:
-    handler_prefixes: dict[str, set[str]] = {name: set(handler.id_prefixes) for name, handler in config.handlers.items()}
-    all_handler_prefixes = [prefix for prefixes in handler_prefixes.values() for prefix in prefixes]
-    reject_duplicate_prefixes(all_handler_prefixes, "handlers")
+def validate_backend_references(config: PluginConfig) -> None:
+    from rdmo_sensorsearch.config_models.contracts import CONSUMER_CAPABILITIES
 
-    provider_instances = (*config.device_search.providers, *config.configuration_search.providers)
-    provider_prefixes = [provider.id_prefix for provider in provider_instances if provider.id_prefix]
-    reject_duplicate_prefixes(provider_prefixes, "providers")
-    for provider in provider_instances:
-        prefix = provider.id_prefix
-        handler_name = PROVIDER_HANDLER_NAMES[provider.provider_name]
-        if prefix not in handler_prefixes.get(handler_name, set()):
-            raise ConfigValidationError(
-                f"providers.{provider.provider_name}",
-                f"id_prefix {prefix!r} has no matching {handler_name}",
-            )
-
-    sms_device_prefixes = handler_prefixes.get("SensorManagementSystemDeviceHandler", set())
-    sms_configuration = config.handlers.get("SensorManagementSystemConfigurationHandler")
-    if sms_configuration:
-        for index, backend in enumerate(sms_configuration.backends):
-            merged = merge(sms_configuration.backend_defaults, backend)
-            device_prefix = merged.get("device_id_prefix")
-            if device_prefix not in sms_device_prefixes:
+    bindings = set()
+    for handler in config.handlers.values():
+        seen = set()
+        for instance in handler.instances:
+            validate_reference(config, handler.handler_name, instance.backend, f"handlers.{handler.handler_name}.instances")
+            if instance.backend in seen:
                 raise ConfigValidationError(
-                    f"handlers.SensorManagementSystemConfigurationHandler.backends[{index}].device_id_prefix",
-                    f"{device_prefix!r} has no matching SMS device handler backend",
+                    f"handlers.{handler.handler_name}.instances", f"duplicate backend binding {instance.backend!r}"
                 )
+            seen.add(instance.backend)
+            bindings.add((handler.handler_name, instance.backend))
+    seen = set()
+    for provider in (*config.device_search.providers, *config.configuration_search.providers):
+        path = f"providers.{provider.provider_name}"
+        validate_reference(config, provider.provider_name, provider.backend, path)
+        key = (provider.provider_name, provider.backend)
+        if key in seen:
+            raise ConfigValidationError(path, f"duplicate backend binding {provider.backend!r}")
+        seen.add(key)
+        handler_name = PROVIDER_HANDLER_NAMES[provider.provider_name]
+        if (handler_name, provider.backend) not in bindings:
+            raise ConfigValidationError(path, f"backend {provider.backend!r} has no matching {handler_name}")
+    for handler in config.handlers.values():
+        if handler.handler_name in {"SensorManagementSystemConfigurationHandler", "O2ARegistryMissionHandler"}:
+            device_handler = {"sms": "SensorManagementSystemDeviceHandler", "o2a": "O2ARegistryItemHandler"}[
+                CONSUMER_CAPABILITIES[handler.handler_name][0]
+            ]
+            for instance in handler.instances:
+                if (device_handler, instance.backend) not in bindings:
+                    raise ConfigValidationError(
+                        f"handlers.{handler.handler_name}.instances",
+                        f"backend {instance.backend!r} has no matching {device_handler}",
+                    )
 
-    mission_handler = config.handlers.get("O2ARegistryMissionHandler")
-    item_prefixes = handler_prefixes.get("O2ARegistryItemHandler", set())
-    if mission_handler:
-        item_prefix = mission_handler.defaults.get("item_id_prefix")
-        if item_prefix not in item_prefixes:
-            raise ConfigValidationError(
-                "handlers.O2ARegistryMissionHandler.defaults.item_id_prefix",
-                f"{item_prefix!r} has no matching O2A item handler",
-            )
+
+def validate_reference(config: PluginConfig, consumer: str, backend_name: str, path: str) -> None:
+    from rdmo_sensorsearch.config_models.contracts import CONSUMER_CAPABILITIES
+
+    backend = config.backends.get(backend_name)
+    if backend is None:
+        raise ConfigValidationError(path, f"unknown backend {backend_name!r}")
+    backend_type, resource = CONSUMER_CAPABILITIES[consumer]
+    if backend.type != backend_type:
+        raise ConfigValidationError(path, f"{consumer} requires {backend_type!r}, got {backend.type!r}")
+    if resource == "configuration" and backend.device_id_prefix is None:
+        raise ConfigValidationError(path, "configuration membership requires a device namespace")
+    if (backend.device_id_prefix if resource == "device" else backend.configuration_id_prefix) is None:
+        raise ConfigValidationError(path, f"backend {backend_name!r} has no {resource} namespace")
 
 
 def validate_membership_filter_settings(settings: Mapping[str, Any], path: str) -> None:
@@ -97,14 +109,6 @@ def validate_provider_name(name: Any, allowed_names: frozenset[str], path: str) 
         raise ConfigValidationError(path, f"unknown provider {name!r}; expected one of {sorted(allowed_names)}")
 
 
-def reject_duplicate_prefixes(prefixes: Sequence[str], path: str) -> None:
-    seen = set()
-    for prefix in prefixes:
-        if prefix in seen:
-            raise ConfigValidationError(path, f"duplicate id_prefix {prefix!r}")
-        seen.add(prefix)
-
-
 def validate_id_prefix(value: Any, path: str) -> str:
     prefix = nonempty_string(value, path)
     if ":" in prefix or "||" in prefix:
@@ -115,7 +119,16 @@ def validate_id_prefix(value: Any, path: str) -> str:
 def reject_unknown_keys(data: Mapping[str, Any], allowed: set[str] | frozenset[str], path: str) -> None:
     unknown = sorted(set(data) - set(allowed))
     if unknown:
-        raise ConfigValidationError(path, f"unknown setting(s): {', '.join(unknown)}")
+        message = f"unknown setting(s): {', '.join(unknown)}"
+        if path.startswith(("handlers.", "DeviceSearchProvider.", "ConfigurationSearchProvider.")) and set(unknown) & {
+            "base_url",
+            "id_prefix",
+            "device_id_prefix",
+            "item_id_prefix",
+            "query_url",
+        }:
+            message += "; migrate connection settings to top-level [[backends]] (see docs/configuration-reference.md)"
+        raise ConfigValidationError(path, message)
 
 
 def require_mapping(value: Any, path: str) -> Mapping[str, Any]:
@@ -184,11 +197,3 @@ def merge(base: Mapping[str, Any] | None, override: Mapping[str, Any] | None) ->
     merged = dict(base or {})
     merged.update(override or {})
     return merged
-
-
-def freeze(value: Any) -> Any:
-    if isinstance(value, Mapping):
-        return MappingProxyType({key: freeze(item) for key, item in value.items()})
-    if isinstance(value, list | tuple):
-        return tuple(freeze(item) for item in value)
-    return value

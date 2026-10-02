@@ -11,7 +11,7 @@ from rdmo.domain.models import Attribute
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.client import deduplicate_json_requests
-from rdmo_sensorsearch.config import catalog_matches, load_config
+from rdmo_sensorsearch.config import load_config_model
 from rdmo_sensorsearch.naming import canonical_configuration_label, canonical_device_label
 from rdmo_sensorsearch.persistence.value_reconciliation import (
     _scalar_scopes,
@@ -48,52 +48,25 @@ def get_refresh_actions_for_input(catalog_uri: str, attribute_uri: str) -> tuple
 
 
 def _get_refresh_actions(catalog_uri: str) -> tuple[RefreshAction, ...]:
-    refresh_config = load_config().get("MetadataRefresh", {})
-    configuration_search_attribute_uri = refresh_config.get("configuration_search_attribute_uri", "")
-    device_search_attribute_uri = refresh_config.get("device_search_attribute_uri", "")
-    actions = []
-
-    for action_config in refresh_config.get("actions", []):
-        if not catalog_matches(action_config, catalog_uri):
-            continue
-
-        try:
-            kind = RefreshKind(action_config["kind"])
-        except (KeyError, ValueError):
-            logger.error("Invalid metadata refresh action kind: %r", action_config.get("kind"))
-            continue
-
-        trigger_attribute_uri = action_config.get("trigger_attribute_uri", "")
-        if not trigger_attribute_uri:
-            logger.error("Metadata refresh action %s has no trigger attribute URI", kind.value)
-            continue
-
-        actions.append(
-            RefreshAction(
-                kind=kind,
-                trigger_attribute_uri=trigger_attribute_uri,
-                configuration_search_attribute_uri=action_config.get(
-                    "configuration_search_attribute_uri",
-                    configuration_search_attribute_uri,
-                ),
-                device_search_attribute_uri=action_config.get(
-                    "device_search_attribute_uri",
-                    device_search_attribute_uri,
-                ),
-                status_attribute_uri=action_config.get("status_attribute_uri"),
-                message_attribute_uri=action_config.get("message_attribute_uri"),
-                timestamp_attribute_uri=action_config.get("timestamp_attribute_uri"),
-                replace_existing_collections=bool(action_config.get("replace_existing_collections", False)),
-                require_configuration_period=bool(action_config.get("require_configuration_period", False)),
-                input_attribute_uris=tuple(
-                    attribute_uri
-                    for attribute_uri in action_config.get("input_attribute_uris", [])
-                    if isinstance(attribute_uri, str) and attribute_uri
-                ),
-            )
+    refresh_config = load_config_model().metadata_refresh
+    return tuple(
+        RefreshAction(
+            kind=RefreshKind(action.kind),
+            trigger_attribute_uri=action.trigger_attribute_uri,
+            configuration_search_attribute_uri=action.configuration_search_attribute_uri
+            or refresh_config.configuration_search_attribute_uri
+            or "",
+            device_search_attribute_uri=action.device_search_attribute_uri or refresh_config.device_search_attribute_uri or "",
+            status_attribute_uri=action.status_attribute_uri,
+            message_attribute_uri=action.message_attribute_uri,
+            timestamp_attribute_uri=action.timestamp_attribute_uri,
+            replace_existing_collections=action.replace_existing_collections,
+            require_configuration_period=action.require_configuration_period,
+            input_attribute_uris=action.input_attribute_uris,
         )
-
-    return tuple(actions)
+        for action in refresh_config.actions
+        if action.scope.matches(catalog_uri)
+    )
 
 
 def clear_refresh_state_for_source(instance: Value, actions: tuple[RefreshAction, ...]) -> None:

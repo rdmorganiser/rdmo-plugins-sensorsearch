@@ -18,6 +18,10 @@ class BaseRemoteSearchProvider(Provider):
     These can be optionally overridden at instantiation.
     """
 
+    backend_name: str
+    backend_type: str
+    resource_kind: str
+
     def __init__(
         self,
         id_prefix: str | None = None,

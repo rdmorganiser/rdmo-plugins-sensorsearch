@@ -19,7 +19,7 @@ not included in the plugin wheel.
 - `performance/` contains synthetic fixtures and opt-in measurement helpers.
   The associated regression tests run in `integration/django/` with the normal
   Django suite and assert query counts, output parity, and callback behavior.
-  Set `SENSORSEARCH_BENCHMARK_OUTPUT=/tmp/sensorsearch-benchmarks.ndjson` to
+Set `SENSORSEARCH_BENCHMARK_OUTPUT=/tmp/sensorsearch-benchmarks.ndjson` to
   additionally record five warm-ups and twenty measured samples per scenario.
   Use a fresh output path per run; results append. The full benchmark run also
   repeats metadata writes and 1,000-row deletes and can take several minutes.
@@ -27,3 +27,49 @@ not included in the plugin wheel.
 
 See [the performance review](../docs/performance-review.md) for the environment,
 measurement boundaries, results, and remaining deployment checks.
+
+## RDMO compatibility matrix
+
+Install the `dev` extra and run `tox` from the repository root. Its three
+environments run the unit suite, the Django suite on RDMO 2.5.1, and the Django
+suite on upstream commit `2da60cfe4c895aa3af20a0ca96fb74bd40059d05` (the merge of
+PR #1752). This tests both `AnswerTree` APIs against real RDMO installations;
+unit tests also exercise initialization errors and unsupported signatures.
+The first matrix run needs network access to install dependencies. Django tests
+use isolated SQLite databases and mocked backend HTTP.
+
+Set `SENSORSEARCH_TEST_PYTHON` to the configured interpreter path to select the
+base interpreter. `SENSORSEARCH_TOX_WORK_DIR` can place environments outside the
+checkout. Run `tox -e django-new` or `tox -e django-old` to select one RDMO target.
+
+## SMS owner and location interview verification
+
+Automated SMS regressions mock backend responses and use the real catalog and
+RDMO models. The interactive widget also needs a check in the target RDMO
+installation after importing the updated catalog and deploying its mappings:
+
+1. Select an SMS device with an Owner contact and configuration/static-location
+   context. Open its device block on page 2.4: question 2.4.4 must show the
+   configuration's site label and 2.4.6 must show the organisation name.
+2. Reload the interview. Confirm the imported owner remains selected, the
+   dropdown still offers ROR suggestions, and an arbitrary free-text name can
+   be entered and saved.
+3. Start with a ROR-backed owner matching the SMS name. Refresh and reload;
+   confirm the label remains and the ROR identifier and option are cleared.
+   With a different manual name or several SMS institutions, refresh must
+   replace the answer with the distinct backend names joined using `; `.
+   Each backend name, including embedded semicolons, must remain intact.
+   The free-text answer must have no ROR identifier or static option attached.
+4. Repeat the refresh, then remove Owner roles in a test backend. Confirm names
+   are not duplicated on repetition and the answer is cleared after a
+   successful response without usable Owner names. A failed or malformed
+   contact request must leave all existing metadata intact. Missing referenced
+   contacts must produce owner feedback independently of any location feedback.
+5. Import the same device through two configurations with different site
+   labels. Refresh individual devices and all devices; check each block keeps
+   its own site and the refreshed backend Owner answer. A standalone device
+   without configuration context must not acquire either configuration's site.
+
+Record the plugin/RDMO versions, catalog/profile used, device/configuration IDs,
+and outcomes. These interactive checks are separate from the mocked regression
+suite and require an actual interview deployment.

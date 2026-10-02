@@ -3,62 +3,26 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from rdmo_sensorsearch.handlers.configuration_period import ConfigurationPeriod
-from rdmo_sensorsearch.handlers.sms_mounting import (
+from rdmo_sensorsearch.backends.sms.mounting import (
     format_sms_timepoint,
     parse_sms_timepoint,
     resolve_mount_location,
 )
-from rdmo_sensorsearch.naming import configuration_short_label
-from rdmo_sensorsearch.services.device_details import SelectedDevice
-from rdmo_sensorsearch.services.refresh import RefreshNotice
+from rdmo_sensorsearch.contracts import (
+    BackendFailure,
+    BackendResult,
+    BackendSuccess,
+    ConfigurationMember,
+    ConfigurationPeriod,
+    MountLocation,
+)
 
-DeviceFetcher = Callable[[str], tuple[dict | None, list[str]]]
-MountActionFetcher = Callable[[str], tuple[dict | None, list[str]]]
-
-
-@dataclass(frozen=True)
-class SMSConfigurationMember:
-    text: str
-    external_id: str
-    instrument_start: str | None
-    instrument_end: str | None
-    station_height_amsl: float | None
-    vertical_surface_offset: float | None
-    site_name: str | None
-    mount_location_notices: tuple[RefreshNotice, ...] = ()
-
-    def as_collection_value(self) -> dict[str, object]:
-        return {
-            "text": self.text,
-            "external_id": self.external_id,
-            "instrument_start": self.instrument_start,
-            "instrument_end": self.instrument_end,
-            "station_height_amsl": self.station_height_amsl,
-            "vertical_surface_offset": self.vertical_surface_offset,
-            "site_name": self.site_name,
-            "mount_location_notices": self.mount_location_notices,
-        }
-
-    def as_selected_device(self) -> SelectedDevice:
-        return SelectedDevice(
-            text=self.text,
-            external_id=self.external_id,
-            instrument_start=self.instrument_start,
-            instrument_end=self.instrument_end,
-            station_height_amsl=self.station_height_amsl,
-            vertical_surface_offset=self.vertical_surface_offset,
-            site_name=self.site_name,
-            mount_location_resolved=True,
-            mount_location_notices=self.mount_location_notices,
-        )
+DeviceFetcher = Callable[[str], BackendResult[dict | None]]
+MountActionFetcher = Callable[[str], BackendResult[dict | None]]
 
 
 @dataclass(frozen=True)
 class SMSConfigurationMembershipResolver:
-    configuration_id_prefix: str
-    device_id_prefix: str
-    device_text_prefix: str
     fetch_device: DeviceFetcher
     fetch_mount_action: MountActionFetcher
     static_location_end_tolerance_seconds: int = 0
@@ -72,10 +36,10 @@ class SMSConfigurationMembershipResolver:
         platform_mount_action_data: dict | None = None,
         static_location_action_data: dict | None = None,
         configuration_period: ConfigurationPeriod | None = None,
-    ) -> tuple[tuple[SMSConfigurationMember, ...], tuple[str, ...]]:
+    ) -> BackendResult[tuple[ConfigurationMember, ...]]:
         mount_actions, errors = self._mount_actions(configuration_data, mount_action_data)
         if errors:
-            return (), tuple(errors)
+            return BackendFailure(tuple(errors))
 
         included_devices = {item["id"]: item for item in mount_action_data.get("included", []) if item.get("type") == "device"}
         platform_mount_actions = (
@@ -95,10 +59,11 @@ class SMSConfigurationMembershipResolver:
             device_id = device_ref["id"]
             device = included_devices.get(device_id)
             if device is None:
-                device, device_errors = self.fetch_device(device_id)
-                if device_errors:
-                    errors.extend(device_errors)
+                response = self.fetch_device(device_id)
+                if isinstance(response, BackendFailure):
+                    errors.extend(response.errors)
                     continue
+                device = response.value
             if device is None:
                 continue
 
@@ -113,31 +78,18 @@ class SMSConfigurationMembershipResolver:
                 incomplete_mount_chain_policy=self.incomplete_mount_chain_policy,
             )
             members.append(
-                SMSConfigurationMember(
-                    text=self.format_device_text(
-                        configuration_id=configuration_data.get("data", {}).get("id"),
-                        device_id=device["id"],
-                        attributes=device.get("attributes", {}),
-                    ),
-                    external_id=f"{self.device_id_prefix}:{device['id']}",
+                ConfigurationMember(
+                    identifier=device["id"],
+                    attributes=device.get("attributes", {}),
                     instrument_start=_format_mount_timepoint(attributes.get("begin_date")),
                     instrument_end=_format_mount_timepoint(attributes.get("end_date")),
-                    station_height_amsl=mount_location.station_height_amsl,
-                    vertical_surface_offset=mount_location.vertical_surface_offset,
-                    site_name=mount_location.site_name,
-                    mount_location_notices=mount_location.notices,
+                    location=MountLocation(
+                        mount_location.station_height_amsl, mount_location.vertical_surface_offset, mount_location.site_name
+                    ),
+                    notices=mount_location.notices,
                 )
             )
-        return tuple(members), tuple(errors)
-
-    def format_device_text(self, configuration_id: str | None, device_id: str, attributes: dict) -> str:
-        name = attributes.get("long_name") or attributes.get("short_name", "")
-        serial = f" (s/n: {attributes['serial_number']})" if attributes.get("serial_number") else ""
-        configuration_label = (
-            configuration_short_label(f"{self.configuration_id_prefix}:{configuration_id}") if configuration_id else None
-        )
-        configuration_prefix = f"{configuration_label} " if configuration_label else ""
-        return f"{configuration_prefix}{self.device_text_prefix}({device_id}): {name}{serial}"
+        return BackendFailure(tuple(errors)) if errors else BackendSuccess(tuple(members))
 
     def _mount_actions(self, configuration_data: dict, mount_action_data: dict) -> tuple[list[dict], list[str]]:
         mount_actions = mount_action_data.get("data", [])
@@ -151,10 +103,11 @@ class SMSConfigurationMembershipResolver:
             action_id = action_ref.get("id")
             if not action_id:
                 continue
-            action, action_errors = self.fetch_mount_action(action_id)
-            errors.extend(action_errors)
-            if action is not None:
-                resolved_actions.append(action)
+            response = self.fetch_mount_action(action_id)
+            if isinstance(response, BackendFailure):
+                errors.extend(response.errors)
+            elif response.value is not None:
+                resolved_actions.append(response.value)
         return resolved_actions, errors
 
 

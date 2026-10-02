@@ -1,10 +1,10 @@
 import pytest
 
+from rdmo_sensorsearch.contracts import RefreshNotice
 from rdmo_sensorsearch.services.refresh import (
     RefreshAction,
     RefreshError,
     RefreshKind,
-    RefreshNotice,
     RefreshResult,
     combine_refresh_results,
     format_refresh_message,
@@ -143,6 +143,25 @@ def test_success_message_aggregates_location_notices_without_changing_status():
         "Success: KIT Cfg(47): TEAMx was refreshed. 2 devices were refreshed. "
         "Location metadata: parent mount unavailable for 1 device; "
         "direct device offset fallback used for 2 devices."
+    )
+
+
+def test_owner_notices_have_separate_feedback_and_are_counted_once_per_device():
+    result = RefreshResult(
+        1,
+        1,
+        notices=(
+            RefreshNotice("owner_contact_unresolved", "gfzsms:42", (("role_id", "1"),)),
+            RefreshNotice("owner_contact_unresolved", "gfzsms:42", (("role_id", "2"),)),
+            RefreshNotice("static_location_not_found", "gfzsms:42"),
+        ),
+    )
+
+    message = format_refresh_message(RefreshKind.DEVICE, result)
+
+    assert result.status == "success"
+    assert message.endswith(
+        "Location metadata: static location unavailable for 1 device. Owner metadata: owner contact unavailable for 1 device."
     )
 
 

@@ -2,7 +2,8 @@ import logging
 from urllib.parse import urlsplit
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import BackendRecordHandler, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.handlers.base import BackendRecordHandler
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ class O2ARegistryItemHandler(BackendRecordHandler):
             **kwargs,
         )
 
-    def handle(self, backend_id, instance=None, context: HandlerExecutionContext | None = None):
+    def handle(self, backend_id: str, *, context: HandlerExecutionContext, auth_token: str | None = None):
         """
         Synchronizes one O2A item with its RDMO value.
 

@@ -1,51 +1,13 @@
-import logging
+"""Construct search consumers from validated typed configuration."""
 
-from rdmo_sensorsearch.config import load_config, merge_config
-from rdmo_sensorsearch.providers.registry import PROVIDER_REGISTRY
+from rdmo_sensorsearch.backend_assembly import PROVIDER_BUILDERS
+from rdmo_sensorsearch.config import load_config_model
+from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 
-logger = logging.getLogger(__name__)
 
-
-def build_provider_instances(config_section_name: str) -> list:
-    """
-    Factory method to create provider instances from config.
-
-    Args:
-        config_section_name (str): Name of the top-level section in config, usually the provider class name.
-
-    Returns:
-        list: List of instantiated provider objects.
-    """
-    plugin_config = load_config()
-    section_config = plugin_config.get(config_section_name, {})
-    provider_definitions = section_config.get("providers", {})
-    provider_defaults = section_config.get("provider_defaults", {})
-    logger.debug(
-        "Building provider instances for %s from configured provider keys: %s",
-        config_section_name,
-        sorted(provider_definitions.keys()),
-    )
-
-    flattened_provider_definitions = [
-        (provider_name, merge_config(provider_defaults.get(provider_name, {}), provider_config))
-        for provider_name, configs in provider_definitions.items()
-        for provider_config in configs
+def build_provider_instances(config_section_name: str) -> list[BaseRemoteSearchProvider]:
+    config = load_config_model()
+    return [
+        PROVIDER_BUILDERS[instance.provider_name](instance, config.backend(instance.backend))
+        for instance in config.search_provider(config_section_name).providers
     ]
-
-    instances = []
-    for provider_name, provider_config in flattened_provider_definitions:
-        try:
-            provider_cls = PROVIDER_REGISTRY[provider_name]
-            instances.append(provider_cls(**provider_config))
-        except KeyError:
-            logger.error("Provider class %s not found in registry", provider_name)
-        except TypeError as e:
-            logger.error("Error initializing %s with config %s: %s", provider_name, provider_config, e)
-
-    logger.debug(
-        "Built %s provider instance(s) for %s: %s",
-        len(instances),
-        config_section_name,
-        [repr(instance) for instance in instances],
-    )
-    return instances

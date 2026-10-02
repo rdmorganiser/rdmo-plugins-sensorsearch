@@ -6,6 +6,8 @@ from threading import Lock
 from time import sleep
 from types import ModuleType, SimpleNamespace
 
+import pytest
+
 from testing.paths import REPOSITORY_ROOT
 
 
@@ -15,31 +17,8 @@ def _install_host_application_stubs():
     django_conf.settings = getattr(django_conf, "settings", SimpleNamespace())
     django.conf = django_conf
 
-    django_utils = sys.modules.setdefault("django.utils", ModuleType("django.utils"))
-    django_timezone = sys.modules.setdefault("django.utils.timezone", ModuleType("django.utils.timezone"))
-    django_timezone.is_aware = lambda value: value.tzinfo is not None
-    django_timezone.make_aware = lambda value, timezone: value.replace(tzinfo=timezone)
-    django_utils.timezone = django_timezone
-
     rdmo = sys.modules.setdefault("rdmo", ModuleType("rdmo"))
     rdmo.__version__ = "test"
-    rdmo_projects = sys.modules.setdefault("rdmo.projects", ModuleType("rdmo.projects"))
-    rdmo_project_models = sys.modules.setdefault("rdmo.projects.models", ModuleType("rdmo.projects.models"))
-    rdmo_project_models.Value = getattr(rdmo_project_models, "Value", type("Value", (), {}))
-    rdmo_projects.models = rdmo_project_models
-    rdmo.projects = rdmo_projects
-
-    workflows = sys.modules.setdefault("rdmo_sensorsearch.workflows", ModuleType("rdmo_sensorsearch.workflows"))
-    workflows.__path__ = [str(REPOSITORY_ROOT / "rdmo_sensorsearch" / "workflows")]
-    device_details = ModuleType("rdmo_sensorsearch.workflows.device_details")
-
-    device_details.reconcile_device_details_from_selected_devices = lambda **kwargs: None
-    sys.modules.setdefault("rdmo_sensorsearch.workflows.device_details", device_details)
-
-    project_values = ModuleType("rdmo_sensorsearch.project_values")
-    project_values.get_scoped_project_value = lambda instance, attribute_uri: None
-    sys.modules.setdefault("rdmo_sensorsearch.project_values", project_values)
-
     handlers = sys.modules.setdefault("rdmo_sensorsearch.handlers", ModuleType("rdmo_sensorsearch.handlers"))
     handlers.__path__ = [str(REPOSITORY_ROOT / "rdmo_sensorsearch" / "handlers")]
 
@@ -48,14 +27,19 @@ _install_host_application_stubs()
 
 client = import_module("rdmo_sensorsearch.client")
 config_module = import_module("rdmo_sensorsearch.config")
+contracts = import_module("rdmo_sensorsearch.contracts")
 handler_base = import_module("rdmo_sensorsearch.handlers.base")
 catalog_registry_module = import_module("rdmo_sensorsearch.handlers.catalog_registry")
 configuration_period = import_module("rdmo_sensorsearch.handlers.configuration_period")
 o2a_item_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_item")
 o2a_mission_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_mission")
+backend_assembly = import_module("rdmo_sensorsearch.backend_assembly")
+sms_device_backend = import_module("rdmo_sensorsearch.backends.sms.device")
+from testing.sms_helpers import make_sms_configuration_handler, make_sms_device_handler, resolve_member_values  # noqa: E402
+
 sms_device_handler_module = import_module("rdmo_sensorsearch.handlers.sms_device")
 sms_configuration_handler_module = import_module("rdmo_sensorsearch.handlers.sms_configuration")
-sms_configuration_membership_module = import_module("rdmo_sensorsearch.handlers.sms_configuration_membership")
+sms_configuration_membership_module = import_module("rdmo_sensorsearch.backends.sms.membership")
 
 # Other unit-test modules can import Django before this isolated module is
 # collected. Keep these tests independent from Django's global LazySettings in
@@ -88,7 +72,7 @@ def test_catalog_handler_registry_builds_without_signal_import_cycle(monkeypatch
 
 
 def test_handler_builds_authoritative_values_for_its_complete_ownership():
-    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
+    handler = make_sms_device_handler(
         attribute_mapping={
             "data.attributes.name": "attribute:name",
             "included[].attributes.unit": "attribute:units",
@@ -111,7 +95,7 @@ def test_handler_builds_authoritative_values_for_its_complete_ownership():
 
 
 def test_handler_authoritative_values_honor_scope_exclusions():
-    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
+    handler = make_sms_device_handler(
         attribute_mapping={"data.attributes.name": "attribute:name"},
         managed_attribute_uris=["attribute:scoped"],
         base_url="https://sms.example/api",
@@ -209,7 +193,7 @@ def test_o2a_device_refresh_fails_when_an_auxiliary_request_fails(monkeypatch):
     monkeypatch.setattr(o2a_item_handler_module, "fetch_json", lambda url: next(responses))
     handler = o2a_item_handler_module.O2ARegistryItemHandler(attribute_mapping={})
 
-    result = handler.handle("42")
+    result = handler.handle("42", context=contracts.HandlerExecutionContext())
 
     assert result == {"errors": ["O2A contacts request for item 42 failed: contacts unavailable"]}
 
@@ -221,15 +205,227 @@ def test_sms_device_refresh_fails_when_contact_request_fails(monkeypatch):
             {"errors": ["contacts unavailable"]},
         )
     )
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", lambda url, auth_token=None: next(responses))
-    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
+    handler = make_sms_device_handler(
         attribute_mapping={},
         base_url="https://sms.example/api",
     )
 
-    result = handler.handle("7")
+    result = handler.handle("7", context=contracts.HandlerExecutionContext())
 
     assert result == {"errors": ["contacts unavailable"]}
+
+
+def _owner_role(contact_id, *, role_id="role-1", role_name="Owner"):
+    return {
+        "type": "device_contact_role",
+        "id": role_id,
+        "attributes": {"role_name": role_name},
+        "relationships": {"contact": {"data": {"type": "contact", "id": contact_id}}},
+    }
+
+
+def _owner_contact(contact_id, organization, *, resource_type="contact"):
+    return {
+        "type": resource_type,
+        "id": contact_id,
+        "attributes": {"organization": organization, "family_name": contact_id, "given_name": "Person"},
+    }
+
+
+def _sms_owner_handler():
+    return make_sms_device_handler(
+        attribute_mapping={
+            "sms_owner_organizations": "attribute:owner",
+            "included[?type==`contact`].attributes.family_name": "attribute:responsible",
+        },
+        id_prefix="example-sms",
+        base_url="https://sms.example/backend/api/v1",
+    )
+
+
+def test_sms_owner_relationship_join_preserves_other_contact_mappings(monkeypatch):
+    roles = [_owner_role("2"), _owner_role("1", role_id="role-2", role_name="PI")]
+    contacts = [_owner_contact("1", "Not owner"), _owner_contact("2", "Wrong type", resource_type="device")]
+    contacts.extend([_owner_contact("unrelated", "Unrelated"), _owner_contact("2", " Owner institute ")])
+    responses = iter([{"data": {"id": "42"}}, {"data": roles, "included": contacts}])
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
+
+    result = _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext())
+
+    assert result.mapped_values["attribute:owner"] == contracts.AuthoritativeTextScalar(("Owner institute",))
+    assert result.mapped_values["attribute:responsible"] == ["1", "unrelated", "2"]
+    assert result.notices == ()
+
+
+def test_sms_owner_names_are_trimmed_deduplicated_and_kept_in_role_order():
+    payload = {
+        "data": [_owner_role(str(i), role_id=str(i)) for i in range(6)],
+        "included": [
+            _owner_contact("5", None),
+            _owner_contact("4", "  "),
+            _owner_contact("3", "Institute A"),
+            _owner_contact("2", "Institute B"),
+            _owner_contact("1", " Institute A "),
+            {"type": "contact", "id": "0", "attributes": {}},
+        ],
+    }
+
+    assert sms_device_backend.extract_owner_organizations(payload) == (("Institute A", "Institute B"), ())
+
+
+@pytest.mark.parametrize("reference", [None, {}, {"type": "device", "id": "1"}, {"type": "contact", "id": "absent"}])
+def test_sms_unresolved_owner_contacts_return_nonfatal_notices(reference):
+    role = _owner_role("1")
+    role["relationships"]["contact"]["data"] = reference
+
+    names, notices = sms_device_backend.extract_owner_organizations(
+        {"data": [role], "included": [_owner_contact("1", "Institute")]},
+        "example-sms:42",
+    )
+
+    assert names == ()
+    assert notices[0].code == "owner_contact_unresolved"
+    assert notices[0].external_id == "example-sms:42"
+
+
+@pytest.mark.parametrize(
+    ("next_link", "expected_next_url"),
+    [
+        ("/backend/api/v1/roles?page[number]=2", "https://sms.example/backend/api/v1/roles?page[number]=2"),
+        (
+            "?include=contact&page[number]=2",
+            "https://sms.example/backend/api/v1/devices/42/device-contact-roles?include=contact&page[number]=2",
+        ),
+    ],
+)
+def test_sms_owner_pagination_joins_contacts_across_pages_and_reuses_authentication(
+    monkeypatch,
+    next_link,
+    expected_next_url,
+):
+    requests = []
+    responses = iter(
+        [
+            {"data": {"id": "42"}},
+            {"data": [_owner_role("1")], "links": {"next": next_link}},
+            {
+                "data": [_owner_role("2", role_id="role-2")],
+                "included": [
+                    _owner_contact("2", "Institute B"),
+                    _owner_contact("1", "Institute A"),
+                ],
+            },
+        ]
+    )
+
+    def fetch(url, auth_token=None):
+        requests.append((url, auth_token))
+        return next(responses)
+
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
+    result = _sms_owner_handler().handle("42", auth_token="test-token", context=contracts.HandlerExecutionContext())
+
+    assert result.mapped_values["attribute:owner"] == contracts.AuthoritativeTextScalar(("Institute A", "Institute B"))
+    assert requests == [
+        ("https://sms.example/backend/api/v1/devices/42?include=device_properties", "test-token"),
+        (
+            "https://sms.example/backend/api/v1/devices/42/device-contact-roles?include=contact&page[size]=100&page[number]=1",
+            "test-token",
+        ),
+        (expected_next_url, "test-token"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        None,
+        {},
+        {"data": {}},
+        {"data": [None]},
+        {"data": [], "included": {}},
+        {"data": [], "included": [{"type": "contact", "id": "1", "attributes": None}]},
+    ],
+)
+def test_sms_malformed_contact_pages_fail_instead_of_returning_authoritative_metadata(monkeypatch, payload):
+    responses = iter([{"data": {"id": "42"}}, payload])
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
+
+    assert "errors" in _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext())
+
+
+def test_sms_no_owner_returns_an_explicit_clearing_scalar(monkeypatch):
+    responses = iter([{"data": {"id": "42"}}, {"data": []}])
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
+
+    assert (
+        _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()).mapped_values["attribute:owner"]
+        == contracts.AuthoritativeTextScalar()
+    )
+
+
+def test_sms_contact_pagination_failure_discards_partial_results(monkeypatch):
+    responses = iter(
+        [
+            {"data": {"id": "42"}},
+            {"data": [_owner_role("1")], "included": [_owner_contact("1", "Institute")], "links": {"next": "roles?page=2"}},
+            {"errors": ["second page unavailable"]},
+        ]
+    )
+    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
+
+    assert _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()) == {
+        "errors": ["second page unavailable"]
+    }
+
+
+def test_sms_owner_contact_missing_relationship_preserves_other_resolved_owners():
+    missing = _owner_role("missing")
+    missing.pop("relationships")
+    names, notices = sms_device_backend.extract_owner_organizations(
+        {
+            "data": [missing, _owner_role("1", role_id="role-2")],
+            "included": [_owner_contact("1", "Institute")],
+        }
+    )
+
+    assert names == ("Institute",)
+    assert len(notices) == 1 and notices[0].code == "owner_contact_unresolved"
+
+
+@pytest.mark.parametrize("next_link", ["https://other.example/contacts", "roles?page=1"])
+def test_sms_contact_pagination_rejects_other_backends_and_repeated_pages(monkeypatch, next_link):
+    calls = []
+
+    def fetch(url, auth_token=None):
+        calls.append(url)
+        if "/devices/42?" in url:
+            return {"data": {"id": "42"}}
+        return {"data": [_owner_role("1")], "links": {"next": next_link}}
+
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
+
+    assert "errors" in _sms_owner_handler().handle("42", auth_token="test-token", context=contracts.HandlerExecutionContext())
+    assert all(url.startswith("https://sms.example/") for url in calls)
+    assert len(calls) <= 3
+
+
+def test_sms_contact_pagination_limit_discards_incomplete_results(monkeypatch):
+    pages = []
+
+    def fetch(url, auth_token=None):
+        if "/devices/42?" in url:
+            return {"data": {"id": "42"}}
+        pages.append(url)
+        return {"data": [_owner_role("1", role_id=str(len(pages)))], "links": {"next": "roles?page=next"}}
+
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
+
+    assert _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()) == {
+        "errors": ["SMS contact roles collection pagination exceeded 100 pages."]
+    }
+    assert len(pages) == 100
 
 
 def test_sms_device_refresh_maps_station_height_depth_and_site(monkeypatch):
@@ -274,19 +470,14 @@ def test_sms_device_refresh_maps_station_height_depth_and_site(monkeypatch):
             }
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(sms_device_handler_module, "fetch_json", fetch_json)
-    handler = sms_device_handler_module.SensorManagementSystemDeviceHandler(
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch_json)
+    handler = make_sms_device_handler(
         attribute_mapping={},
         base_url="https://sms.example/api",
     )
-    monkeypatch.setattr(
-        handler,
-        "_resolve_configuration_external_id",
-        lambda instance: "kitcfg:27",
-    )
     mapped_values = {}
 
-    errors = handler._set_mount_metadata(mapped_values, "607", instance=object())
+    errors = handler._set_mount_metadata(mapped_values, "607", configuration_external_id="kitcfg:27")
 
     assert errors == []
     assert mapped_values[sms_device_handler_module.INSTRUMENT_START_ATTRIBUTE_URI] == "2020-08-25 12:00"
@@ -311,47 +502,36 @@ def test_sms_configuration_collection_fetches_every_page(monkeypatch):
             "included": [{"type": "device", "id": "11"}],
         }
 
-    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch_json)
+    handler = make_sms_configuration_handler(
         attribute_mapping={},
         base_url="https://sms.example/api",
     )
 
-    result = handler._fetch_jsonapi_collection(
-        handler.device_mount_actions_url,
+    result = handler.backend._configuration._collection(
+        handler.backend._configuration.settings.device_mount_actions_url,
         "49",
         page_size=2,
+        auth_token=None,
     )
 
-    assert [item["id"] for item in result["data"]] == ["1", "2", "3"]
-    assert [item["id"] for item in result["included"]] == ["10", "11"]
+    assert [item["id"] for item in result.value["data"]] == ["1", "2", "3"]
+    assert [item["id"] for item in result.value["included"]] == ["10", "11"]
     assert len(requested_urls) == 2
 
 
 def test_sms_configuration_member_uses_compact_configuration_label():
-    resolver = sms_configuration_membership_module.SMSConfigurationMembershipResolver(
-        configuration_id_prefix="kitcfg",
-        device_id_prefix="kitsms",
-        device_text_prefix="KIT Sensor",
-        fetch_device=lambda _device_id: (None, []),
-        fetch_mount_action=lambda _action_id: (None, []),
+    handler = make_sms_configuration_handler(
+        attribute_mapping={}, id_prefix="kitcfg", device_id_prefix="kitsms", device_text_prefix="KIT Sensor"
     )
-
-    assert (
-        resolver.format_device_text(
-            configuration_id="49",
-            device_id="327",
-            attributes={
-                "long_name": "SMT100",
-                "serial_number": "SMTEB23",
-            },
-        )
-        == "KIT Cfg(49) KIT Sensor(327): SMT100 (s/n: SMTEB23)"
+    member = contracts.ConfigurationMember(
+        "327", {"long_name": "SMT100", "serial_number": "SMTEB23"}, None, None, contracts.MountLocation()
     )
+    assert handler._member_value(member, "49")["text"] == "KIT Cfg(49) KIT Sensor(327): SMT100 (s/n: SMTEB23)"
 
 
 def test_sms_configuration_member_includes_derived_vertical_location():
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
+    handler = make_sms_configuration_handler(
         attribute_mapping={},
         id_prefix="kitcfg",
         device_id_prefix="kitsms",
@@ -386,7 +566,8 @@ def test_sms_configuration_member_includes_derived_vertical_location():
         },
     }
 
-    values, errors = handler._build_selected_device_values(
+    values, errors = resolve_member_values(
+        handler,
         configuration_data={"data": {"id": "49"}},
         mount_action_data={
             "data": [device_action],
@@ -472,7 +653,7 @@ def test_configuration_period_validation_fails_closed():
 
 
 def test_sms_configuration_range_selects_latest_mount_and_location_within_range():
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
+    handler = make_sms_configuration_handler(
         attribute_mapping={},
         id_prefix="kitcfg",
         device_id_prefix="kitsms",
@@ -522,7 +703,8 @@ def test_sms_configuration_range_selects_latest_mount_and_location_within_range(
     )
     assert error is None
 
-    values, errors = handler._build_selected_device_values(
+    values, errors = resolve_member_values(
+        handler,
         configuration_data={"data": {"id": "49"}},
         mount_action_data={
             "data": [older_mount, latest_mount, future_mount],
@@ -594,15 +776,15 @@ def test_sms_configuration_refresh_aborts_when_a_member_cannot_be_resolved(monke
             return {"errors": ["device unavailable"]}
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch_json)
+    handler = make_sms_configuration_handler(
         attribute_mapping={},
         base_url="https://sms.example/api",
         selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
     )
 
-    result = handler.handle("49")
+    result = handler.handle("49", context=contracts.HandlerExecutionContext())
 
     assert result == {"errors": ["SMS device request for mounted device 327 failed: device unavailable"]}
 
@@ -626,8 +808,8 @@ def test_sms_configuration_refresh_can_preserve_the_current_device_set(monkeypat
             }
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch_json)
+    handler = make_sms_configuration_handler(
         attribute_mapping={
             "data.attributes.description": "configuration:description",
             "data.attributes.start_date": "configuration:start",
@@ -640,10 +822,10 @@ def test_sms_configuration_refresh_can_preserve_the_current_device_set(monkeypat
 
     result = handler.handle(
         "49",
-        context=handler_base.HandlerExecutionContext(preserve_existing_collections=True),
+        context=contracts.HandlerExecutionContext(preserve_existing_collections=True),
     )
 
-    assert result == handler_base.HandlerResult(
+    assert result == contracts.HandlerResult(
         mapped_values={
             "configuration:description": "Updated",
             "configuration:start": "2020-01-01 00:00",
@@ -671,20 +853,20 @@ def test_sms_configuration_selection_syncs_immediately_without_a_membership_filt
             return {"data": [], "included": []}
         raise AssertionError(f"Unexpected request: {url}")
 
-    monkeypatch.setattr(sms_configuration_handler_module, "fetch_json", fetch_json)
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
+    monkeypatch.setattr(backend_assembly, "fetch_json", fetch_json)
+    handler = make_sms_configuration_handler(
         attribute_mapping={"data.attributes.description": "configuration:description"},
         base_url="https://sms.example/api",
         selected_devices_attribute_uri="selected-devices",
         selected_devices_page_uri="device-page",
     )
 
-    result = handler.handle("49")
+    result = handler.handle("49", context=contracts.HandlerExecutionContext())
 
-    assert result == handler_base.HandlerResult(
+    assert result == contracts.HandlerResult(
         mapped_values={"configuration:description": "Configuration"},
         collections=(
-            handler_base.CollectionAssignment(
+            contracts.CollectionAssignment(
                 attribute_uri="selected-devices",
                 page_uri="device-page",
                 values=(),
@@ -696,16 +878,11 @@ def test_sms_configuration_selection_syncs_immediately_without_a_membership_filt
 
 def test_sms_membership_filter_fails_closed_when_the_period_is_invalid(monkeypatch):
     monkeypatch.setattr(
-        sms_configuration_handler_module,
+        backend_assembly,
         "fetch_json",
         lambda url, auth_token=None: {"data": {"id": "49", "attributes": {}, "links": {}}},
     )
-    monkeypatch.setattr(
-        sms_configuration_handler_module,
-        "read_configuration_period",
-        lambda instance, start_uri, end_uri: (None, "The end date must not be earlier than the start date."),
-    )
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
+    handler = make_sms_configuration_handler(
         attribute_mapping={},
         base_url="https://sms.example/api",
         selected_devices_attribute_uri="selected-devices",
@@ -717,20 +894,19 @@ def test_sms_membership_filter_fails_closed_when_the_period_is_invalid(monkeypat
 
     result = handler.handle(
         "49",
-        instance=SimpleNamespace(),
-        context=handler_base.HandlerExecutionContext(require_configuration_period=True),
+        context=contracts.HandlerExecutionContext(require_configuration_period=True),
     )
 
-    assert result == {"errors": ["The end date must not be earlier than the start date."]}
+    assert result == {"errors": ["A validated configuration period is required for SMS membership filtering."]}
 
 
 def test_sms_membership_filter_action_requires_explicit_enablement(monkeypatch):
     monkeypatch.setattr(
-        sms_configuration_handler_module,
+        backend_assembly,
         "fetch_json",
         lambda url, auth_token=None: {"data": {"id": "49", "attributes": {}, "links": {}}},
     )
-    handler = sms_configuration_handler_module.SensorManagementSystemConfigurationHandler(
+    handler = make_sms_configuration_handler(
         attribute_mapping={},
         base_url="https://sms.example/api",
         selected_devices_attribute_uri="selected-devices",
@@ -739,8 +915,7 @@ def test_sms_membership_filter_action_requires_explicit_enablement(monkeypatch):
 
     result = handler.handle(
         "49",
-        instance=SimpleNamespace(),
-        context=handler_base.HandlerExecutionContext(require_configuration_period=True),
+        context=contracts.HandlerExecutionContext(require_configuration_period=True),
     )
 
     assert result == {"errors": ["SMS membership filtering is not enabled for this catalog."]}
@@ -802,7 +977,7 @@ def test_o2a_mission_refresh_aborts_when_a_member_cannot_be_resolved(monkeypatch
         selected_devices_page_uri="device-page",
     )
 
-    result = handler.handle("30")
+    result = handler.handle("30", context=contracts.HandlerExecutionContext())
 
     assert result == {"errors": ["O2A item request for mission item 4152 failed: item unavailable"]}
 
@@ -833,10 +1008,10 @@ def test_o2a_mission_refresh_can_preserve_the_current_device_set(monkeypatch):
 
     result = handler.handle(
         "30",
-        context=handler_base.HandlerExecutionContext(preserve_existing_collections=True),
+        context=contracts.HandlerExecutionContext(preserve_existing_collections=True),
     )
 
-    assert result == handler_base.HandlerResult(
+    assert result == contracts.HandlerResult(
         mapped_values={
             "configuration:name": "Updated mission",
             "configuration:start": "2020-01-01 00:00",
@@ -864,12 +1039,12 @@ def test_o2a_mission_selection_syncs_immediately(monkeypatch):
         selected_devices_page_uri="device-page",
     )
 
-    result = handler.handle("30")
+    result = handler.handle("30", context=contracts.HandlerExecutionContext())
 
-    assert result == handler_base.HandlerResult(
+    assert result == contracts.HandlerResult(
         mapped_values={"configuration:name": "Mission"},
         collections=(
-            handler_base.CollectionAssignment(
+            contracts.CollectionAssignment(
                 attribute_uri="selected-devices",
                 page_uri="device-page",
                 values=(),
@@ -903,7 +1078,7 @@ def test_o2a_mission_items_inherit_the_backend_mission_period(monkeypatch):
         selected_devices_page_uri="device-page",
     )
 
-    result = handler.handle("30")
+    result = handler.handle("30", context=contracts.HandlerExecutionContext())
 
     member = result.collections[0].values[0]
     assert member["instrument_start"] == "2026-07-01 10:00"
@@ -924,8 +1099,7 @@ def test_o2a_mission_rejects_historical_membership_filtering(monkeypatch):
 
     result = handler.handle(
         "30",
-        instance=SimpleNamespace(),
-        context=handler_base.HandlerExecutionContext(require_configuration_period=True),
+        context=contracts.HandlerExecutionContext(require_configuration_period=True),
     )
 
     assert result == {"errors": ["O2A Registry does not support historical mission-membership filtering."]}
@@ -940,7 +1114,6 @@ def test_o2a_mission_exposes_the_backend_period_for_preserved_devices():
     )
 
     period = handler.get_member_device_period(
-        None,
         {
             "configuration:start": "2026-07-01 10:00",
             "configuration:end": "2026-07-02 12:00",
@@ -948,3 +1121,61 @@ def test_o2a_mission_exposes_the_backend_period_for_preserved_devices():
     )
 
     assert period == ("2026-07-01 10:00", "2026-07-02 12:00")
+
+
+@pytest.mark.parametrize("backend", ("sms", "o2a"))
+@pytest.mark.parametrize("member_values", ([], [{"text": "Sensor", "external_id": "sensor:1", "instrument_start": "2026-01-01"}]))
+def test_configuration_handlers_describe_device_effects_without_interview_models(monkeypatch, backend, member_values):
+    module = sms_configuration_handler_module if backend == "sms" else o2a_mission_handler_module
+    handler_class = make_sms_configuration_handler if backend == "sms" else module.O2ARegistryMissionHandler
+    monkeypatch.setattr(
+        backend_assembly if backend == "sms" else module,
+        "fetch_json",
+        lambda *args, **kwargs: {"data": {"id": "1"}, "name": "Mission"},
+    )
+    handler = handler_class(
+        attribute_mapping={},
+        id_prefix="configuration",
+        base_url="https://backend.example",
+        selected_devices_attribute_uri="selected",
+        selected_devices_page_uri="page",
+        device_collection_attribute_uri="root",
+    )
+    if backend == "sms":
+        members = tuple(
+            contracts.ConfigurationMember(
+                value["external_id"].split(":", 1)[1],
+                {"long_name": value["text"]},
+                value.get("instrument_start"),
+                None,
+                contracts.MountLocation(),
+            )
+            for value in member_values
+        )
+        handler.device_id_prefix = "sensor"
+        monkeypatch.setattr(
+            handler.backend,
+            "get_configuration_members",
+            lambda *args, **kwargs: contracts.BackendSuccess(contracts.ConfigurationMembership(members)),
+        )
+    else:
+        monkeypatch.setattr(handler, "_fetch_mission_items", lambda *args, **kwargs: {"records": []})
+    if backend != "sms":
+        monkeypatch.setattr(handler, "_build_selected_device_values", lambda **kwargs: (member_values, []))
+    result = handler.handle("1", context=contracts.HandlerExecutionContext())
+    if backend != "sms":
+        assert result.collections[0].values == tuple(member_values)
+    else:
+        assert len(result.collections[0].values) == len(member_values)
+    assert len(result.effects) == 1
+    effect = result.effects[0]
+    assert isinstance(effect, contracts.RefreshDeviceDetails)
+    assert (effect.selected_devices_attribute_uri, effect.device_collection_attribute_uri) == ("selected", "root")
+    assert tuple(device.external_id for device in effect.selected_devices) == tuple(
+        value["external_id"] for value in member_values
+    )
+    if member_values:
+        assert effect.selected_devices[0].instrument_start == "2026-01-01"
+        assert effect.selected_devices[0].mount_location_resolved == (backend == "sms")
+    preserved = handler.handle("1", context=contracts.HandlerExecutionContext(preserve_existing_collections=True))
+    assert preserved.collections == preserved.effects == ()

@@ -181,6 +181,7 @@ Device parameter elements are:
 | Instrument location AMSL | `https://rdmo.nfdi4earth.de/terms/questions/instrument_location_above-sealevel` | `https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/height` |
 | Height/depth relative to surface | `https://rdmo.nfdi4earth.de/terms/questions/instrument_location_above-ground` | `https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/geo_location/depth` |
 | Site name | `https://rdmo.nfdi4earth.de/terms/questions/instrument_location-name` | `https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/processing/location` |
+| Owner institution | `https://rdmo.nfdi4earth.de/terms/questions/instrument_owner` | `https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner` |
 
 These three fields can be enriched for SMS devices from static-location and
 device/platform mount actions. The AMSL value is the resolved static-location
@@ -201,6 +202,20 @@ also inspect `/devices/{id}/device-mount-actions` when refreshing an already
 materialized device. An exact static-location interval is preferred; the
 optional bounded end-time tolerance and incomplete-chain policy are documented
 under [SMS location, height, and depth](operations-and-limitations.md#sms-location-height-and-depth).
+
+Site-name resolution requires the device's configuration and mount-time
+context. A standalone device selection does not borrow a site from another
+configuration. If a deployment leaves question 2.4.4 empty, compare its plugin
+version, attribute URI, selected configuration, mount actions, and matching
+static-location label before changing the resolver.
+
+Question 2.4.6 uses `select_creatable` with `value_type=option` and the existing
+ROR provider, accepting both ROR suggestions and imported SMS organisation
+names. SMS Owner roles are joined to their included contacts; distinct
+organisation names merge into the existing answer using `; `. Manually
+entered and historical names are retained until edited, even if SMS removes
+them. See the [SMS device mapping](configuration-reference.md#sensormanagementsystemdevicehandler)
+for refresh and identifier handling.
 
 The further-information location question set and coordinates are:
 

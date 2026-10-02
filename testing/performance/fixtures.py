@@ -6,13 +6,13 @@ from rdmo.domain.models import Attribute
 from rdmo.projects.models import Project, Value
 from rdmo.questions.models import Catalog, Page, Question, Section
 
+from rdmo_sensorsearch.contracts import SelectedDevice
 from rdmo_sensorsearch.naming import device_detail_tab_label
 from rdmo_sensorsearch.persistence.data_collection_variables import (
     DataCollectionVariableAttributes,
     RDMODataCollectionVariableStore,
 )
 from rdmo_sensorsearch.persistence.device_details import RDMODeviceDetailStore
-from rdmo_sensorsearch.services.device_details import SelectedDevice
 
 
 def make_workload(count, *, prefix=""):

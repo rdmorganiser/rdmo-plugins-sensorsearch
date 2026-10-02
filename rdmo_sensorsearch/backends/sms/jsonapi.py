@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
 from urllib.parse import urljoin
 
-JSONFetcher = Callable[[str], Any]
+from rdmo_sensorsearch.contracts import BackendFailure, BackendResult, BackendSuccess
+
+JSONFetcher = Callable[[str], BackendResult[object]]
 
 
 def fetch_paginated_jsonapi_collection(
@@ -17,7 +18,7 @@ def fetch_paginated_jsonapi_collection(
     fetch_page: JSONFetcher,
     error_label: str = "JSON:API",
     next_link_base_url: str | None = None,
-) -> dict:
+) -> BackendResult[dict]:
     """Fetch and combine a bounded JSON:API collection."""
 
     data: list[dict] = []
@@ -34,25 +35,26 @@ def fetch_paginated_jsonapi_collection(
 
     while next_url and pages_fetched < max_pages:
         pages_fetched += 1
-        payload = fetch_page(next_url)
-        if isinstance(payload, dict) and "errors" in payload:
-            return payload
+        response = fetch_page(next_url)
+        if isinstance(response, BackendFailure):
+            return response
+        payload = response.value
         if not isinstance(payload, dict):
-            return {"errors": [f"Unexpected {error_label} collection payload: {type(payload).__name__}"]}
+            return BackendFailure((f"Unexpected {error_label} collection payload: {type(payload).__name__}",))
 
         page_data = payload.get("data", [])
         if not isinstance(page_data, list):
-            return {"errors": [f"Unexpected {error_label} collection data: {type(page_data).__name__}"]}
+            return BackendFailure((f"Unexpected {error_label} collection data: {type(page_data).__name__}",))
 
         signature = tuple((item.get("type"), item.get("id")) for item in page_data)
         if page_data and signature in seen_pages:
-            return {"errors": [f"{error_label} collection pagination returned the same page more than once."]}
+            return BackendFailure((f"{error_label} collection pagination returned the same page more than once.",))
         seen_pages.add(signature)
         data.extend(page_data)
 
         page_included = payload.get("included", [])
         if not isinstance(page_included, list):
-            return {"errors": [f"Unexpected {error_label} included data: {type(page_included).__name__}"]}
+            return BackendFailure((f"Unexpected {error_label} included data: {type(page_included).__name__}",))
         for item in page_included:
             included[(item.get("type"), item.get("id"))] = item
 
@@ -74,5 +76,5 @@ def fetch_paginated_jsonapi_collection(
             next_url = None
 
     if next_url:
-        return {"errors": [f"{error_label} collection pagination exceeded {max_pages} pages."]}
-    return {"data": data, "included": list(included.values())}
+        return BackendFailure((f"{error_label} collection pagination exceeded {max_pages} pages.",))
+    return BackendSuccess({"data": data, "included": list(included.values())})

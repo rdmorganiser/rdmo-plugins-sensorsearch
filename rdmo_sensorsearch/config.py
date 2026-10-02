@@ -122,7 +122,7 @@ def load_config_model() -> PluginConfig:
             logger.debug(
                 "Loaded sensor search configuration from %s with top-level keys: %s",
                 config_file_path,
-                sorted(plugin_config.raw.keys()),
+                sorted(raw_config.keys()),
             )
             return plugin_config
     except (FileNotFoundError, PermissionError) as e:
@@ -134,11 +134,6 @@ def load_config_model() -> PluginConfig:
     except ConfigValidationError:
         logger.exception("Invalid sensor search configuration: %s", config_file_path)
         raise
-
-
-def load_config() -> Mapping[str, Any]:
-    """Return the validated configuration through its read-only mapping view."""
-    return load_config_model().raw
 
 
 def clear_config_cache() -> None:

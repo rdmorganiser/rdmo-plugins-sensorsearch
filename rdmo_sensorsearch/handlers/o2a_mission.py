@@ -1,22 +1,19 @@
 import logging
 from collections import defaultdict
 from datetime import timezone as dt_timezone
-from functools import partial
 from urllib.parse import urlsplit
 
-from django.utils import timezone as django_timezone
-
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.base import (
-    BackendRecordHandler,
+from rdmo_sensorsearch.contracts import (
     CollectionAssignment,
     HandlerExecutionContext,
     HandlerResult,
+    RefreshDeviceDetails,
+    SelectedDevice,
 )
+from rdmo_sensorsearch.handlers.base import BackendRecordHandler
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping, parse_datetime
 from rdmo_sensorsearch.naming import configuration_short_label
-from rdmo_sensorsearch.services.device_details import SelectedDevice
-from rdmo_sensorsearch.workflows.device_details import reconcile_device_details_from_selected_devices
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +47,9 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
     def handle(
         self,
         backend_id: str,
-        instance=None,
-        context: HandlerExecutionContext | None = None,
+        *,
+        context: HandlerExecutionContext,
+        auth_token: str | None = None,
     ) -> dict | HandlerResult:
         mission_data = fetch_json(self.mission_url.format(base_url=self.base_url, id=backend_id))
         if isinstance(mission_data, dict) and "errors" in mission_data:
@@ -68,7 +66,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         self._normalize_datetimes(mapped_values)
 
         collections = []
-        post_actions = []
+        effects = []
         selected_devices_attribute_uri = getattr(self, "selected_devices_attribute_uri", None)
         preserve_existing_collections = bool(context and context.preserve_existing_collections)
         require_configuration_period = bool(context and context.require_configuration_period)
@@ -108,7 +106,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         )
 
         device_collection_attribute_uri = getattr(self, "device_collection_attribute_uri", None)
-        if instance is not None and device_collection_attribute_uri:
+        if device_collection_attribute_uri:
             selected_devices = [
                 SelectedDevice(
                     text=value["text"],
@@ -119,26 +117,18 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
                 for value in selected_device_values
                 if value.get("external_id")
             ]
-            post_actions.append(
-                partial(
-                    reconcile_device_details_from_selected_devices,
-                    project=instance.project,
-                    catalog=instance.project.catalog,
-                    scope_prefix=instance.set_prefix,
-                    source_set_index=instance.set_index,
-                    selected_devices=selected_devices,
+            effects.append(
+                RefreshDeviceDetails(
+                    selected_devices=tuple(selected_devices),
                     selected_devices_attribute_uri=selected_devices_attribute_uri,
                     device_collection_attribute_uri=device_collection_attribute_uri,
-                    configuration_search_attribute_uri=instance.attribute.uri,
-                    configuration_external_id=instance.external_id,
-                    force_refresh=True,
                 )
             )
 
         return HandlerResult(
             mapped_values=mapped_values,
             collections=tuple(collections),
-            post_actions=tuple(post_actions),
+            effects=tuple(effects),
         )
 
     def _set_mission_links(self, mapped_values: dict[str, str | None], mission_id: str) -> None:
@@ -172,7 +162,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
             if formatted is not None:
                 mapped_values[attribute_uri] = formatted
 
-    def get_member_device_period(self, _instance, mapped_values=None) -> tuple[str | None, str | None]:
+    def get_member_device_period(self, mapped_values=None) -> tuple[str | None, str | None]:
         mapped_values = mapped_values or {}
         start_attribute_uri = self.attribute_mapping.get(self.mission_start_date_path)
         end_attribute_uri = self.attribute_mapping.get(self.mission_end_date_path)
@@ -301,8 +291,8 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         parsed = parse_datetime(value) if isinstance(value, str) and value else None
         if parsed is None:
             return None
-        if django_timezone.is_aware(parsed):
+        if parsed.tzinfo is not None:
             utc_value = parsed.astimezone(dt_timezone.utc)
         else:
-            utc_value = django_timezone.make_aware(parsed, dt_timezone.utc)
+            utc_value = parsed.replace(tzinfo=dt_timezone.utc)
         return utc_value.strftime(self.datetime_output_format)
