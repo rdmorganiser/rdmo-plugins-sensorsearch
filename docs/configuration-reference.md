@@ -332,16 +332,21 @@ next-page link. Relative next-page links resolve against the contact endpoint.
 "sms_owner_organizations" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner"
 ```
 
-This exact mapping key opts its configured target into scalar name merging,
-rather than the normal array-to-collection behavior. Use a single optional
+This exact mapping key opts its configured target into backend-authoritative
+scalar synchronization, rather than the normal array-to-collection behavior.
+Use a single optional
 `select_creatable` question with `value_type=option` and provider `ror` for the
-target. Existing names are retained first, with new names appended using `; `.
-Semicolons delimit names; matching is exact after trimming, without fuzzy
-institution matching. A successful response without usable Owner names
-preserves the answer. Failed or malformed contact requests do not persist
+target. A successful metadata refresh replaces the complete current Owner
+answer with the distinct SMS Owner organizations, joined using `; ` in backend
+role order. Each organization name is trimmed and treated as one atomic name;
+embedded semicolons are preserved. Matching is exact after trimming, without
+fuzzy institution matching. A successful response without usable Owner names
+clears the answer. Failed or malformed contact requests do not persist
 device metadata; unresolved Owner contact references produce nonfatal feedback.
-When a merge changes the answer, its ROR identifier and option are cleared,
-and the result is stored as free text. Unchanged ROR answers remain intact.
+Backend text is stored as free text with `value_type=option`. Its previous ROR
+identifier and option are cleared even when the visible organization name
+already matches, because SMS supplies organization names rather than ROR IDs.
+Snapshot answers remain unchanged.
 Normal selection clearing and device-block deletion still clear managed data.
 
 Update both exact and wildcard catalog profiles if they share this field, then

@@ -253,7 +253,7 @@ def test_sms_owner_relationship_join_preserves_other_contact_mappings(monkeypatc
 
     result = _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext())
 
-    assert result.mapped_values["attribute:owner"] == contracts.MergedTextScalar(("Owner institute",))
+    assert result.mapped_values["attribute:owner"] == contracts.AuthoritativeTextScalar(("Owner institute",))
     assert result.mapped_values["attribute:responsible"] == ["1", "unrelated", "2"]
     assert result.notices == ()
 
@@ -326,7 +326,7 @@ def test_sms_owner_pagination_joins_contacts_across_pages_and_reuses_authenticat
     monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
     result = _sms_owner_handler().handle("42", auth_token="test-token", context=contracts.HandlerExecutionContext())
 
-    assert result.mapped_values["attribute:owner"] == contracts.MergedTextScalar(("Institute A", "Institute B"))
+    assert result.mapped_values["attribute:owner"] == contracts.AuthoritativeTextScalar(("Institute A", "Institute B"))
     assert requests == [
         ("https://sms.example/backend/api/v1/devices/42?include=device_properties", "test-token"),
         (
@@ -355,13 +355,13 @@ def test_sms_malformed_contact_pages_fail_instead_of_returning_authoritative_met
     assert "errors" in _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext())
 
 
-def test_sms_no_owner_returns_an_explicit_preserving_scalar(monkeypatch):
+def test_sms_no_owner_returns_an_explicit_clearing_scalar(monkeypatch):
     responses = iter([{"data": {"id": "42"}}, {"data": []}])
     monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
 
     assert (
         _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()).mapped_values["attribute:owner"]
-        == contracts.MergedTextScalar()
+        == contracts.AuthoritativeTextScalar()
     )
 
 

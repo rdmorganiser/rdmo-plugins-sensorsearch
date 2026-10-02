@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from rdmo_sensorsearch.contracts import (
+    AuthoritativeTextScalar,
     BackendFailure,
     BackendSuccess,
     ConfigurationMember,
@@ -14,7 +15,6 @@ from rdmo_sensorsearch.contracts import (
     DeviceMetadata,
     HandlerExecutionContext,
     HandlerResult,
-    MergedTextScalar,
     MountLocation,
     RefreshNotice,
     SelectedDevice,
@@ -48,7 +48,7 @@ def test_device_handler_maps_injected_metadata_and_binds_notices_without_http():
     )
     result = handler.handle("1", context=HandlerExecutionContext(), auth_token="token")
     assert calls == [("1", "token")]
-    assert result.mapped_values["name"] == "Sensor" and result.mapped_values["owner"] == MergedTextScalar(("Institute",))
+    assert result.mapped_values["name"] == "Sensor" and result.mapped_values["owner"] == AuthoritativeTextScalar(("Institute",))
     assert result.notices == (RefreshNotice("owner_contact_unresolved", "dev:1"),)
 
 

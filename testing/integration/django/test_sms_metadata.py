@@ -11,8 +11,9 @@ from rdmo.projects.models import Project, Snapshot, Value
 from rdmo.questions.models import Question
 
 from rdmo_sensorsearch import backend_assembly
-from rdmo_sensorsearch.contracts import SelectedDevice
+from rdmo_sensorsearch.contracts import AuthoritativeTextScalar, SelectedDevice
 from rdmo_sensorsearch.handlers.catalog_registry import clear_handler_registry
+from rdmo_sensorsearch.persistence import value_reconciliation
 from rdmo_sensorsearch.persistence.value_reconciliation import apply_mapped_values
 from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
 from rdmo_sensorsearch.services.refresh import RefreshAction, RefreshKind
@@ -141,53 +142,77 @@ def test_initial_device_sync_populates_owner_and_actual_catalog_site(sms_project
     assert all(token == "test-token" for _, token in sms_project.requests)
 
 
-def test_refresh_merges_manual_and_historical_names_and_is_idempotent(sms_project):
+def test_refresh_replaces_manual_and_previous_backend_names_and_is_idempotent(sms_project):
     project = sms_project.project
     source = _device_source(project)
-    _insert(project, OWNER_URI, text="Manual institute", external_id="https://ror.org/example", value_type="option")
+    _insert(project, OWNER_URI, text="Manual institute", value_type="option")
     assert backend_value_sync.refresh_value_from_backend(source).status == "success"
     owner = _answer(project)
-    assert owner.text == "Manual institute; Institute A"
+    assert owner.text == "Institute A"
     assert owner.external_id == "" and owner.option_id is None
 
     sms_project.owners = ["Institute B", " Institute B "]
     assert backend_value_sync.refresh_value_from_backend(source).status == "success"
-    assert _answer(project).text == "Manual institute; Institute A; Institute B"
+    assert _answer(project).text == "Institute B"
     before = list(Value.objects.filter(project=project, attribute__uri=OWNER_URI).values())
     assert backend_value_sync.refresh_value_from_backend(source).status == "success"
     assert list(Value.objects.filter(project=project, attribute__uri=OWNER_URI).values()) == before
 
-    sms_project.owners = []
-    assert backend_value_sync.refresh_value_from_backend(source).status == "success"
-    assert list(Value.objects.filter(project=project, attribute__uri=OWNER_URI).values()) == before
 
-
-def test_matching_owner_preserves_existing_ror_answer_and_timestamp(sms_project):
+@pytest.mark.parametrize("existing_name", ["Institute A", "Different institute"])
+def test_refresh_replaces_ror_metadata_even_when_owner_label_matches(sms_project, existing_name):
     project = sms_project.project
     source = _device_source(project)
-    owner = _insert(project, OWNER_URI, text="Institute A", external_id="https://ror.org/example", value_type="option")
-    before = Value.objects.filter(pk=owner.pk).values().get()
+    option = Option.objects.create(
+        uri_prefix="https://test.example", uri_path="ror-owner", text_lang1=existing_name, text_lang2=existing_name
+    )
+    owner = _insert(
+        project, OWNER_URI, text=existing_name, option=option, external_id="https://ror.org/example", value_type="option"
+    )
 
     assert backend_value_sync.refresh_value_from_backend(source).status == "success"
 
-    assert Value.objects.filter(pk=owner.pk).values().get() == before
+    owner.refresh_from_db()
+    assert (owner.text, owner.option_id, owner.external_id, owner.value_type) == ("Institute A", None, "", "option")
 
 
-def test_changed_owner_clears_static_option_and_preserves_its_label(sms_project):
+@pytest.mark.parametrize("owners", [[], ["", "  "]])
+def test_successful_sms_refresh_without_usable_owner_clears_existing_owner(sms_project, owners):
+    source = _device_source(sms_project.project)
+    assert backend_value_sync.refresh_value_from_backend(source).status == "success"
+    sms_project.owners = owners
+
+    assert backend_value_sync.refresh_value_from_backend(source).status == "success"
+
+    assert not sms_project.project.values.filter(attribute__uri=OWNER_URI, snapshot=None).exists()
+
+
+def test_refresh_normalizes_multiple_owners_without_splitting_organization_names(sms_project):
+    source = _device_source(sms_project.project)
+    _insert(sms_project.project, OWNER_URI, text="Old owner")
+    sms_project.owners = [" Institute A ", "Institute B", "Institute A", "Institute; Research", " "]
+
+    assert backend_value_sync.refresh_value_from_backend(source).status == "success"
+
+    assert _answer(sms_project.project).text == "Institute A; Institute B; Institute; Research"
+
+
+@pytest.mark.parametrize("existing_name", ["Institute A", "Static institute"])
+def test_refresh_replaces_static_option_even_when_owner_label_matches(sms_project, existing_name):
     project = sms_project.project
     source = _device_source(project)
     option = Option.objects.create(
         uri_prefix="https://test.example",
         uri_path="owner",
-        text_lang1="Static institute",
-        text_lang2="Static institute",
+        text_lang1=existing_name,
+        text_lang2=existing_name,
     )
     _insert(project, OWNER_URI, option=option, value_type="option")
 
     assert backend_value_sync.refresh_value_from_backend(source).status == "success"
 
     answer = _answer(project)
-    assert (answer.text, answer.option_id, answer.external_id) == ("Static institute; Institute A", None, "")
+    assert (answer.text, answer.option_id, answer.external_id, answer.value_type) == ("Institute A", None, "", "option")
 
 
 def test_clearing_device_selection_clears_managed_owner(sms_project):
@@ -243,14 +268,18 @@ def test_bulk_refresh_keeps_same_device_in_two_configuration_blocks(sms_project)
     assert _answer(project, SITE_URI, 0).text == "Site A"
     assert _answer(project, SITE_URI, 1).text == "Site B"
     assert _answer(project, index=0).text == "Institute A"
-    assert _answer(project, index=1).text == "Manual institute; Institute A"
+    assert _answer(project, index=1).text == "Institute A"
     sms_project.sites["27"] = None
     assert backend_value_sync.refresh_value_from_backend(first).status == "success"
     assert not project.values.filter(attribute__uri=SITE_URI, set_index=0).exists()
     assert _answer(project, SITE_URI, 1).text == "Site B"
+    sms_project.owners = ["Institute B"]
+    assert backend_value_sync.refresh_value_from_backend(first).status == "success"
+    assert _answer(project, index=0).text == "Institute B"
+    assert _answer(project, index=1).text == "Institute A"
 
 
-def test_configuration_derived_import_and_forced_refresh_merge_owner_in_device_block(sms_project):
+def test_configuration_derived_import_and_forced_refresh_replace_owner_in_device_block(sms_project):
     project = sms_project.project
     _insert(project, CONFIG_SEARCH_URI, text="Configuration", external_id="gfzcfg:27")
 
@@ -273,7 +302,7 @@ def test_configuration_derived_import_and_forced_refresh_merge_owner_in_device_b
     assert _answer(project, SITE_URI).text == "Site A"
     sms_project.owners = ["Institute B"]
     assert synchronize(force=True).status == "success"
-    assert _answer(project).text == "Institute A; Institute B"
+    assert _answer(project).text == "Institute B"
     before = list(project.values.filter(attribute__uri=OWNER_URI).values())
     sms_project.contact_payload = {"errors": ["backend unavailable"]}
     assert synchronize(force=True).status == "failed"
@@ -282,16 +311,56 @@ def test_configuration_derived_import_and_forced_refresh_merge_owner_in_device_b
     assert not project.values.filter(attribute__uri__in=[OWNER_URI, SITE_URI]).exists()
 
 
-def test_merge_ignores_snapshots_and_normal_scalar_clearing_still_works(sms_project):
-    from rdmo_sensorsearch.contracts import MergedTextScalar
-
+def test_authoritative_refresh_ignores_snapshots_and_normal_scalar_clearing_still_works(sms_project):
     project = sms_project.project
     source = _device_source(project)
     snapshot = Snapshot.objects.create(project=project, title="Historical")
     historical = _insert(project, OWNER_URI, snapshot=snapshot, text="Snapshot owner")
-    apply_mapped_values(source, {OWNER_URI: MergedTextScalar(("Institute A",))})
+    apply_mapped_values(source, {OWNER_URI: AuthoritativeTextScalar(("Institute A",))})
     assert _answer(project).text == "Institute A"
     apply_mapped_values(source, {OWNER_URI: None})
     assert not project.values.filter(attribute__uri=OWNER_URI, snapshot=None).exists()
     historical.refresh_from_db()
     assert historical.text == "Snapshot owner"
+
+
+@pytest.mark.parametrize(
+    "names,expected",
+    [
+        ((" Institute;Research ", "Institute B", "Institute;Research", " "), "Institute;Research; Institute B"),
+        ((), None),
+        (("", " \t "), None),
+    ],
+)
+def test_authoritative_scalar_consolidates_resolved_scopes_and_preserves_other_values(sms_project, monkeypatch, names, expected):
+    project = sms_project.project
+    source = _device_source(project)
+    primary = _insert(project, OWNER_URI, text="Old primary", value_type="text")
+    _insert(project, OWNER_URI, text="Duplicate")
+    _insert(project, OWNER_URI, set_prefix="legacy", set_index=2, text="Secondary")
+    unrelated = _insert(project, OWNER_URI, set_index=1, text="Unrelated")
+    collection = _insert(project, OWNER_URI, set_collection=True, text="Collection")
+    snapshot = Snapshot.objects.create(project=project, title="Historical")
+    historical = _insert(project, OWNER_URI, snapshot=snapshot, text="Snapshot primary")
+    secondary_historical = _insert(
+        project, OWNER_URI, snapshot=snapshot, set_prefix="legacy", set_index=2, text="Snapshot secondary"
+    )
+    preserved_ids = [unrelated.pk, collection.pk, historical.pk, secondary_historical.pk]
+    preserved = list(Value.objects.filter(pk__in=preserved_ids).order_by("id").values())
+    resolver = SimpleNamespace(resolve=lambda *args: [("", 0), ("legacy", 2)])
+    monkeypatch.setattr(value_reconciliation, "RDMOAnswerTreeScopeResolver", lambda project: resolver)
+
+    apply_mapped_values(source, {OWNER_URI: AuthoritativeTextScalar(names)})
+
+    assert list(Value.objects.filter(pk__in=preserved_ids).order_by("id").values()) == preserved
+    assert not project.values.filter(attribute__uri=OWNER_URI, snapshot=None, set_prefix="legacy").exists()
+    active = project.values.filter(attribute__uri=OWNER_URI, snapshot=None, set_collection=False, set_index=0)
+    if expected is None:
+        assert not active.exists()
+    else:
+        answer = active.get()
+        assert answer.pk == primary.pk
+        assert (answer.text, answer.option_id, answer.external_id, answer.value_type) == (expected, None, "", "option")
+        before = list(active.values())
+        apply_mapped_values(source, {OWNER_URI: AuthoritativeTextScalar(names)})
+        assert list(active.values()) == before

@@ -31,15 +31,15 @@ def build_handlers_by_catalog() -> dict:
             for instance in handler_config.instances:
                 definition = config.backend(instance.backend)
                 handler = builder(instance, catalog, definition)
-                binding = HandlerBinding(
-                    id_prefix=definition.prefix(resource),
-                    handler=handler,
-                    search_attribute_uri=catalog.search_attribute_uri,
-                    catalog_uri=catalog_uris[0],
-                    backend_name=definition.name,
-                    backend_type=backend_type,
-                    resource_kind=resource,
-                )
                 for uri in catalog_uris:
+                    binding = HandlerBinding(
+                        id_prefix=definition.prefix(resource),
+                        handler=handler,
+                        search_attribute_uri=catalog.search_attribute_uri,
+                        catalog_uri=uri,
+                        backend_name=definition.name,
+                        backend_type=backend_type,
+                        resource_kind=resource,
+                    )
                     bindings_by_catalog.setdefault(uri, []).append(binding)
     return bindings_by_catalog

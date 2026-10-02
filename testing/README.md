@@ -55,18 +55,20 @@ installation after importing the updated catalog and deploying its mappings:
    dropdown still offers ROR suggestions, and an arbitrary free-text name can
    be entered and saved.
 3. Start with a ROR-backed owner matching the SMS name. Refresh and reload;
-   confirm the label and ROR identifier remain intact. With a different manual
-   name or several SMS institutions, refresh must retain existing names and
-   append distinct names with `; `. The combined free-text answer must have
-   no ROR identifier or static option attached.
+   confirm the label remains and the ROR identifier and option are cleared.
+   With a different manual name or several SMS institutions, refresh must
+   replace the answer with the distinct backend names joined using `; `.
+   Each backend name, including embedded semicolons, must remain intact.
+   The free-text answer must have no ROR identifier or static option attached.
 4. Repeat the refresh, then remove Owner roles in a test backend. Confirm names
-   are not duplicated or removed. A failed contact request must leave all
-   existing metadata intact. Missing referenced contacts must produce owner
-   feedback independently of any location feedback.
+   are not duplicated on repetition and the answer is cleared after a
+   successful response without usable Owner names. A failed or malformed
+   contact request must leave all existing metadata intact. Missing referenced
+   contacts must produce owner feedback independently of any location feedback.
 5. Import the same device through two configurations with different site
    labels. Refresh individual devices and all devices; check each block keeps
-   its own site and manual owner answer. A standalone device without
-   configuration context must not acquire either configuration's site.
+   its own site and the refreshed backend Owner answer. A standalone device
+   without configuration context must not acquire either configuration's site.
 
 Record the plugin/RDMO versions, catalog/profile used, device/configuration IDs,
 and outcomes. These interactive checks are separate from the mocked regression

@@ -8,7 +8,7 @@ from django.db import transaction
 from rdmo.domain.models import Attribute
 from rdmo.projects.models import Value
 
-from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerResult, MergedTextScalar, ScalarScopeResolver
+from rdmo_sensorsearch.contracts import AuthoritativeTextScalar, CollectionAssignment, HandlerResult, ScalarScopeResolver
 from rdmo_sensorsearch.handlers.base import deduplicate_collection_values
 from rdmo_sensorsearch.persistence.catalog_context import workflow_catalog_context
 from rdmo_sensorsearch.persistence.collection_binding import (
@@ -252,22 +252,16 @@ def _qs_scalar_for_scope(instance, attribute, set_prefix: str, set_index: int):
     return queryset
 
 
-def _apply_merged_text_scalar(instance, attribute, value: MergedTextScalar, scopes: list[tuple[str, int]]) -> None:
-    """Merge names in this answer's scopes, preserving unchanged provider selections."""
-    if not value.values:
-        return
-    existing_values = [
-        current
-        for set_prefix, set_index in scopes
-        for current in (_qs_scalar_for_scope(instance, attribute, set_prefix, set_index).select_related("option").order_by("id"))
-    ]
-    names = list(dict.fromkeys(name.strip() for current in existing_values for name in current.label.split(";") if name.strip()))
-    new_names = [name.strip() for raw_name in value.values for name in raw_name.split(";") if name.strip()]
-    merged_names = list(dict.fromkeys([*names, *new_names]))
-    if merged_names == names:
+def _apply_authoritative_text_scalar(instance, attribute, value: AuthoritativeTextScalar, scopes: list[tuple[str, int]]) -> None:
+    """Replace active answers using only the supplied backend organization names."""
+    names = list(dict.fromkeys(name.strip() for name in value.values if name.strip()))
+    if not names:
+        for set_prefix, set_index in scopes:
+            _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).delete()
+        logger.info("Cleared authoritative scalar names for attribute %s", attribute.uri)
         return
 
-    text = "; ".join(merged_names)
+    text = "; ".join(names)
     primary_set_prefix, primary_set_index = scopes[0]
     primary_values = _qs_scalar_for_scope(instance, attribute, primary_set_prefix, primary_set_index).order_by("id")
     current = primary_values.first()
@@ -284,10 +278,9 @@ def _apply_merged_text_scalar(instance, attribute, value: MergedTextScalar, scop
         )
     else:
         update_value_if_changed(current, **updates)
-    # Preserve the names from legacy/duplicate rows before consolidating them.
     for set_prefix, set_index in scopes:
         _qs_scalar_for_scope(instance, attribute, set_prefix, set_index).exclude(id=current.id).delete()
-    logger.info("Merged scalar names for attribute %s: %r", attribute.uri, text)
+    logger.info("Replaced authoritative scalar names for attribute %s: %r", attribute.uri, text)
 
 
 @measure_phase("scalar.apply")
@@ -322,8 +315,8 @@ def apply_mapped_values(instance, mapped_values: dict):
             primary_set_prefix, primary_set_index = scopes[0]
             secondary_scopes = scopes[1:]
 
-            if isinstance(value, MergedTextScalar):
-                _apply_merged_text_scalar(instance, attribute, value, scopes)
+            if isinstance(value, AuthoritativeTextScalar):
+                _apply_authoritative_text_scalar(instance, attribute, value, scopes)
                 continue
 
             if _is_blank_scalar(value):

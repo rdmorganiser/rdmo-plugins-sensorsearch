@@ -2,11 +2,11 @@ import logging
 from dataclasses import replace
 
 from rdmo_sensorsearch.contracts import (
+    AuthoritativeTextScalar,
     BackendFailure,
     DeviceSource,
     HandlerExecutionContext,
     HandlerResult,
-    MergedTextScalar,
     RefreshNotice,
 )
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
@@ -69,7 +69,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, metadata.document)
         owner_attribute_uri = self.attribute_mapping.get(OWNER_ORGANIZATIONS_PATH)
         if owner_attribute_uri:
-            mapped_values[owner_attribute_uri] = MergedTextScalar(metadata.owner_organizations)
+            mapped_values[owner_attribute_uri] = AuthoritativeTextScalar(metadata.owner_organizations)
         detail_settings = context.device_detail_settings or DEFAULT_DEVICE_DETAIL_SETTINGS
         link_uri = getattr(self, "device_link_attribute_uri", detail_settings.device_link_attribute_uri)
         if metadata.frontend_link and link_uri:

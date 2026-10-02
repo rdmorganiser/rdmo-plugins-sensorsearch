@@ -76,8 +76,8 @@ class CollectionAssignment:
 
 
 @dataclass(frozen=True)
-class MergedTextScalar:
-    """Append names to a creatable option answer; an empty tuple preserves it."""
+class AuthoritativeTextScalar:
+    """Replace a creatable option answer with atomic text names; empty values clear it."""
 
     values: tuple[str, ...] = ()
 
