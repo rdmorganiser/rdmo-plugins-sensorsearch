@@ -3,8 +3,8 @@
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.contracts import ConfigurationPeriod
-from rdmo_sensorsearch.handlers.configuration_period import parse_configuration_period
 from rdmo_sensorsearch.project_values import get_scoped_project_value
+from rdmo_sensorsearch.services.configuration_period import parse_configuration_period
 from rdmo_sensorsearch.services.device_details import parse_device_block_key
 
 DEFAULT_DEVICE_COLLECTION_ATTRIBUTE_URI = "https://rdmo-sandbox.gfz-potsdam.de/terms/domain/moses/instruments/id"

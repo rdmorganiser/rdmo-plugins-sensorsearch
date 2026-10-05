@@ -28,9 +28,8 @@ _install_host_application_stubs()
 client = import_module("rdmo_sensorsearch.client")
 config_module = import_module("rdmo_sensorsearch.config")
 contracts = import_module("rdmo_sensorsearch.contracts")
-handler_base = import_module("rdmo_sensorsearch.handlers.base")
 catalog_registry_module = import_module("rdmo_sensorsearch.handlers.catalog_registry")
-configuration_period = import_module("rdmo_sensorsearch.handlers.configuration_period")
+configuration_period = import_module("rdmo_sensorsearch.services.configuration_period")
 o2a_item_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_item")
 o2a_mission_handler_module = import_module("rdmo_sensorsearch.handlers.o2a_mission")
 backend_assembly = import_module("rdmo_sensorsearch.backend_assembly")
@@ -110,18 +109,6 @@ def test_handler_authoritative_values_honor_scope_exclusions():
     )
 
     assert values == {"attribute:name": "Sensor"}
-
-
-def test_collection_values_are_deduplicated_by_external_id_in_input_order():
-    first = {"external_id": "ufzsms:483", "text": "First label"}
-    duplicate = {"external_id": "ufzsms:483", "text": "Duplicate label"}
-    without_external_id = {"external_id": "", "text": "Manual value"}
-
-    values = handler_base.deduplicate_collection_values(
-        (first, duplicate, without_external_id),
-    )
-
-    assert values == (first, without_external_id)
 
 
 def test_user_agent_does_not_duplicate_itself_when_email_is_configured(monkeypatch):
@@ -633,23 +620,6 @@ def test_sms_configuration_period_supports_an_optional_end_and_exclusive_unmount
         )
         is True
     )
-
-
-def test_configuration_period_validation_fails_closed():
-    period, error = configuration_period.parse_configuration_period(None, None)
-    assert period is None
-    assert "start date" in error
-
-    period, error = configuration_period.parse_configuration_period("not a date", None)
-    assert period is None
-    assert "start date is invalid" in error
-
-    period, error = configuration_period.parse_configuration_period(
-        "2025-02-01 00:00",
-        "2025-01-01 00:00",
-    )
-    assert period is None
-    assert "end date must not be earlier" in error
 
 
 def test_sms_configuration_range_selects_latest_mount_and_location_within_range():

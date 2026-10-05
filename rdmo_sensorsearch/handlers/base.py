@@ -6,19 +6,6 @@ from urllib.parse import urlsplit
 logger = logging.getLogger(__name__)
 
 
-def deduplicate_collection_values(values: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...]:
-    unique_values = []
-    seen_external_ids = set()
-    for value in values:
-        external_id = value.get("external_id")
-        if external_id:
-            if external_id in seen_external_ids:
-                continue
-            seen_external_ids.add(external_id)
-        unique_values.append(value)
-    return tuple(unique_values)
-
-
 class BackendRecordHandler:
     """
     Base class for synchronizing a selected backend record with RDMO values.

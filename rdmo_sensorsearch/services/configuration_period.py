@@ -1,8 +1,9 @@
+"""Validate interview date ranges before fetching configuration membership."""
+
 from datetime import datetime
 from datetime import timezone as dt_timezone
 
 from rdmo_sensorsearch.contracts import ConfigurationPeriod
-from rdmo_sensorsearch.handlers.parser import parse_datetime
 
 
 def parse_configuration_period(
@@ -31,8 +32,9 @@ def parse_configuration_period(
 def _parse_timepoint(value: str | None) -> datetime | None:
     if not value:
         return None
-    parsed = parse_datetime(value)
-    if parsed is None:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
         return None
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=dt_timezone.utc)

@@ -9,7 +9,6 @@ from rdmo.domain.models import Attribute
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.contracts import AuthoritativeTextScalar, CollectionAssignment, HandlerResult, ScalarScopeResolver
-from rdmo_sensorsearch.handlers.base import deduplicate_collection_values
 from rdmo_sensorsearch.persistence.catalog_context import workflow_catalog_context
 from rdmo_sensorsearch.persistence.collection_binding import (
     CollectionBinding,
@@ -21,6 +20,19 @@ from rdmo_sensorsearch.services.performance import measure_phase
 from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
 
 logger = logging.getLogger(__name__)
+
+
+def deduplicate_collection_values(values: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...]:
+    unique_values = []
+    seen_external_ids = set()
+    for value in values:
+        external_id = value.get("external_id")
+        if external_id:
+            if external_id in seen_external_ids:
+                continue
+            seen_external_ids.add(external_id)
+        unique_values.append(value)
+    return tuple(unique_values)
 
 
 def _attributes_by_uri(attribute_uris) -> dict[str, Attribute]:

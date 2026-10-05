@@ -95,6 +95,19 @@ def test_only_scope_adapter_imports_answer_tree():
     assert violations == set()
 
 
+def test_persistence_does_not_import_consumers_signals_or_backends():
+    forbidden = tuple(f"rdmo_sensorsearch.{name}" for name in ("handlers", "providers", "signals", "backends"))
+    violations = {
+        str(path.relative_to(PACKAGE_ROOT)): [
+            module
+            for module in _imports(path)
+            if any(module == prefix or module.startswith(prefix + ".") for prefix in forbidden)
+        ]
+        for path in (PACKAGE_ROOT / "persistence").rglob("*.py")
+    }
+    assert {path: modules for path, modules in violations.items() if modules} == {}
+
+
 def test_handlers_do_not_import_workflows():
     assert {
         str(path.relative_to(PACKAGE_ROOT))
