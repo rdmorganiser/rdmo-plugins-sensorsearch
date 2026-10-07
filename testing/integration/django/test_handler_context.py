@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from rdmo.options.models import Option
 from rdmo.projects.models import Snapshot
 
 from rdmo_sensorsearch.persistence.handler_context import device_configuration_reference, read_configuration_period
@@ -54,6 +55,35 @@ def test_period_context_preserves_scope_and_validation(end, expected_error):
     else:
         assert error is None
         assert period.formatted == ("2026-01-01 00:00", end or None)
+
+
+@pytest.mark.parametrize("start_field", ("text", "option"))
+def test_period_context_reads_latest_live_scalar_and_excludes_other_scopes(start_field):
+    workload = make_workload(0)
+    snapshot = Snapshot.objects.create(project=workload.project, title="Historical")
+    common = {"attribute": workload.attributes["start"], "set_prefix": "", "set_index": 2}
+    start = "2026-01-01 00:00"
+    if start_field == "option":
+        start = Option.objects.create(uri_prefix="https://performance.example", uri_path="start", text_lang1=start)
+    insert_values(
+        workload.project,
+        [
+            {**common, "text": "2025-01-01 00:00"},
+            {**common, start_field: start},
+            {**common, "text": "1999-01-01 00:00", "snapshot": snapshot},
+            {**common, "text": "1999-01-01 00:00", "set_index": 3},
+            {**common, "text": "1999-01-01 00:00", "set_prefix": "other"},
+            {**common, "text": "1999-01-01 00:00", "set_collection": True},
+        ],
+    )
+    instance = SimpleNamespace(project=workload.project, set_prefix=None, set_index=2)
+    period, error = read_configuration_period(instance, workload.attributes["start"].uri, workload.attributes["end"].uri)
+    assert error is None
+    assert period.formatted == ("2026-01-01 00:00", None)
+    instance.set_index = 99
+    period, error = read_configuration_period(instance, workload.attributes["start"].uri, workload.attributes["end"].uri)
+    assert period is None
+    assert error
 
 
 def test_invalid_period_stops_refresh_before_handler_or_persistence(monkeypatch):

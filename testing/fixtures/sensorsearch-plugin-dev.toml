@@ -61,12 +61,12 @@ min_search_len = 3
 
 [ProjectConfigurationDevicesProvider]
 [[ProjectConfigurationDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set/selected-devices"
 
 [ProjectDataCollectionDevicesProvider]
 [[ProjectDataCollectionDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set/selected-devices"
 
 [DataCollectionVariableSync]
@@ -77,10 +77,16 @@ catalog_uris = [
     "https://example.com/terms/questions/plugin-dev/earth-sensor-with-refresh-feature-v1",
 ]
 
+devices_attribute_uri = "https://example.com/terms/domain/plugin-dev/project/dataset/collaboration_tools"
+device_collection_attribute_uri = "https://example.com/terms/domain/plugin-dev/moses/instruments/id"
+parameter_name_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/name"
+parameter_unit_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/unit"
+variable_attribute_uri = "https://example.com/terms/domain/plugin-dev/project/dataset/metadata/dc-variable"
+unit_attribute_uri = "https://example.com/terms/domain/plugin-dev/project/dataset/metadata/dc-unit"
 [DeviceDetailSync]
 # The default profile serves the Earth Sensor catalog and compatible deployments.
 [[DeviceDetailSync.catalogs]]
-catalog_uri = "https://example.com/terms/questions/plugin-dev/sensorsearch"
+catalog_uris = ["https://example.com/terms/questions/plugin-dev/sensorsearch"]
 device_details_page_uri = "https://example.com/terms/questions/plugin-dev/instruments_general"
 device_optional_info_page_uri = "https://example.com/terms/questions/plugin-dev/instruments/further-info"
 configuration_collection_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set"
@@ -130,7 +136,7 @@ timestamp_attribute_uri = "https://example.com/terms/domain/plugin-dev/metadata-
 backend = "o2a"
 # Earth-Sensor-compatible mapping, also used by MOSES.
 [[handlers.O2ARegistryItemHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link",
@@ -143,6 +149,7 @@ managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/sop",
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/owner",
 ]
+device_link_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link"
 [handlers.O2ARegistryItemHandler.catalogs.attribute_mapping]
 "longName || shortName" = "https://example.com/terms/domain/plugin-dev/project/dataset/usage_technology"
 "type.generalName" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/type/title"
@@ -167,7 +174,7 @@ backend = "ufz"
 
 # MOSES Catalog mapping
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
-catalog_uri = "https://example.com/terms/questions/plugin-dev/moses"
+catalog_uris = ["https://example.com/terms/questions/plugin-dev/moses"]
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link",
@@ -195,7 +202,7 @@ managed_attribute_uris = [
 
 # Earth-Sensor catalog https://example.com/terms/questions/plugin-dev/sensorsearch
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link",
@@ -255,7 +262,7 @@ managed_attribute_uris = [
 
 # Earth-Sensor configuration catalog mapping
 [[handlers.SensorManagementSystemConfigurationHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 
 
 [handlers.O2ARegistryMissionHandler]
@@ -280,7 +287,7 @@ managed_attribute_uris = [
 "endDate" = "https://example.com/terms/domain/plugin-dev/configuration-set/configurations-end-datetime"
 
 [[handlers.O2ARegistryMissionHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 
 
 [handlers.GIPPInstrumentHandler]
@@ -288,7 +295,7 @@ managed_attribute_uris = [
 backend = "gipp"
 # Earth-Sensor-compatible mapping, also used by MOSES.
 [[handlers.GIPPInstrumentHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link",

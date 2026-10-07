@@ -244,8 +244,8 @@ def build_o2a_mission_provider(config: ProviderInstanceConfig, definition: Backe
         text_prefix=settings.text_prefix,
         base_url=connection.mission_search_url,
         max_hits=settings.max_hits,
-        query_url=connection.settings.mission_query_url,
     )
+    provider.query_url = connection.settings.mission_query_url
     assert isinstance(settings, O2AMissionSearchSettings)
     provider.where_template = settings.where_template
     provider.sorts = settings.sorts
@@ -271,8 +271,8 @@ def build_gipp_instrument_provider(config: ProviderInstanceConfig, definition: B
         text_prefix=settings.text_prefix,
         base_url=connection.search_url,
         max_hits=settings.max_hits,
-        instruments_url=connection.settings.instruments_url,
     )
+    provider.instruments_url = connection.settings.instruments_url
     if settings.option_id is not None:
         provider.option_id = settings.option_id
     if settings.option_text is not None:

@@ -15,25 +15,10 @@ class O2ARegistryItemProvider(BaseRemoteSearchProvider):
     given search term. It then constructs option objects containing the item
     title, serial number (if available), and unique ID from the registry.
 
-    Attributes:
-        id_prefix (str):    Prefix for generated option IDs. Defaults to
-                            "o2aregistry". This id_prefix can be used by
-                            handlers (post_save) to query more data, when
-                            using different instances.
-        text_prefix (str):  Prefix for displayed option text. Defaults to
-                            "O2A Item".
-        max_hits (int):     Maximum number of search results to return.
-                            Defaults to 10.
-        base_url (str):     Base URL for the O2A Registry API endpoint.
-                            Defaults to "https://registry.o2a-data.de/index/rest/search/sensor-v2".
+    Connection identity, display prefix, and result limit are supplied by
+    typed backend assembly.
     """
 
-    # max_hits = 10 from base provider
-
-    id_prefix = "o2aregistry"
-    text_prefix = "O2A Item"
-
-    base_url = "https://registry.o2a-data.de/index/rest/search/sensor-v2"
     query_url = "{base_url}?hits={hits}&q={query}"
 
     def get_options(self, project, search=None, user=None, site=None):

@@ -109,16 +109,86 @@ def test_handler_catalog_requires_a_search_attribute():
         PluginConfig.from_mapping(data)
 
 
-def test_data_collection_sync_requires_explicit_catalog_scope():
+@pytest.mark.parametrize("scope", [None, []])
+def test_data_collection_sync_requires_explicit_catalog_scope(scope):
     data = _config_data()
     catalog = data["DataCollectionVariableSync"]["catalogs"][0]
-    del catalog["catalog_uris"]
+    if scope is None:
+        catalog.pop("catalog_uris")
+    else:
+        catalog["catalog_uris"] = scope
 
     with pytest.raises(
         ConfigValidationError,
-        match=r"DataCollectionVariableSync\.catalogs\[0\]: catalog_uri or catalog_uris is required",
+        match=r"DataCollectionVariableSync\.catalogs\[0\]: catalog_uris is required",
     ):
         PluginConfig.from_mapping(data)
+
+
+SCOPED_SECTIONS = (
+    "ProjectConfigurationDevicesProvider",
+    "ProjectDataCollectionDevicesProvider",
+    "DataCollectionVariableSync",
+    "DeviceDetailSync",
+    "MetadataRefresh",
+    "handlers",
+)
+
+
+def _scoped_entry(data, section):
+    if section == "handlers":
+        return data["handlers"]["SensorManagementSystemDeviceHandler"]["catalogs"][0]
+    if section == "MetadataRefresh":
+        return data[section]["actions"][0]
+    return data[section]["catalogs"][0]
+
+
+def _parsed_scope(config, section):
+    if section == "handlers":
+        return config.handlers["SensorManagementSystemDeviceHandler"].catalogs[0].scope
+    if section == "MetadataRefresh":
+        return config.metadata_refresh.actions[0].scope
+    sections = {
+        "ProjectConfigurationDevicesProvider": config.project_configuration_devices,
+        "ProjectDataCollectionDevicesProvider": config.project_data_collection_devices,
+        "DataCollectionVariableSync": config.data_collection_variable_sync,
+        "DeviceDetailSync": config.device_detail_sync,
+    }
+    return sections[section].catalogs[0].scope
+
+
+@pytest.mark.parametrize("section", SCOPED_SECTIONS)
+def test_singular_catalog_scope_is_rejected_in_every_scoped_section(section):
+    data = _config_data()
+    _scoped_entry(data, section)["catalog_uri"] = "catalog:a"
+    with pytest.raises(ConfigValidationError, match=r"unknown setting\(s\): catalog_uri$"):
+        PluginConfig.from_mapping(data)
+
+
+@pytest.mark.parametrize("section", SCOPED_SECTIONS)
+@pytest.mark.parametrize("uris", [["catalog:a"], ["catalog:a", "catalog:b", "catalog:a"]])
+def test_plural_catalog_scope_matches_and_deduplicates(section, uris):
+    data = _config_data()
+    _scoped_entry(data, section)["catalog_uris"] = uris
+    scope = _parsed_scope(PluginConfig.from_mapping(data), section)
+    assert scope.catalog_uris == tuple(dict.fromkeys(uris))
+    assert scope.matches("catalog:a")
+    assert scope.matches("catalog:b") == ("catalog:b" in uris)
+    assert not scope.matches("catalog:other")
+
+
+@pytest.mark.parametrize("section", [name for name in SCOPED_SECTIONS if name != "DataCollectionVariableSync"])
+@pytest.mark.parametrize("scope", [None, []])
+def test_omitted_or_empty_catalog_scope_remains_wildcard(section, scope):
+    data = _config_data()
+    entry = _scoped_entry(data, section)
+    if scope is None:
+        entry.pop("catalog_uris", None)
+    else:
+        entry["catalog_uris"] = scope
+    parsed = _parsed_scope(PluginConfig.from_mapping(data), section)
+    assert parsed.catalog_uris == ()
+    assert parsed.matches("catalog:any")
 
 
 def test_sms_provider_requires_routing_and_request_settings():

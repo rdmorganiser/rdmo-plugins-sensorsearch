@@ -135,7 +135,7 @@ HANDLER_SETTINGS = {
     "GIPPInstrumentHandler": frozenset(["managed_attribute_uris", "search_attribute_uri"]),
 }
 
-CATALOG_SCOPE_KEYS = frozenset({"catalog_uri", "catalog_uris"})
+CATALOG_SCOPE_KEYS = frozenset({"catalog_uris"})
 STRING_SEQUENCE_SETTINGS = frozenset({"managed_attribute_uris", "date_mapping_paths", "input_attribute_uris"})
 BOOLEAN_SETTINGS = frozenset(
     {

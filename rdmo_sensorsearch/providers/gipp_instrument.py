@@ -16,24 +16,10 @@ class GIPPInstrumentProvider(BaseRemoteSearchProvider):
     containing the instrument code and a unique ID derived from the
     instrument's ID in the GIPP.
 
-    Attributes:
-        id_prefix (str):    Prefix for generated option IDs. Defaults to
-                            "gfzgipp". This id_prefix can be used by handlers
-                            (post_save) to query more data, when using
-                            different instances.
-        text_prefix (str):  Prefix for displayed option text. Defaults to
-                            "GFZ GIPP Instrument".
-        max_hits (int):     Maximum number of search results to return.
-                            Defaults to 10.
-        base_url (str):     Base URL for the GIPP API endpoint. Defaults to
-                            "https://gipp.gfz.de/instruments".
+    Connection identity, display prefix, and result limit are supplied by
+    typed backend assembly.
     """
 
-    # max_hits = 10 from base provider
-
-    id_prefix = "gfzgipp"
-    text_prefix = "GFZ GIPP Instrument"
-    base_url = "https://gipp.gfz.de/instruments"
     instruments_url = "{base_url}/index.json?limit=10000&program=MOSES"
 
     option_id = "{prefix}:{id}"

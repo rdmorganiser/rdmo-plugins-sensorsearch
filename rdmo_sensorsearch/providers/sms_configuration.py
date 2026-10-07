@@ -20,8 +20,8 @@ class SensorManagementSystemConfigurationProvider(BaseRemoteSearchProvider):
     option_id = "{id_prefix}:{id}"
     option_text = "{prefix}({id}): {label}{project}{pid}"
 
-    def __init__(self, *, backend: ConfigurationSearch, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *, backend: ConfigurationSearch, id_prefix: str, text_prefix: str, base_url: str, max_hits: int):
+        super().__init__(id_prefix=id_prefix, text_prefix=text_prefix, base_url=base_url, max_hits=max_hits)
         self.backend = backend
 
     def get_options(self, project, search=None, user=None, site=None):

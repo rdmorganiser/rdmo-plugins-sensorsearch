@@ -170,8 +170,8 @@ For SMS, keep configuration and device prefixes paired:
 
 Each `[[ProjectConfigurationDevicesProvider.catalogs]]` entry selects an
 attribute whose project values become device options. In the Earth Sensor
-catalog it is the selected-devices attribute. Use `catalog_uri` for one catalog,
-`catalog_uris` for several, or omit both for a wildcard mapping.
+catalog it is the selected-devices attribute. Use `catalog_uris` for one or
+more catalogs, or omit it for a wildcard mapping.
 
 ### `[ProjectDataCollectionDevicesProvider]`
 
@@ -182,10 +182,8 @@ as `ProjectConfigurationDevicesProvider`.
 ## `[DataCollectionVariableSync]`
 
 `[[DataCollectionVariableSync.catalogs]]` enables automatic variable and unit
-rows for selected data-collection devices. `catalog_uri` selects one catalog;
-`catalog_uris` selects several. Do not add a wildcard entry unless every catalog
-using the plugin has compatible data-collection attributes and collection
-layout.
+rows for selected data-collection devices. `catalog_uris` must explicitly
+select one or more catalogs. Omitted or empty scope is rejected for this section.
 
 Each catalog entry can override these attributes; otherwise the built-in Earth
 Sensor defaults are used:
@@ -205,7 +203,7 @@ The concrete Earth Sensor elements are listed in the
 ## `[DeviceDetailSync]`
 
 `[[DeviceDetailSync.catalogs]]` controls the URIs that identify repeated device
-detail blocks and SMS mount metadata. It uses `catalog_uri`/`catalog_uris` like
+detail blocks and SMS mount metadata. It uses `catalog_uris` like
 other scoped tables; an exact match wins over a wildcard entry. The packaged
 profile is the Earth Sensor baseline, whose concrete elements are in the
 [catalog map](earth-sensor-catalog.md). All fields are required per profile:
@@ -258,7 +256,7 @@ backend = "example"
 # settings shared by all catalog mappings
 
 [[handlers.SomeHandler.catalogs]]
-catalog_uri = "https://example.org/catalog"
+catalog_uris = ["https://example.org/catalog"]
 search_attribute_uri = "https://example.org/attributes/search"
 managed_attribute_uris = ["https://example.org/attributes/output"]
 
@@ -267,7 +265,7 @@ managed_attribute_uris = ["https://example.org/attributes/output"]
 ```
 
 `defaults` are merged into each catalog entry. A catalog entry can override a
-default. Omitting `catalog_uri` and `catalog_uris` creates a wildcard catalog
+default. Omitting `catalog_uris` creates a wildcard catalog
 mapping. Prefer explicit scope when two catalogs use different attribute
 semantics.
 
@@ -291,7 +289,7 @@ Common handler settings are:
 | `managed_attribute_uris` | Additional fields authoritatively owned by the handler. |
 | `materialize_device_details` | Allows selected devices to be materialized into repeated detail collections. |
 | `device_link_attribute_uri` | Target for a backend or frontend record link. |
-| `catalog_uri`, `catalog_uris` | Catalog scope; omitted means wildcard. |
+| `catalog_uris` | Catalog scope; omitted means wildcard. |
 
 ### `O2ARegistryItemHandler`
 
@@ -407,7 +405,7 @@ and detail synchronization but not configuration or mission membership.
 The example configuration contains wildcard catalog entries so the same Earth
 Sensor attribute scheme can be reused by compatible catalogs. This is
 convenient but broad: a handler can run in any catalog containing its search
-attribute. To isolate behavior, add `catalog_uri` or `catalog_uris` to every
+attribute. To isolate behavior, add `catalog_uris` to every
 handler and project-local provider mapping.
 
 When two matching catalog entries could apply, avoid relying on file order.
@@ -415,8 +413,8 @@ Give each catalog one unambiguous mapping for a handler.
 
 ## Complete setting index
 
-This index is exhaustive for the validated TOML schema. `catalog_uri` and
-`catalog_uris` are allowed on every `catalogs` entry. `attribute_mapping` is a
+This index is exhaustive for the validated TOML schema. `catalog_uris` is
+allowed on every `catalogs` entry. `attribute_mapping` is a
 table of JMESPath source expressions to RDMO attribute URI strings. URL fields
 are templates where documented placeholders such as `{base_url}` and `{id}`
 are substituted by the handler.

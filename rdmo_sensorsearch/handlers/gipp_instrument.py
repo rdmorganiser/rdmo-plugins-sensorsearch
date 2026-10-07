@@ -15,13 +15,8 @@ class GIPPInstrumentHandler(BackendRecordHandler):
 
     This handler retrieves instrument information from the GIPP REST API.
 
-     base_url (str, optional):           The base URL for API requests
-                                                to GIPP. Defaults to
-                                                'https://gipp.gfz.de/instruments/rest'.
+    Connection identity and attribute mapping are supplied by typed assembly.
     """
-
-    id_prefix = "gfzgipp"
-    base_url = "https://gipp.gfz.de/instruments/rest"
 
     json_url = "{base_url}/{id}.json"
 

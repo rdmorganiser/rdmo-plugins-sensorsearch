@@ -210,7 +210,7 @@ def _parse_data_collection_sync(value: Any) -> DataCollectionVariableSyncConfig:
         reject_unknown_keys(entry, CATALOG_SCOPE_KEYS | setting_keys, entry_path)
         scope = _parse_catalog_scope(entry, entry_path)
         if not scope.catalog_uris:
-            raise ConfigValidationError(entry_path, "catalog_uri or catalog_uris is required")
+            raise ConfigValidationError(entry_path, "catalog_uris is required")
         settings = {key: nonempty_string(entry[key], f"{entry_path}.{key}") for key in setting_keys if key in entry}
         catalogs.append(
             DataCollectionSyncCatalogConfig(
@@ -407,9 +407,5 @@ def _parse_attribute_mapping(value: Any, path: str) -> Mapping[str, str]:
 
 
 def _parse_catalog_scope(data: Mapping[str, Any], path: str) -> CatalogScopeConfig:
-    values = []
-    catalog_uri = data.get("catalog_uri")
-    if catalog_uri is not None:
-        values.append(nonempty_string(catalog_uri, f"{path}.catalog_uri"))
-    values.extend(string_sequence(data.get("catalog_uris", ()), f"{path}.catalog_uris"))
+    values = string_sequence(data.get("catalog_uris", ()), f"{path}.catalog_uris")
     return CatalogScopeConfig(catalog_uris=tuple(dict.fromkeys(values)))

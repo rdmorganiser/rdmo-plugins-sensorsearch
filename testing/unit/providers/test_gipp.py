@@ -58,7 +58,12 @@ def test_provider_uses_current_gipp_hostname(monkeypatch):
 
     monkeypatch.setattr(gipp_provider_module, "fetch_json", fetch_json)
 
-    options = gipp_provider_module.GIPPInstrumentProvider().get_options(
+    options = gipp_provider_module.GIPPInstrumentProvider(
+        id_prefix="gfzgipp",
+        text_prefix="GFZ GIPP Instrument",
+        base_url="https://gipp.gfz.de/instruments",
+        max_hits=10,
+    ).get_options(
         project=None,
         search="BASE_X2",
     )
@@ -81,7 +86,11 @@ def test_handler_uses_current_gipp_hostname(monkeypatch):
 
     monkeypatch.setattr(gipp_handler_module, "fetch_json", fetch_json)
 
-    handler = gipp_handler_module.GIPPInstrumentHandler(attribute_mapping={"Instrument.code": "uri"})
+    handler = gipp_handler_module.GIPPInstrumentHandler(
+        attribute_mapping={"Instrument.code": "uri"},
+        id_prefix="gfzgipp",
+        base_url="https://gipp.gfz.de/instruments/rest",
+    )
     result = handler.handle("1", context=HandlerExecutionContext())
 
     assert requested_urls == ["https://gipp.gfz.de/instruments/rest/1.json"]
@@ -94,7 +103,11 @@ def test_handler_propagates_backend_errors(monkeypatch):
         "fetch_json",
         lambda url: {"errors": ["instrument unavailable"]},
     )
-    handler = gipp_handler_module.GIPPInstrumentHandler(attribute_mapping={"Instrument.code": "uri"})
+    handler = gipp_handler_module.GIPPInstrumentHandler(
+        attribute_mapping={"Instrument.code": "uri"},
+        id_prefix="gfzgipp",
+        base_url="https://gipp.gfz.de/instruments/rest",
+    )
 
     result = handler.handle("1", context=HandlerExecutionContext())
 

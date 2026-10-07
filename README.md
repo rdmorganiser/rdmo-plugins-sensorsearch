@@ -157,12 +157,12 @@ min_search_len = 3
 
 [ProjectConfigurationDevicesProvider]
 [[ProjectConfigurationDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 
 [ProjectDataCollectionDevicesProvider]
 [[ProjectDataCollectionDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
 [MetadataRefresh]
@@ -255,7 +255,7 @@ location_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/da
 "data.attributes.description" = "https://rdmorganiser.github.io/terms/domain/project/dataset/annotation"
 "data.links.self" = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
 [[handlers.SensorManagementSystemConfigurationHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
+catalog_uris = ["http://example.com/terms/questions/example-configurations-earth-sensor"]
 
 [handlers.O2ARegistryMissionHandler]
 [[handlers.O2ARegistryMissionHandler.instances]]
@@ -269,7 +269,7 @@ item_text_template = "{configuration} {prefix}({item_id}): {name}{serial}"
 [handlers.O2ARegistryMissionHandler.defaults.attribute_mapping]
 "description" = "http://example.com/terms/domain/configuration-set/description"
 [[handlers.O2ARegistryMissionHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
+catalog_uris = ["http://example.com/terms/questions/example-configurations-earth-sensor"]
 # These are user-entered filtering inputs, not mission metadata outputs.
 period_start_attribute_uri = "http://example.com/terms/domain/configuration-set/start"
 period_end_attribute_uri = "http://example.com/terms/domain/configuration-set/end"
@@ -504,7 +504,7 @@ device_link_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/device-li
 "serialNumber" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
 [[handlers.O2ARegistryItemHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+catalog_uris = ["http://rdmo-dev.local/terms/questions/sensor-awi-test"]
 # optional per-catalog overrides can be added here
 
 [handlers.SensorManagementSystemDeviceHandler]
@@ -522,7 +522,7 @@ search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
 "data.attributes.serial_number" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+catalog_uris = ["http://rdmo-dev.local/terms/questions/sensor-awi-test"]
 
 [handlers.GIPPInstrumentHandler]
 [[handlers.GIPPInstrumentHandler.instances]]
@@ -535,7 +535,7 @@ search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
 "Instrument.serialNo" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
 [[handlers.GIPPInstrumentHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+catalog_uris = ["http://rdmo-dev.local/terms/questions/sensor-awi-test"]
 ```
 
 Every provider and handler instance references a named backend. Its separate
@@ -546,8 +546,8 @@ typed backend-specific settings.
 The `catalogs` configuration is used to identify the catalog(s) where the
 attribute mapping should be used to map values from the API response to
 attributes of the catalog. It is possible to configure more than one catalog.
-- `catalog_uri` is the uri of the catalog where the handler should map values
-  to attributes
+- `catalog_uris` lists the catalog URIs where the handler should map values
+  to attributes; omission makes the mapping available in all catalogs.
 - `search_attribute_uri` is the uri of the question with the option set
   provider used in the catalog
 - `managed_attribute_uris` adds attributes to the handler's ownership beyond

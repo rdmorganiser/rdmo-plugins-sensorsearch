@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Mapping
 from dataclasses import replace
 
 from rdmo_sensorsearch.contracts import (
@@ -33,15 +34,14 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
     SMS API.
     """
 
-    # id_prefix = "sms"
     materialize_device_details = True
     supports_mount_period_lookup = True
     supports_mount_location_lookup = True
 
     uses_auth_token = True
 
-    def __init__(self, *, backend: DeviceSource, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *, backend: DeviceSource, id_prefix: str, base_url: str, attribute_mapping: Mapping[str, str]):
+        super().__init__(id_prefix=id_prefix, base_url=base_url, attribute_mapping=attribute_mapping)
         self.backend = backend
 
     def handle(
@@ -74,7 +74,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         link_uri = getattr(self, "device_link_attribute_uri", detail_settings.device_link_attribute_uri)
         if metadata.frontend_link and link_uri:
             mapped_values[link_uri] = metadata.frontend_link
-        external_id = f"{self._id_prefix}:{backend_id}" if self._id_prefix else backend_id
+        external_id = f"{self.id_prefix}:{backend_id}"
         notices = [replace(notice, external_id=external_id) for notice in response.notices]
         mount_metadata_errors = self._set_mount_metadata(
             mapped_values,

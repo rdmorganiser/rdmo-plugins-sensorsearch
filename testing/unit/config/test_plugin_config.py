@@ -1,11 +1,11 @@
 import sys
 from copy import deepcopy
+from dataclasses import fields
 from urllib.parse import urlsplit
 from xml.etree import ElementTree
 
 import pytest
 
-from rdmo_sensorsearch.config import catalog_matches, merge_config
 from rdmo_sensorsearch.config_models import PluginConfig
 from rdmo_sensorsearch.services.device_detail_profile import get_device_detail_settings
 from testing.paths import CATALOGS_ROOT, FIXTURES_ROOT, PRODUCTION_CONFIG_PATH, REPOSITORY_ROOT
@@ -30,38 +30,51 @@ def _load_config(path):
         return tomllib.load(config_file)
 
 
-def test_original_earth_sensor_catalog_matches_deployment_configuration():
-    root = ElementTree.parse(ORIGINAL_EARTH_SENSOR_CATALOG_PATH).getroot()
+def _attribute_uris(settings):
+    return {
+        value
+        for field in fields(settings)
+        if field.name.endswith("_attribute_uri") and isinstance(value := getattr(settings, field.name), str)
+    }
+
+
+@pytest.mark.parametrize(
+    "config_path,catalog_path",
+    [(PRODUCTION_CONFIG_PATH, ORIGINAL_EARTH_SENSOR_CATALOG_PATH), (MIRROR_CONFIG_PATH, MIRROR_CATALOG_PATH)],
+)
+def test_catalog_matches_effective_deployment_configuration(config_path, catalog_path):
+    root = ElementTree.parse(catalog_path).getroot()
     catalog_uri = root.find("catalog").attrib[DC_URI]
     attribute_uris = {attribute.attrib[DC_URI] for attribute in root.findall("attribute")}
-    config = _load_config(CONFIG_PATHS[0])
+    config = PluginConfig.from_mapping(_load_config(config_path))
 
     configured_attribute_uris = set()
-    for handler in config["handlers"].values():
-        defaults = handler.get("defaults", {})
-        for catalog in handler.get("catalogs", []):
-            if not catalog_matches(catalog, catalog_uri):
+    for handler in config.handlers.values():
+        for catalog in handler.catalogs:
+            if not catalog.scope.matches(catalog_uri):
                 continue
-            settings = merge_config(defaults, catalog)
-            configured_attribute_uris.add(settings["search_attribute_uri"])
-            configured_attribute_uris.update(settings.get("managed_attribute_uris", []))
-            configured_attribute_uris.update(settings.get("attribute_mapping", {}).values())
-            configured_attribute_uris.update(
-                value for key, value in settings.items() if key.endswith("_attribute_uri") and isinstance(value, str)
-            )
+            configured_attribute_uris.add(catalog.search_attribute_uri)
+            configured_attribute_uris.update(catalog.settings.managed_attribute_uris)
+            configured_attribute_uris.update(catalog.attribute_mapping.values())
+            configured_attribute_uris.update(_attribute_uris(catalog.settings))
 
-    refresh = config["MetadataRefresh"]
-    configured_attribute_uris.update(
-        value for key, value in refresh.items() if key.endswith("_attribute_uri") and isinstance(value, str)
-    )
-    for action in refresh["actions"]:
-        if catalog_matches(action, catalog_uri):
-            configured_attribute_uris.update(
-                value for key, value in action.items() if key.endswith("_attribute_uri") and isinstance(value, str)
-            )
+    refresh = config.metadata_refresh
+    configured_attribute_uris.update(_attribute_uris(refresh))
+    for action in refresh.actions:
+        if action.scope.matches(catalog_uri):
+            configured_attribute_uris.update(_attribute_uris(action))
+            configured_attribute_uris.update(action.input_attribute_uris)
+    for section in (config.data_collection_variable_sync, config.device_detail_sync):
+        for catalog in section.catalogs:
+            if catalog.scope.matches(catalog_uri):
+                configured_attribute_uris.update(_attribute_uris(catalog.settings))
+    for section in (config.project_configuration_devices, config.project_data_collection_devices):
+        for catalog in section.catalogs:
+            if catalog.scope.matches(catalog_uri):
+                configured_attribute_uris.add(catalog.source_attribute_uri)
 
-    assert configured_attribute_uris <= attribute_uris
-    assert any(catalog_matches(catalog, catalog_uri) for catalog in config["DataCollectionVariableSync"]["catalogs"])
+    assert configured_attribute_uris - attribute_uris == set()
+    assert any(catalog.scope.matches(catalog_uri) for catalog in config.data_collection_variable_sync.catalogs)
 
 
 def test_deployment_configuration_passes_schema_validation():
@@ -73,20 +86,16 @@ def test_deployment_configuration_passes_schema_validation():
 
 
 def test_plugin_development_catalog_has_an_isolated_complete_test_profile():
-    mirror_config = _load_config(MIRROR_CONFIG_PATH)
+    parsed = PluginConfig.from_mapping(_load_config(MIRROR_CONFIG_PATH))
     mirror_attributes = {
         attribute.attrib[DC_URI] for attribute in ElementTree.parse(MIRROR_CATALOG_PATH).getroot().findall("attribute")
     }
 
     assert "example.com" not in CONFIG_PATHS[0].read_text(encoding="utf-8")
-    parsed = PluginConfig.from_mapping(mirror_config)
     detail_settings = get_device_detail_settings(MIRROR_CATALOG_URI, config=parsed)
     assert detail_settings.device_details_page_uri == "https://example.com/terms/questions/plugin-dev/instruments_general"
     assert detail_settings.configuration_collection_attribute_uri in mirror_attributes
-    assert any(
-        MIRROR_CATALOG_URI in ([catalog["catalog_uri"]] if catalog.get("catalog_uri") else catalog.get("catalog_uris", []))
-        for catalog in mirror_config["DataCollectionVariableSync"]["catalogs"]
-    )
+    assert any(catalog.scope.matches(MIRROR_CATALOG_URI) for catalog in parsed.data_collection_variable_sync.catalogs)
 
 
 def test_wheel_build_packages_the_authoritative_deployment_configuration():
@@ -110,35 +119,20 @@ def test_gfz_sms_connection_is_defined_once():
 
 def test_data_collection_variable_sync_is_explicitly_catalog_scoped():
     for path in CONFIG_PATHS:
-        config = _load_config(path)
-        catalog_configs = config["DataCollectionVariableSync"]["catalogs"]
+        config = PluginConfig.from_mapping(_load_config(path))
+        catalog_configs = config.data_collection_variable_sync.catalogs
 
         assert catalog_configs
-        assert all(catalog_config.get("catalog_uri") or catalog_config.get("catalog_uris") for catalog_config in catalog_configs)
-        assert any(
-            EARTH_SENSOR_CATALOG_URI
-            in ([catalog_config["catalog_uri"]] if catalog_config.get("catalog_uri") else catalog_config["catalog_uris"])
-            for catalog_config in catalog_configs
-        )
+        assert all(catalog.scope.catalog_uris for catalog in catalog_configs)
+        assert any(catalog.scope.matches(EARTH_SENSOR_CATALOG_URI) for catalog in catalog_configs)
 
 
 def test_handlers_declare_additional_owned_attributes_as_managed():
     for path in CONFIG_PATHS:
-        config = _load_config(path)
-        handler_configs = config["handlers"]
-
-        def assert_managed(config_part):
-            if isinstance(config_part, dict):
-                assert "reset_attribute_uris" not in config_part
-                if "managed_attribute_uris" in config_part:
-                    assert all(config_part["managed_attribute_uris"])
-                for value in config_part.values():
-                    assert_managed(value)
-            elif isinstance(config_part, list):
-                for value in config_part:
-                    assert_managed(value)
-
-        assert_managed(handler_configs)
+        config = PluginConfig.from_mapping(_load_config(path))
+        assert all(
+            all(catalog.settings.managed_attribute_uris) for handler in config.handlers.values() for catalog in handler.catalogs
+        )
 
 
 def test_configuration_providers_use_compact_backend_labels():
@@ -155,14 +149,12 @@ def test_configuration_handlers_define_the_shared_tab_collection_attribute():
     expected_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set"
 
     for path in CONFIG_PATHS:
-        config = _load_config(path)
-        handlers = config["handlers"]
-
-        assert (
-            handlers["SensorManagementSystemConfigurationHandler"]["defaults"]["configuration_collection_attribute_uri"]
-            == expected_uri
-        )
-        assert handlers["O2ARegistryMissionHandler"]["defaults"]["configuration_collection_attribute_uri"] == expected_uri
+        config = PluginConfig.from_mapping(_load_config(path))
+        for name in ("SensorManagementSystemConfigurationHandler", "O2ARegistryMissionHandler"):
+            assert all(
+                catalog.settings.configuration_collection_attribute_uri == expected_uri
+                for catalog in config.handlers[name].catalogs
+            )
 
 
 def test_configuration_period_is_backend_owned_for_sms_and_o2a():
@@ -177,25 +169,23 @@ def test_configuration_period_is_backend_owned_for_sms_and_o2a():
     }
 
     for path in CONFIG_PATHS:
-        config = _load_config(path)
-        handlers = config["handlers"]
+        config = PluginConfig.from_mapping(_load_config(path))
 
         for handler_name, (start_path, end_path) in source_paths.items():
-            defaults = handlers[handler_name]["defaults"]
-
-            assert expected_start_uri in defaults["managed_attribute_uris"]
-            assert expected_end_uri in defaults["managed_attribute_uris"]
-            assert defaults["attribute_mapping"][start_path] == expected_start_uri
-            assert defaults["attribute_mapping"][end_path] == expected_end_uri
+            for catalog in config.handlers[handler_name].catalogs:
+                assert expected_start_uri in catalog.settings.managed_attribute_uris
+                assert expected_end_uri in catalog.settings.managed_attribute_uris
+                assert catalog.attribute_mapping[start_path] == expected_start_uri
+                assert catalog.attribute_mapping[end_path] == expected_end_uri
 
 
 def test_baseline_has_no_membership_filter_action():
     for path in CONFIG_PATHS:
-        config = _load_config(path)
-        assert not any(action.get("require_configuration_period", False) for action in config["MetadataRefresh"]["actions"])
+        config = PluginConfig.from_mapping(_load_config(path))
+        assert not any(action.require_configuration_period for action in config.metadata_refresh.actions)
         assert not any(
-            action["trigger_attribute_uri"].endswith(("/apply-date-range", "/apply-member-filter"))
-            for action in config["MetadataRefresh"]["actions"]
+            action.trigger_attribute_uri.endswith(("/apply-date-range", "/apply-member-filter"))
+            for action in config.metadata_refresh.actions
         )
 
 

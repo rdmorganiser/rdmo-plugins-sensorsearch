@@ -178,7 +178,11 @@ def test_o2a_device_refresh_fails_when_an_auxiliary_request_fails(monkeypatch):
         )
     )
     monkeypatch.setattr(o2a_item_handler_module, "fetch_json", lambda url: next(responses))
-    handler = o2a_item_handler_module.O2ARegistryItemHandler(attribute_mapping={})
+    handler = o2a_item_handler_module.O2ARegistryItemHandler(
+        attribute_mapping={},
+        id_prefix="o2aregistry",
+        base_url="https://registry.o2a-data.de/rest/v2",
+    )
 
     result = handler.handle("42", context=contracts.HandlerExecutionContext())
 
@@ -903,8 +907,11 @@ def test_o2a_mission_collection_fetches_every_page(monkeypatch):
     monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
     handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={},
-        mission_item_page_size=2,
+        id_prefix="o2amission",
+        base_url="https://registry.o2a-data.de/rest/v2",
     )
+    handler.mission_item_page_size = 2
+    handler.item_id_prefix = "o2aregistry"
 
     result = handler._fetch_mission_items("30")
 
@@ -913,7 +920,12 @@ def test_o2a_mission_collection_fetches_every_page(monkeypatch):
 
 
 def test_o2a_mission_member_uses_compact_mission_label():
-    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(attribute_mapping={})
+    handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
+        attribute_mapping={},
+        id_prefix="o2amission",
+        base_url="https://registry.o2a-data.de/rest/v2",
+    )
+    handler.item_id_prefix = "o2aregistry"
 
     assert (
         handler._format_item_text(
@@ -943,9 +955,12 @@ def test_o2a_mission_refresh_aborts_when_a_member_cannot_be_resolved(monkeypatch
     monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
     handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={},
-        selected_devices_attribute_uri="selected-devices",
-        selected_devices_page_uri="device-page",
+        id_prefix="o2amission",
+        base_url="https://registry.o2a-data.de/rest/v2",
     )
+    handler.selected_devices_attribute_uri = "selected-devices"
+    handler.selected_devices_page_uri = "device-page"
+    handler.item_id_prefix = "o2aregistry"
 
     result = handler.handle("30", context=contracts.HandlerExecutionContext())
 
@@ -972,9 +987,12 @@ def test_o2a_mission_refresh_can_preserve_the_current_device_set(monkeypatch):
             "startDate": "configuration:start",
             "endDate": "configuration:end",
         },
-        selected_devices_attribute_uri="selected-devices",
-        selected_devices_page_uri="device-page",
+        id_prefix="o2amission",
+        base_url="https://registry.o2a-data.de/rest/v2",
     )
+    handler.selected_devices_attribute_uri = "selected-devices"
+    handler.selected_devices_page_uri = "device-page"
+    handler.item_id_prefix = "o2aregistry"
 
     result = handler.handle(
         "30",
@@ -1005,9 +1023,12 @@ def test_o2a_mission_selection_syncs_immediately(monkeypatch):
     monkeypatch.setattr(o2a_mission_handler_module, "fetch_json", fetch_json)
     handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={"name": "configuration:name"},
-        selected_devices_attribute_uri="selected-devices",
-        selected_devices_page_uri="device-page",
+        id_prefix="o2amission",
+        base_url="https://registry.o2a-data.de/rest/v2",
     )
+    handler.selected_devices_attribute_uri = "selected-devices"
+    handler.selected_devices_page_uri = "device-page"
+    handler.item_id_prefix = "o2aregistry"
 
     result = handler.handle("30", context=contracts.HandlerExecutionContext())
 
@@ -1044,9 +1065,12 @@ def test_o2a_mission_items_inherit_the_backend_mission_period(monkeypatch):
             "startDate": "configuration:start",
             "endDate": "configuration:end",
         },
-        selected_devices_attribute_uri="selected-devices",
-        selected_devices_page_uri="device-page",
+        id_prefix="o2amission",
+        base_url="https://registry.o2a-data.de/rest/v2",
     )
+    handler.selected_devices_attribute_uri = "selected-devices"
+    handler.selected_devices_page_uri = "device-page"
+    handler.item_id_prefix = "o2aregistry"
 
     result = handler.handle("30", context=contracts.HandlerExecutionContext())
 
@@ -1063,9 +1087,12 @@ def test_o2a_mission_rejects_historical_membership_filtering(monkeypatch):
     )
     handler = o2a_mission_handler_module.O2ARegistryMissionHandler(
         attribute_mapping={},
-        selected_devices_attribute_uri="selected-devices",
-        selected_devices_page_uri="device-page",
+        id_prefix="o2amission",
+        base_url="https://registry.o2a-data.de/rest/v2",
     )
+    handler.selected_devices_attribute_uri = "selected-devices"
+    handler.selected_devices_page_uri = "device-page"
+    handler.item_id_prefix = "o2aregistry"
 
     result = handler.handle(
         "30",
@@ -1081,7 +1108,10 @@ def test_o2a_mission_exposes_the_backend_period_for_preserved_devices():
             "startDate": "configuration:start",
             "endDate": "configuration:end",
         },
+        id_prefix="o2amission",
+        base_url="https://registry.o2a-data.de/rest/v2",
     )
+    handler.item_id_prefix = "o2aregistry"
 
     period = handler.get_member_device_period(
         {
@@ -1107,10 +1137,10 @@ def test_configuration_handlers_describe_device_effects_without_interview_models
         attribute_mapping={},
         id_prefix="configuration",
         base_url="https://backend.example",
-        selected_devices_attribute_uri="selected",
-        selected_devices_page_uri="page",
-        device_collection_attribute_uri="root",
     )
+    handler.selected_devices_attribute_uri = "selected"
+    handler.selected_devices_page_uri = "page"
+    handler.device_collection_attribute_uri = "root"
     if backend == "sms":
         members = tuple(
             contracts.ConfigurationMember(

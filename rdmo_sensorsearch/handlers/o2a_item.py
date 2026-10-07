@@ -1,5 +1,4 @@
 import logging
-from urllib.parse import urlsplit
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerResult
@@ -20,13 +19,9 @@ class O2ARegistryItemHandler(BackendRecordHandler):
     3. Units to add them to the parameters
     4. Global units list (for parameter unit lookup)
 
-     base_url (str, optional):           The base URL for API requests
-                                                to the O2A Registry. Defaults
-                                                to 'https://registry.o2a-data.de/rest/v2'.
+    Connection identity and attribute mapping are supplied by typed assembly.
     """
 
-    id_prefix = "o2aregistry"
-    base_url = "https://registry.o2a-data.de/rest/v2"
     materialize_device_details = True
 
     # URL templates
@@ -37,27 +32,6 @@ class O2ARegistryItemHandler(BackendRecordHandler):
     item_api_link_template = "{base_url}/items/{id}"
     item_frontend_link_template = "{base_url_origin}/items/{id}"
     device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
-
-    def __init__(self, attribute_mapping=None, id_prefix=None, base_url=None, **kwargs):
-        """
-        Initializes the O2ARegistryItemHandler.
-
-        Args:
-
-            attribute_mapping (dict, optional): A dictionary mapping JMESPath
-                                                expressions to attribute URIs.
-                                                Defaults to an empty dictionary.
-            **kwargs: Additional keyword arguments.
-
-        """
-        base_url = base_url or self.base_url
-
-        super().__init__(
-            attribute_mapping=attribute_mapping,
-            id_prefix=id_prefix,
-            base_url=base_url,
-            **kwargs,
-        )
 
     def handle(self, backend_id: str, *, context: HandlerExecutionContext, auth_token: str | None = None):
         """
@@ -116,11 +90,6 @@ class O2ARegistryItemHandler(BackendRecordHandler):
             elif endpoint == "item" and not payload:
                 errors.append(f"O2A item request for item {item_id} returned no data.")
         return errors
-
-    @property
-    def base_url_origin(self) -> str:
-        parsed = urlsplit(self.base_url)
-        return f"{parsed.scheme}://{parsed.netloc}"
 
     def add_links_to_data(self, data: dict, item_id: str) -> None:
         values = {

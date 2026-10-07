@@ -1,7 +1,6 @@
 import logging
 from collections import defaultdict
 from datetime import timezone as dt_timezone
-from urllib.parse import urlsplit
 
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.contracts import (
@@ -23,16 +22,13 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
     Resolves one O2A Registry mission and materializes its associated items.
     """
 
-    id_prefix = "o2amission"
-    base_url = "https://registry.o2a-data.de/rest/v2"
-
     mission_url = "{base_url}/missions/{id}"
     mission_items_url = "{base_url}/missions/{id}/items?offset={offset}&hits={page_size}"
     item_url = "{base_url}/items/{id}"
     mission_item_page_size = 100
     max_collection_pages = 1000
 
-    item_id_prefix = "o2aregistry"
+    item_id_prefix: str
     item_text_prefix = "O2A Item"
     item_text_template = "{configuration} {prefix}({item_id}): {name}{serial}"
 
@@ -145,11 +141,6 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         frontend_attribute_uri = getattr(self, "frontend_link_attribute_uri", None)
         if frontend_attribute_uri:
             mapped_values[frontend_attribute_uri] = self.frontend_link_template.format(**values)
-
-    @property
-    def base_url_origin(self) -> str:
-        parsed = urlsplit(self.base_url)
-        return f"{parsed.scheme}://{parsed.netloc}"
 
     def _normalize_datetimes(self, mapped_values: dict[str, str | None]) -> None:
         datetime_paths = set(getattr(self, "date_mapping_paths", []))

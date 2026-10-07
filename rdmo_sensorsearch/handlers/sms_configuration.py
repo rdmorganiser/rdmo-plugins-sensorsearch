@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Mapping
 from datetime import timezone as dt_timezone
 
 from rdmo_sensorsearch.contracts import (
@@ -27,8 +28,8 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
     configuration_end_date_path = "data.attributes.end_date"
     uses_auth_token = True
 
-    def __init__(self, *, backend: ConfigurationSource, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *, backend: ConfigurationSource, id_prefix: str, base_url: str, attribute_mapping: Mapping[str, str]):
+        super().__init__(id_prefix=id_prefix, base_url=base_url, attribute_mapping=attribute_mapping)
         self.backend = backend
 
     def handle(

@@ -57,12 +57,12 @@ min_search_len = 3
 
 [ProjectConfigurationDevicesProvider]
 [[ProjectConfigurationDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
 [ProjectDataCollectionDevicesProvider]
 [[ProjectDataCollectionDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
 [DataCollectionVariableSync]
@@ -125,7 +125,7 @@ timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refr
 backend = "o2a"
 # Earth-Sensor-compatible mapping, also used by MOSES.
 [[handlers.O2ARegistryItemHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
@@ -162,7 +162,7 @@ backend = "ufz"
 
 # MOSES Catalog mapping
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
-catalog_uri = "https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"
+catalog_uris = ["https://rdmo-sandbox.gfz-potsdam.de/terms/questions/moses"]
 search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
@@ -190,7 +190,7 @@ managed_attribute_uris = [
 
 # Earth-Sensor catalog https://rdmo.nfdi4earth.de/terms/questions/earth-sensor
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",
@@ -250,7 +250,7 @@ managed_attribute_uris = [
 
 # Earth-Sensor configuration catalog mapping
 [[handlers.SensorManagementSystemConfigurationHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 
 
 [handlers.O2ARegistryMissionHandler]
@@ -275,7 +275,7 @@ managed_attribute_uris = [
 "endDate" = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/configurations-end-datetime"
 
 [[handlers.O2ARegistryMissionHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 
 
 [handlers.GIPPInstrumentHandler]
@@ -283,7 +283,7 @@ managed_attribute_uris = [
 backend = "gipp"
 # Earth-Sensor-compatible mapping, also used by MOSES.
 [[handlers.GIPPInstrumentHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link",

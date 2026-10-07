@@ -11,12 +11,19 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from dataclasses import fields
 from pathlib import Path
 from xml.etree import ElementTree
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from rdmo_sensorsearch.config_models import PluginConfig
 from testing.paths import CATALOGS_ROOT, FIXTURES_ROOT, PRODUCTION_CONFIG_PATH, REPOSITORY_ROOT
 
 ROOT = REPOSITORY_ROOT
@@ -97,10 +104,36 @@ def generate_catalog() -> bytes:
 
 def generate_config() -> bytes:
     source = SOURCE_CONFIG.read_text(encoding="utf-8")
+    config = PluginConfig.from_mapping(tomllib.loads(source))
+    # Materialize implicit attribute defaults before mirroring their namespaces.
+    # Otherwise the test profile silently points at production attributes.
+    for table, catalogs in (
+        ("DataCollectionVariableSync.catalogs", config.data_collection_variable_sync.catalogs),
+        ("handlers.O2ARegistryItemHandler.catalogs", config.handlers["O2ARegistryItemHandler"].catalogs),
+    ):
+        entries = iter(catalogs)
+
+        def with_attribute_defaults(match, entries=entries):
+            settings = next(entries).settings
+            block = match.group(0)
+            defaults = "".join(
+                f'{field.name} = "{value}"\n'
+                for field in fields(settings)
+                if field.name.endswith("_attribute_uri")
+                and isinstance(value := getattr(settings, field.name), str)
+                and not re.search(rf"(?m)^{field.name}\s*=", block)
+            )
+            return block + defaults
+
+        source = re.sub(
+            rf"(?m)^\[\[{re.escape(table)}\]\]\n(?:(?!^\[).*(?:\n|$))*",
+            with_attribute_defaults,
+            source,
+        )
     transformed = re.sub(r"https?://[^\"'\s]+", lambda match: mirror_uri(match.group(0)), source)
     transformed = transformed.replace(
         "[[DeviceDetailSync.catalogs]]\n",
-        f'[[DeviceDetailSync.catalogs]]\ncatalog_uri = "{TARGET_CATALOG_URI}"\n',
+        f'[[DeviceDetailSync.catalogs]]\ncatalog_uris = ["{TARGET_CATALOG_URI}"]\n',
         1,
     )
     header = (

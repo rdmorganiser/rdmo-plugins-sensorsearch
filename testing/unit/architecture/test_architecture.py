@@ -119,7 +119,6 @@ def test_handlers_do_not_import_workflows():
 def test_handlers_do_not_import_storage_or_frameworks():
     forbidden = (
         "rdmo_sensorsearch.persistence",
-        "rdmo_sensorsearch.project_values",
         "rdmo",
         "django",
     )

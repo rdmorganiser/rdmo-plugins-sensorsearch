@@ -45,6 +45,7 @@ def test_device_handler_maps_injected_metadata_and_binds_notices_without_http():
         backend=SimpleNamespace(get_device=get_device),
         id_prefix="dev",
         attribute_mapping={"data.attributes.long_name": "name", "sms_owner_organizations": "owner"},
+        base_url="https://sms.example/api",
     )
     result = handler.handle("1", context=HandlerExecutionContext(), auth_token="token")
     assert calls == [("1", "token")]
@@ -72,16 +73,17 @@ def test_configuration_handler_keeps_mapping_and_effects_with_injected_membershi
     handler = SensorManagementSystemConfigurationHandler(
         backend=SimpleNamespace(get_configuration=get_configuration, get_configuration_members=get_members),
         id_prefix="cfg",
-        device_id_prefix="dev",
         attribute_mapping={"data.attributes.label": "label"},
-        selected_devices_attribute_uri="selected",
-        selected_devices_page_uri="page",
-        device_collection_attribute_uri="root",
-        frontend_link_attribute_uri="link",
-        membership_filter_enabled=True,
-        membership_filter_start_attribute_uri="start",
-        membership_filter_end_attribute_uri="end",
+        base_url="https://sms.example/api",
     )
+    handler.device_id_prefix = "dev"
+    handler.selected_devices_attribute_uri = "selected"
+    handler.selected_devices_page_uri = "page"
+    handler.device_collection_attribute_uri = "root"
+    handler.frontend_link_attribute_uri = "link"
+    handler.membership_filter_enabled = True
+    handler.membership_filter_start_attribute_uri = "start"
+    handler.membership_filter_end_attribute_uri = "end"
     result = handler.handle(
         "2",
         context=HandlerExecutionContext(
@@ -106,8 +108,12 @@ def test_membership_failure_returns_existing_error_contract_without_effects():
         get_configuration_members=lambda *args, **kwargs: BackendFailure(("Unavailable",)),
     )
     handler = SensorManagementSystemConfigurationHandler(
-        backend=backend, attribute_mapping={}, selected_devices_attribute_uri="selected"
+        backend=backend,
+        attribute_mapping={},
+        id_prefix="cfg",
+        base_url="https://sms.example/api",
     )
+    handler.selected_devices_attribute_uri = "selected"
     assert handler.handle("2", context=HandlerExecutionContext()) == {"errors": ["Unavailable"]}
 
 

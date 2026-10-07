@@ -36,7 +36,13 @@ def test_providers_format_options_using_injected_capabilities(provider_class, me
         calls.append((query, limit, auth_token))
         return BackendSuccess((SearchRecord("42", attributes),))
 
-    provider = provider_class(backend=SimpleNamespace(**{method: search}), id_prefix="test", text_prefix="Test", max_hits=5)
+    provider = provider_class(
+        backend=SimpleNamespace(**{method: search}),
+        id_prefix="test",
+        text_prefix="Test",
+        max_hits=5,
+        base_url="https://sms.example/api",
+    )
     provider.auth_token = "token"
     assert provider.get_options(None, search=None) == [] and calls == []
     assert provider.get_options(None, search="Sensor & Configuration") == [expected]
@@ -52,7 +58,13 @@ def test_providers_format_options_using_injected_capabilities(provider_class, me
 )
 def test_provider_failure_returns_no_options(provider_class, method):
     backend = SimpleNamespace(**{method: lambda *args, **kwargs: BackendFailure(("Unavailable",))})
-    provider = provider_class(backend=backend, id_prefix="test", text_prefix="Test")
+    provider = provider_class(
+        backend=backend,
+        id_prefix="test",
+        text_prefix="Test",
+        base_url="https://sms.example/api",
+        max_hits=10,
+    )
     provider.auth_token = "token"
     assert provider.get_options(None, search="Sensor") == []
 
@@ -79,7 +91,7 @@ def _sms_config(*, backend_settings=None, provider=None, catalog=None):
                 "SensorManagementSystemDeviceHandler": {
                     "instances": [{"backend": "sms"}],
                     "defaults": {"search_attribute_uri": "search", "attribute_mapping": {"data.attributes.long_name": "name"}},
-                    "catalogs": [catalog or {"catalog_uri": "catalog"}],
+                    "catalogs": [catalog or {"catalog_uris": ["catalog"]}],
                 }
             },
         }
@@ -118,7 +130,7 @@ def test_handler_factory_keeps_catalog_mapping_and_endpoint_overrides(monkeypatc
     monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
     config = _sms_config(
         backend_settings={"device": {"device_url": "{base_url}/catalog-device/{id}", "contact_url": "{base_url}/contacts/{id}"}},
-        catalog={"catalog_uri": "catalog", "attribute_mapping": {"data.attributes.serial_number": "serial"}},
+        catalog={"catalog_uris": ["catalog"], "attribute_mapping": {"data.attributes.serial_number": "serial"}},
     )
     monkeypatch.setattr(handler_factory, "load_config_model", lambda: config)
     (binding,) = handler_factory.build_handlers_by_catalog()["catalog"]

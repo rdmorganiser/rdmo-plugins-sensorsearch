@@ -1,4 +1,4 @@
-"""Build test consumers with explicit adapters; legacy fixture kwargs stay test-local."""
+"""Build test consumers with explicit adapters and fixture-only settings."""
 
 from dataclasses import fields
 
@@ -14,9 +14,15 @@ from rdmo_sensorsearch.handlers.sms_device import SensorManagementSystemDeviceHa
 def make_sms_device_handler(**kwargs):
     names = {field.name for field in fields(SMSDeviceSettings)}
     settings = SMSDeviceSettings(**{name: kwargs.pop(name) for name in names if name in kwargs})
-    return SensorManagementSystemDeviceHandler(
-        backend=SMSBackend(fetch=backend_assembly.fetch_json, device_settings=settings), base_url=settings.base_url, **kwargs
+    handler = SensorManagementSystemDeviceHandler(
+        backend=SMSBackend(fetch=backend_assembly.fetch_json, device_settings=settings),
+        base_url=settings.base_url,
+        id_prefix=kwargs.pop("id_prefix", "sms"),
+        attribute_mapping=kwargs.pop("attribute_mapping", {}),
     )
+    for name, value in kwargs.items():
+        setattr(handler, name, value)
+    return handler
 
 
 def make_sms_configuration_handler(**kwargs):
@@ -25,11 +31,15 @@ def make_sms_configuration_handler(**kwargs):
     values = {name: kwargs.pop(name) for name in names if name in kwargs}
     path = values.get("configuration_self_link_path", "data.links.self")
     settings = SMSConfigurationSettings(**values, self_link_fallback_enabled=path in kwargs.get("attribute_mapping", {}))
-    return SensorManagementSystemConfigurationHandler(
+    handler = SensorManagementSystemConfigurationHandler(
         backend=SMSBackend(fetch=backend_assembly.fetch_json, configuration_settings=settings),
         base_url=settings.base_url,
-        **kwargs,
+        id_prefix=kwargs.pop("id_prefix", "smscfg"),
+        attribute_mapping=kwargs.pop("attribute_mapping", {}),
     )
+    for name, value in kwargs.items():
+        setattr(handler, name, value)
+    return handler
 
 
 def resolve_member_values(handler, **kwargs):

@@ -107,6 +107,16 @@ their current API implementations. No runtime consumer reads `.raw`, calls the
 removed mapping loader, or serializes configuration back into constructor
 kwargs. The TOML was migrated once; persisted identifiers remain unchanged.
 
+Typed assembly is the supported construction path for backend-specific
+consumers. Providers require keyword-only `id_prefix`, `text_prefix`, `base_url`,
+and `max_hits`; handlers require keyword-only `id_prefix`, `base_url`, and
+`attribute_mapping`. SMS consumers also require their injected capability
+backend. Handlers own a mutable copy of the supplied mapping. Constructors do
+not accept arbitrary settings or fall back to class-level connection defaults.
+Assembly assigns catalog settings and endpoint templates explicitly after
+construction. RDMO-facing aggregate and project-local providers retain their
+framework entry points and normal construction behavior.
+
 Backend definitions distinguish installation names from device/configuration
 namespaces. Search filtering uses those declared relationships, not prefix
 suffix conventions. Authentication remains request-specific. Catalog mappings,
