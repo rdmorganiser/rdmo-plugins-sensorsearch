@@ -30,10 +30,8 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
     date_mapping_paths = ("startDate", "endDate")
     datetime_output_format = "%Y-%m-%d %H:%M"
 
-    def __init__(
-        self, *, backend: ConfigurationWithMembersSource, id_prefix: str, base_url: str, attribute_mapping: Mapping[str, str]
-    ):
-        super().__init__(id_prefix=id_prefix, base_url=base_url, attribute_mapping=attribute_mapping)
+    def __init__(self, *, backend: ConfigurationWithMembersSource, id_prefix: str, attribute_mapping: Mapping[str, str]):
+        super().__init__(id_prefix=id_prefix, attribute_mapping=attribute_mapping)
         self.backend = backend
 
     def handle(self, backend_id: str, *, context: HandlerExecutionContext, auth_token: str | None = None) -> HandlerOutcome:

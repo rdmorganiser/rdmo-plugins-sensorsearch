@@ -17,7 +17,6 @@ def make_sms_device_handler(**kwargs):
     settings = SMSDeviceSettings(**{name: kwargs.pop(name) for name in names if name in kwargs})
     handler = SensorManagementSystemDeviceHandler(
         backend=SMSBackend(fetch=raising_fetch(backend_assembly.fetch_json), device_settings=settings),
-        base_url=settings.base_url,
         id_prefix=kwargs.pop("id_prefix", "sms"),
         attribute_mapping=kwargs.pop("attribute_mapping", {}),
     )
@@ -34,7 +33,6 @@ def make_sms_configuration_handler(**kwargs):
     settings = SMSConfigurationSettings(**values, self_link_fallback_enabled=path in kwargs.get("attribute_mapping", {}))
     handler = SensorManagementSystemConfigurationHandler(
         backend=SMSBackend(fetch=raising_fetch(backend_assembly.fetch_json), configuration_settings=settings),
-        base_url=settings.base_url,
         id_prefix=kwargs.pop("id_prefix", "smscfg"),
         attribute_mapping=kwargs.pop("attribute_mapping", {}),
     )

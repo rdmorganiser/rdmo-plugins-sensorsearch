@@ -1,7 +1,6 @@
 import logging
 from collections.abc import Mapping
 from typing import Any
-from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
@@ -19,28 +18,16 @@ class BackendRecordHandler:
         self,
         *,
         id_prefix: str,
-        base_url: str,
         attribute_mapping: Mapping[str, str],
     ):
         """Own the mapping and connection values supplied by typed assembly."""
         self._id_prefix = id_prefix
-        self.base_url = base_url
         self.attribute_mapping = attribute_mapping
 
     @property
     def id_prefix(self) -> str:
         """Return the configured external-ID namespace."""
         return self._id_prefix
-
-    @property
-    def base_url(self) -> str:
-        return self._base_url
-
-    @base_url.setter
-    def base_url(self, value: str) -> None:
-        if not isinstance(value, str):
-            raise TypeError("base_url must be a string")
-        self._base_url = value
 
     @property
     def attribute_mapping(self) -> dict[str, str]:
@@ -92,8 +79,3 @@ class BackendRecordHandler:
             }
         )
         return authoritative_values
-
-    @property
-    def base_url_origin(self) -> str:
-        parsed = urlsplit(self.base_url)
-        return f"{parsed.scheme}://{parsed.netloc}"

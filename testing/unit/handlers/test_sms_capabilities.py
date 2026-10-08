@@ -17,6 +17,7 @@ from rdmo_sensorsearch.contracts import (
     HandlerFailure,
     HandlerResult,
     MountLocation,
+    MountPeriod,
     RefreshNotice,
     SelectedDevice,
     StaticLocation,
@@ -46,7 +47,6 @@ def test_device_handler_maps_injected_metadata_and_binds_notices_without_http():
         backend=SimpleNamespace(get_device=get_device),
         id_prefix="dev",
         attribute_mapping={"data.attributes.long_name": "name", "sms_owner_organizations": "owner"},
-        base_url="https://sms.example/api",
     )
     result = handler.handle("1", context=HandlerExecutionContext(), auth_token="token")
     assert calls == [("1", "token")]
@@ -67,7 +67,8 @@ def test_configuration_handler_keeps_mapping_and_effects_with_injected_membershi
         calls.append(("configuration", identifier, auth_token))
         return BackendSuccess(metadata)
 
-    def get_members(configuration, *, period, auth_token):
+    def get_members(configuration, *, period, require_configuration_period, auth_token):
+        assert require_configuration_period
         calls.append(("members", configuration, period, auth_token))
         return BackendSuccess(ConfigurationMembership((member,), StaticLocation(51, 7)))
 
@@ -75,7 +76,6 @@ def test_configuration_handler_keeps_mapping_and_effects_with_injected_membershi
         backend=SimpleNamespace(get_configuration=get_configuration, get_configuration_members=get_members),
         id_prefix="cfg",
         attribute_mapping={"data.attributes.label": "label"},
-        base_url="https://sms.example/api",
     )
     handler.device_id_prefix = "dev"
     handler.selected_devices_attribute_uri = "selected"
@@ -103,7 +103,7 @@ def test_configuration_handler_keeps_mapping_and_effects_with_injected_membershi
         assert selected.external_id == "dev:1" and selected.site_name == "Plot" and selected.mount_location_resolved
 
 
-def test_membership_failure_returns_existing_error_contract_without_effects():
+def test_membership_failure_returns_typed_failure_without_effects():
     backend = SimpleNamespace(
         get_configuration=lambda *args, **kwargs: BackendSuccess(ConfigurationMetadata({"data": {"id": "2"}})),
         get_configuration_members=lambda *args, **kwargs: BackendFailure(("Unavailable",)),
@@ -112,10 +112,50 @@ def test_membership_failure_returns_existing_error_contract_without_effects():
         backend=backend,
         attribute_mapping={},
         id_prefix="cfg",
-        base_url="https://sms.example/api",
     )
     handler.selected_devices_attribute_uri = "selected"
     assert handler.handle("2", context=HandlerExecutionContext()) == HandlerFailure(("Unavailable",))
+
+
+@pytest.mark.parametrize("operation", ("get_device", "get_mount_period", "get_mount_location"))
+def test_device_handler_propagates_capability_failures(operation):
+    backend = SimpleNamespace(
+        get_device=lambda *args, **kwargs: BackendSuccess(DeviceMetadata({"name": "Sensor"})),
+        get_mount_period=lambda *args, **kwargs: BackendSuccess(MountPeriod("2025-01-01", None, {})),
+    )
+    errors = ("Unavailable", "Try later")
+    setattr(backend, operation, lambda *args, **kwargs: BackendFailure(errors))
+    handler = SensorManagementSystemDeviceHandler(backend=backend, id_prefix="dev", attribute_mapping={"name": "name"})
+
+    result = handler.handle("1", context=HandlerExecutionContext(configuration_external_id="cfg:2"))
+
+    assert result == HandlerFailure(errors)
+
+
+@pytest.mark.parametrize("operation", ("get_configuration", "get_static_location"))
+def test_configuration_handler_propagates_capability_failures(operation):
+    backend = SimpleNamespace(
+        get_configuration=lambda *args, **kwargs: BackendSuccess(ConfigurationMetadata({"name": "Configuration"})),
+    )
+    errors = ("Unavailable", "Try later")
+    setattr(backend, operation, lambda *args, **kwargs: BackendFailure(errors))
+    handler = SensorManagementSystemConfigurationHandler(backend=backend, id_prefix="cfg", attribute_mapping={"name": "name"})
+    handler.latitude_attribute_uri = "latitude"
+
+    assert handler.handle("2", context=HandlerExecutionContext()) == HandlerFailure(errors)
+
+
+def test_membership_filter_requires_configured_input_uris():
+    handler = SensorManagementSystemConfigurationHandler(
+        backend=SimpleNamespace(get_configuration=lambda *args, **kwargs: BackendSuccess(ConfigurationMetadata({}))),
+        id_prefix="cfg",
+        attribute_mapping={},
+    )
+    handler.membership_filter_enabled = True
+
+    result = handler.handle("2", context=HandlerExecutionContext(require_configuration_period=True))
+
+    assert result == HandlerFailure(("The SMS membership filter inputs are not configured for this catalog.",))
 
 
 def test_bulk_enricher_uses_custom_profile_and_logs_partial_capability_failures(caplog):

@@ -157,7 +157,6 @@ def build_sms_device_provider(
     provider = SensorManagementSystemDeviceProvider(
         id_prefix=definition.prefix("device"),
         text_prefix=settings.text_prefix,
-        base_url=definition.settings.device_search_url.format(base_url=definition.base_url),
         max_hits=settings.max_hits,
         backend=connection,
     )
@@ -183,7 +182,6 @@ def build_sms_configuration_provider(
     provider = SensorManagementSystemConfigurationProvider(
         id_prefix=definition.prefix("configuration"),
         text_prefix=settings.text_prefix,
-        base_url=definition.settings.configuration_search_url.format(base_url=definition.base_url),
         max_hits=settings.max_hits,
         backend=connection,
     )
@@ -204,7 +202,6 @@ def build_o2a_item_provider(config: ProviderInstanceConfig, definition: BackendD
     assert isinstance(connection, O2ABackend)
     settings = config.settings
     provider = O2ARegistryItemProvider(
-        base_url=connection._item.search_url,
         id_prefix=definition.prefix("device"),
         text_prefix=settings.text_prefix,
         backend=connection,
@@ -233,7 +230,6 @@ def build_o2a_mission_provider(config: ProviderInstanceConfig, definition: Backe
         mission_query_settings=O2AMissionQuerySettings(settings.where_template, settings.sorts, settings.offset),
     )
     provider = O2ARegistryMissionProvider(
-        base_url=connection._mission.search_url,
         id_prefix=definition.prefix("configuration"),
         text_prefix=settings.text_prefix,
         backend=connection,
@@ -256,7 +252,6 @@ def build_gipp_instrument_provider(config: ProviderInstanceConfig, definition: B
     assert isinstance(connection, GIPPBackend)
     settings = config.settings
     provider = GIPPInstrumentProvider(
-        base_url=definition.base_url,
         id_prefix=definition.prefix("device"),
         text_prefix=settings.text_prefix,
         backend=connection,
@@ -290,7 +285,6 @@ def build_sms_device_handler(
     assert isinstance(connection, SMSBackend)
     handler = SensorManagementSystemDeviceHandler(
         id_prefix=definition.prefix("device"),
-        base_url=definition.base_url,
         attribute_mapping=dict(catalog.attribute_mapping),
         backend=connection,
     )
@@ -316,7 +310,6 @@ def build_sms_configuration_handler(
     assert isinstance(connection, SMSBackend)
     handler = SensorManagementSystemConfigurationHandler(
         id_prefix=definition.prefix("configuration"),
-        base_url=definition.base_url,
         attribute_mapping=dict(catalog.attribute_mapping),
         backend=connection,
     )
@@ -361,10 +354,7 @@ def build_o2a_item_handler(
     connection = build_backend(definition, "device")
     assert isinstance(connection, O2ABackend)
     handler = O2ARegistryItemHandler(
-        base_url=connection._item.base_url,
-        id_prefix=definition.prefix("device"),
-        backend=connection,
-        attribute_mapping=dict(catalog.attribute_mapping),
+        id_prefix=definition.prefix("device"), backend=connection, attribute_mapping=dict(catalog.attribute_mapping)
     )
     if settings.device_collection_attribute_uri is not None:
         handler.device_collection_attribute_uri = settings.device_collection_attribute_uri
@@ -385,7 +375,6 @@ def build_o2a_mission_handler(
     connection = build_backend(definition, "configuration")
     assert isinstance(connection, O2ABackend)
     handler = O2ARegistryMissionHandler(
-        base_url=connection._mission.base_url,
         id_prefix=definition.prefix("configuration"),
         backend=connection,
         attribute_mapping=dict(catalog.attribute_mapping),
@@ -424,10 +413,7 @@ def build_gipp_instrument_handler(
     connection = build_backend(definition, "device")
     assert isinstance(connection, GIPPBackend)
     handler = GIPPInstrumentHandler(
-        base_url=definition.settings.metadata_url.format(base_url=definition.base_url),
-        id_prefix=definition.prefix("device"),
-        backend=connection,
-        attribute_mapping=dict(catalog.attribute_mapping),
+        id_prefix=definition.prefix("device"), backend=connection, attribute_mapping=dict(catalog.attribute_mapping)
     )
     handler.managed_attribute_uris = settings.managed_attribute_uris
     return handler

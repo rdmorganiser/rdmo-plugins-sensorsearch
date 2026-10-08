@@ -40,10 +40,8 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
     supports_mount_period_lookup = True
     supports_mount_location_lookup = True
 
-    uses_auth_token = True
-
-    def __init__(self, *, backend: DeviceSource, id_prefix: str, base_url: str, attribute_mapping: Mapping[str, str]):
-        super().__init__(id_prefix=id_prefix, base_url=base_url, attribute_mapping=attribute_mapping)
+    def __init__(self, *, backend: DeviceSource, id_prefix: str, attribute_mapping: Mapping[str, str]):
+        super().__init__(id_prefix=id_prefix, attribute_mapping=attribute_mapping)
         self.backend = backend
 
     def handle(
@@ -60,13 +58,12 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             backend_id (str): The ID of the device to get information for.
 
         Returns:
-            dict: A dictionary containing the mapped values from the SMS API
-                  response.
+            HandlerOutcome: Mapped metadata or a typed failure.
         """
 
         response = self.backend.get_device(backend_id, auth_token=auth_token)
         if isinstance(response, BackendFailure):
-            return HandlerFailure(tuple(response.errors))
+            return HandlerFailure(response.errors)
         metadata = response.value
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, metadata.document)
         owner_attribute_uri = self.attribute_mapping.get(OWNER_ORGANIZATIONS_PATH)

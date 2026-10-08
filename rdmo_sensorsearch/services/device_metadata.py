@@ -114,14 +114,7 @@ def _fetch_device_metadata(
     # Bulk mounting belongs to the injected enricher; no direct mount lookup.
     context = HandlerExecutionContext(device_detail_settings=device_detail_settings)
     handler = plan.handler_binding.handler
-    if getattr(handler, "uses_auth_token", False):
-        handler_result = handler.handle(
-            backend_id=device_id,
-            context=context,
-            auth_token=auth_token,
-        )
-    else:
-        handler_result = handler.handle(backend_id=device_id, context=context)
+    handler_result = handler.handle(backend_id=device_id, context=context, auth_token=auth_token)
 
     if isinstance(handler_result, HandlerFailure):
         logger.error("Device handler returned errors for %s: %s", plan.device.external_id, handler_result.errors)

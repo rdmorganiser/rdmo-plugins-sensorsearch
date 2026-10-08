@@ -71,8 +71,7 @@ class AggregatingSearchProvider(Provider):
 
         auth_token = get_sms_auth_token(user=user)
         for provider in providers:
-            if getattr(provider, "uses_auth_token", False):
-                provider.auth_token = auth_token
+            provider.auth_token = auth_token
 
         logger.debug("Search term: %s", search)
 

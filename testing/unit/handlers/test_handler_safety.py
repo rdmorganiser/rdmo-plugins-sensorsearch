@@ -1141,7 +1141,7 @@ def test_configuration_handlers_describe_device_effects_without_interview_models
         if backend == "sms"
         else o2a_mission_handler_module.O2ARegistryMissionHandler
     )
-    handler = cls(base_url="https://consumer.example", backend=capability, attribute_mapping={}, id_prefix="configuration")
+    handler = cls(backend=capability, attribute_mapping={}, id_prefix="configuration")
     handler.selected_devices_attribute_uri = "selected"
     handler.selected_devices_page_uri = "page"
     handler.device_collection_attribute_uri = "root"

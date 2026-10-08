@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 class O2ARegistryItemProvider(BaseRemoteSearchProvider):
     """Format O2A device search results as RDMO options."""
 
-    def __init__(self, *, backend: DeviceSearch, id_prefix: str, text_prefix: str, base_url: str, max_hits: int):
-        super().__init__(id_prefix=id_prefix, text_prefix=text_prefix, base_url=base_url, max_hits=max_hits)
+    def __init__(self, *, backend: DeviceSearch, id_prefix: str, text_prefix: str, max_hits: int):
+        super().__init__(id_prefix=id_prefix, text_prefix=text_prefix, max_hits=max_hits)
         self.backend = backend
 
     def get_options(self, project, search=None, user=None, site=None):

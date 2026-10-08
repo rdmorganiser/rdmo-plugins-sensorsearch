@@ -18,8 +18,10 @@ from rdmo_sensorsearch.persistence.value_reconciliation import apply_mapped_valu
 from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
 from rdmo_sensorsearch.services.refresh import RefreshAction, RefreshKind
 from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
+from rdmo_sensorsearch.transport import TransportError
 from rdmo_sensorsearch.workflows import backend_value_sync, device_details, metadata_refresh
 from testing.integration.django.test_metadata_refresh import earth_sensor_catalog as earth_sensor_catalog
+from testing.transport_helpers import raising_fetch
 
 pytestmark = pytest.mark.django_db
 OWNER_URI = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner"
@@ -119,7 +121,7 @@ def sms_project(earth_sensor_catalog, monkeypatch):
             }
         raise AssertionError(f"Unexpected SMS request: {url}")
 
-    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
+    monkeypatch.setattr(backend_assembly, "fetch_json", raising_fetch(fetch))
     clear_handler_registry()
     yield state
     clear_handler_registry()
@@ -231,7 +233,7 @@ def test_clearing_device_selection_clears_managed_owner(sms_project):
 @pytest.mark.parametrize(
     "payload",
     [
-        {"errors": ["backend unavailable"]},
+        TransportError("backend unavailable"),
         {"data": None},
         {"data": [], "included": [None]},
     ],
@@ -304,7 +306,7 @@ def test_configuration_derived_import_and_forced_refresh_replace_owner_in_device
     assert synchronize(force=True).status == "success"
     assert _answer(project).text == "Institute B"
     before = list(project.values.filter(attribute__uri=OWNER_URI).values())
-    sms_project.contact_payload = {"errors": ["backend unavailable"]}
+    sms_project.contact_payload = TransportError("backend unavailable")
     assert synchronize(force=True).status == "failed"
     assert list(project.values.filter(attribute__uri=OWNER_URI).values()) == before
     assert synchronize(devices=[]).status == "success"

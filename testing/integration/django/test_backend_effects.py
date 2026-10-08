@@ -26,7 +26,7 @@ def test_handler_failures_skip_persistence_and_effects(monkeypatch, preserve, ou
     source = Value.objects.create(
         project=workload.project, attribute=workload.attributes["search"], external_id="sms:42", text="selected"
     )
-    handler = SimpleNamespace(uses_auth_token=True, handle=lambda **kwargs: output)
+    handler = SimpleNamespace(handle=lambda **kwargs: output)
     binding = SimpleNamespace(id_prefix="sms", search_attribute_uri=source.attribute.uri, handler=handler)
     monkeypatch.setattr(backend_value_sync, "get_handler_bindings_for_catalog", lambda uri: [binding])
 
@@ -54,7 +54,7 @@ def test_effects_follow_successful_persistence_and_preserve_failure_semantics(mo
     )
     effect = RefreshDeviceDetails((SelectedDevice("Sensor", "sms:1"),), "selected-uri", "root-uri")
     output = HandlerResult(effects=(object() if failure == "unsupported" else effect,))
-    handler = SimpleNamespace(uses_auth_token=True, handle=lambda **kwargs: output)
+    handler = SimpleNamespace(handle=lambda **kwargs: output)
     binding = SimpleNamespace(id_prefix="sms", search_attribute_uri=source.attribute.uri, handler=handler)
     monkeypatch.setattr(backend_value_sync, "get_handler_bindings_for_catalog", lambda uri: [binding])
     events = []

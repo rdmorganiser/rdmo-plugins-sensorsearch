@@ -10,6 +10,7 @@ from rdmo_sensorsearch import backend_assembly, providers
 from rdmo_sensorsearch.config_models import PluginConfig
 from rdmo_sensorsearch.config_models.contracts import CONSUMER_CAPABILITIES
 from testing.paths import FIXTURES_ROOT, PRODUCTION_CONFIG_PATH
+from testing.transport_helpers import raising_fetch
 
 try:
     import tomllib
@@ -46,23 +47,9 @@ def config(profile, request, monkeypatch):
     def unexpected_http(*args, **kwargs):
         pytest.fail("Assembling consumers must not issue HTTP requests")
 
-    monkeypatch.setattr(backend_assembly, "fetch_json", unexpected_http)
+    monkeypatch.setattr(backend_assembly, "fetch_json", raising_fetch(unexpected_http))
     monkeypatch.setattr("requests.sessions.Session.request", unexpected_http)
     return PluginConfig.from_mapping(profile)
-
-
-def _expected_url(definition, resource, *, provider):
-    settings = definition.settings
-    if definition.type == "sms":
-        template = getattr(settings, f"{resource}_search_url") if provider else "{base_url}"
-    elif definition.type == "o2a":
-        if provider:
-            template = settings.item_search_url if resource == "device" else settings.mission_search_url
-        else:
-            template = settings.api_url
-    else:
-        template = "{base_url}" if provider else settings.metadata_url
-    return template.format(base_url=definition.base_url)
 
 
 def test_all_provider_builders_use_typed_connection_and_presentation_values(config):
@@ -74,7 +61,10 @@ def test_all_provider_builders_use_typed_connection_and_presentation_values(conf
         names.add(instance.provider_name)
         assert (provider.backend_name, provider.backend_type, provider.resource_kind) == (definition.name, backend_type, resource)
         assert provider.id_prefix == definition.prefix(resource)
-        assert provider.base_url == _expected_url(definition, resource, provider=True)
+        if definition.type != "sms":
+            assert provider.backend.base_url == definition.base_url
+            assert provider.backend.settings is definition.settings
+        assert not hasattr(provider, "base_url")
         assert (provider.text_prefix, provider.max_hits) == (instance.settings.text_prefix, instance.settings.max_hits)
         if instance.provider_name == "O2ARegistryMissionProvider":
             assert provider.backend._mission.query_url == definition.settings.mission_query_url
@@ -96,7 +86,10 @@ def test_all_handler_builders_use_typed_connections_and_own_catalog_mappings(con
             for catalog in handler_config.catalogs:
                 handler = backend_assembly.HANDLER_BUILDERS[handler_config.handler_name](instance, catalog, definition)
                 assert handler.id_prefix == definition.prefix(resource)
-                assert handler.base_url == _expected_url(definition, resource, provider=False)
+                if definition.type != "sms":
+                    assert handler.backend.base_url == definition.base_url
+                    assert handler.backend.settings is definition.settings
+                assert not hasattr(handler, "base_url")
                 assert handler.attribute_mapping == dict(catalog.attribute_mapping)
                 assert handler.managed_attribute_uris == (
                     frozenset(catalog.attribute_mapping.values()) | frozenset(catalog.settings.managed_attribute_uris)

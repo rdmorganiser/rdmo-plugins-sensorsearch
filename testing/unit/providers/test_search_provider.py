@@ -87,10 +87,9 @@ class FakeManager:
 
 
 class FakeBackendProvider:
-    def __init__(self, id_prefix, results=None, uses_auth_token=True):
+    def __init__(self, id_prefix, results=None):
         self.id_prefix = id_prefix
         self.results = results or []
-        self.uses_auth_token = uses_auth_token
         self.calls = []
 
     def get_options(self, project, search, user, site):

@@ -28,10 +28,9 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
 
     configuration_start_date_path = "data.attributes.start_date"
     configuration_end_date_path = "data.attributes.end_date"
-    uses_auth_token = True
 
-    def __init__(self, *, backend: ConfigurationSource, id_prefix: str, base_url: str, attribute_mapping: Mapping[str, str]):
-        super().__init__(id_prefix=id_prefix, base_url=base_url, attribute_mapping=attribute_mapping)
+    def __init__(self, *, backend: ConfigurationSource, id_prefix: str, attribute_mapping: Mapping[str, str]):
+        super().__init__(id_prefix=id_prefix, attribute_mapping=attribute_mapping)
         self.backend = backend
 
     def handle(
@@ -43,7 +42,7 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
     ) -> HandlerOutcome:
         response = self.backend.get_configuration(backend_id, auth_token=auth_token)
         if isinstance(response, BackendFailure):
-            return HandlerFailure(tuple(response.errors))
+            return HandlerFailure(response.errors)
         configuration = response.value
         configuration_data = configuration.document
 
@@ -66,9 +65,14 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
 
         membership = None
         if selected_devices_attribute_uri and not preserve_existing_collections:
-            members = self.backend.get_configuration_members(configuration, period=configuration_period, auth_token=auth_token)
+            members = self.backend.get_configuration_members(
+                configuration,
+                period=configuration_period,
+                require_configuration_period=require_configuration_period,
+                auth_token=auth_token,
+            )
             if isinstance(members, BackendFailure):
-                return HandlerFailure(tuple(members.errors))
+                return HandlerFailure(members.errors)
             membership = members.value
         needs_configuration_location = any(
             getattr(self, name, None) for name in ("location_attribute_uri", "latitude_attribute_uri", "longitude_attribute_uri")
@@ -77,7 +81,7 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
         if needs_configuration_location and membership is None:
             locations = self.backend.get_static_location(backend_id, auth_token=auth_token)
             if isinstance(locations, BackendFailure):
-                return HandlerFailure(tuple(locations.errors))
+                return HandlerFailure(locations.errors)
             location = locations.value
 
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, configuration_data)

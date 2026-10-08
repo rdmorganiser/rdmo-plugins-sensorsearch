@@ -23,7 +23,6 @@ def _make_handler(kind, values):
     )
     cls = O2ARegistryItemHandler if kind == "item" else O2ARegistryMissionHandler
     handler = cls(
-        base_url="https://consumer.example",
         backend=backend,
         id_prefix=values.pop("id_prefix", "o2aregistry" if kind == "item" else "o2amission"),
         attribute_mapping=values.pop("attribute_mapping", {}),

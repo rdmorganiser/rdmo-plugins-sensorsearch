@@ -15,8 +15,8 @@ from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
 class GIPPInstrumentHandler(BackendRecordHandler):
     """Map GIPP metadata into catalog attributes."""
 
-    def __init__(self, *, backend: DeviceMetadataSource, id_prefix: str, base_url: str, attribute_mapping: Mapping[str, str]):
-        super().__init__(id_prefix=id_prefix, base_url=base_url, attribute_mapping=attribute_mapping)
+    def __init__(self, *, backend: DeviceMetadataSource, id_prefix: str, attribute_mapping: Mapping[str, str]):
+        super().__init__(id_prefix=id_prefix, attribute_mapping=attribute_mapping)
         self.backend = backend
 
     def handle(self, backend_id: str, *, context: HandlerExecutionContext, auth_token: str | None = None) -> HandlerOutcome:

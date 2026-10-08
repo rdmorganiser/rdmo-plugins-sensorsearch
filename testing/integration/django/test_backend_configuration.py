@@ -119,6 +119,6 @@ def test_rebuilding_consumers_does_not_share_mutable_provider_or_mapping_state()
     second = provider_factory.build_provider_instances("DeviceSearchProvider")
     first[1].auth_token = "request-a"
     assert first[1] is not second[1]
-    assert not hasattr(second[1], "auth_token")
+    assert second[1].auth_token is None
     config = load_config_model()
     assert config.backend("gfz").auth.source == "sms_user_token"

@@ -196,14 +196,7 @@ def refresh_value_from_backend(
             preserve_existing_collections=preserve_existing_collections,
             require_configuration_period=require_configuration_period,
         )
-        if getattr(binding.handler, "uses_auth_token", False):
-            handler_output = binding.handler.handle(
-                backend_id=backend_id,
-                auth_token=auth_token,
-                context=context,
-            )
-        else:
-            handler_output = binding.handler.handle(backend_id=backend_id, context=context)
+        handler_output = binding.handler.handle(backend_id=backend_id, context=context, auth_token=auth_token)
     except Exception as error:
         logger.exception(
             "Handler %s failed while processing external_id=%s for catalog=%s",

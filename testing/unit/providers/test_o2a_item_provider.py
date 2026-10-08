@@ -55,11 +55,7 @@ def test_o2a_providers_use_search_capabilities_and_preserve_presentation(
         return BackendFailure(("unavailable",)) if failure else BackendSuccess((SearchRecord("42", attributes),))
 
     provider = provider_class(
-        base_url="https://consumer.example",
-        backend=SimpleNamespace(**{capability: search}),
-        id_prefix="custom",
-        text_prefix="Custom",
-        max_hits=3,
+        backend=SimpleNamespace(**{capability: search}), id_prefix="custom", text_prefix="Custom", max_hits=3
     )
     if capability == "search_configurations":
         provider.option_text = "{prefix}({id}): {name} | {description} | {start_date} | {unknown}"
@@ -72,7 +68,6 @@ def test_o2a_providers_use_search_capabilities_and_preserve_presentation(
 
 def test_o2a_registry_option_uses_item_id_in_display_name():
     provider = o2a_item_provider_module.O2ARegistryItemProvider(
-        base_url="https://consumer.example",
         backend=SimpleNamespace(),
         id_prefix="o2aregistry",
         text_prefix="O2A Item",
@@ -102,17 +97,8 @@ def test_o2a_registry_option_uses_item_id_in_display_name():
 def test_remote_provider_requires_all_configuration_and_rejects_arbitrary_keywords():
     provider_class = o2a_item_provider_module.O2ARegistryItemProvider
     with pytest.raises(TypeError, match="required keyword-only"):
-        provider_class(
-            base_url="https://consumer.example",
-        )
+        provider_class()
     with pytest.raises(TypeError, match="max_hits"):
-        provider_class(base_url="https://consumer.example", backend=SimpleNamespace(), id_prefix="custom", text_prefix="Custom")
+        provider_class(backend=SimpleNamespace(), id_prefix="custom", text_prefix="Custom")
     with pytest.raises(TypeError, match="unexpected keyword"):
-        provider_class(
-            base_url="https://consumer.example",
-            backend=SimpleNamespace(),
-            id_prefix="custom",
-            text_prefix="Custom",
-            max_hits=3,
-            unused=True,
-        )
+        provider_class(backend=SimpleNamespace(), id_prefix="custom", text_prefix="Custom", max_hits=3, unused=True)

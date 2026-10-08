@@ -26,16 +26,13 @@ class SensorManagementSystemDeviceProvider(BaseRemoteSearchProvider):
                             "KIT Sensor".
         max_hits (int):     Maximum number of search results to return,
                             supplied explicitly from parsed configuration.
-        base_url (str):     SMS search API endpoint supplied at construction.
     """
-
-    uses_auth_token = True
 
     option_id = "{id_prefix}:{id}"
     option_text = "{prefix}({id}): {name}{serial}"
 
-    def __init__(self, *, backend: DeviceSearch, id_prefix: str, text_prefix: str, base_url: str, max_hits: int):
-        super().__init__(id_prefix=id_prefix, text_prefix=text_prefix, base_url=base_url, max_hits=max_hits)
+    def __init__(self, *, backend: DeviceSearch, id_prefix: str, text_prefix: str, max_hits: int):
+        super().__init__(id_prefix=id_prefix, text_prefix=text_prefix, max_hits=max_hits)
         self.backend = backend
 
     def get_options(self, project, search=None, user=None, site=None):

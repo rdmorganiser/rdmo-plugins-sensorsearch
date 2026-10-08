@@ -22,10 +22,7 @@ def test_item_handler_maps_capability_metadata_and_propagates_failure():
         )
     )
     handler = O2ARegistryItemHandler(
-        base_url="https://consumer.example",
-        backend=backend,
-        id_prefix="o2a",
-        attribute_mapping={"name": "name", "parameters[].unit": "units"},
+        backend=backend, id_prefix="o2a", attribute_mapping={"name": "name", "parameters[].unit": "units"}
     )
     handler.device_link_attribute_uri = "link"
     result = handler.handle("42", context=HandlerExecutionContext())
@@ -54,7 +51,6 @@ def test_mission_handler_keeps_custom_dates_labels_and_effects():
         return BackendSuccess(ConfigurationMembership((member,)))
 
     handler = O2ARegistryMissionHandler(
-        base_url="https://consumer.example",
         backend=SimpleNamespace(
             get_configuration=lambda *args, **kwargs: BackendSuccess(metadata), get_configuration_members=members
         ),

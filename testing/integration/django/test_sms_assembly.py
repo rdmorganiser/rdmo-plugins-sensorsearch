@@ -10,6 +10,7 @@ from rdmo_sensorsearch.handlers import factory as handler_factory
 from rdmo_sensorsearch.providers import factory as provider_factory
 from rdmo_sensorsearch.providers.sms_configuration import SensorManagementSystemConfigurationProvider
 from rdmo_sensorsearch.providers.sms_device import SensorManagementSystemDeviceProvider
+from testing.transport_helpers import raising_fetch
 
 
 @pytest.mark.parametrize(
@@ -41,7 +42,6 @@ def test_providers_format_options_using_injected_capabilities(provider_class, me
         id_prefix="test",
         text_prefix="Test",
         max_hits=5,
-        base_url="https://sms.example/api",
     )
     provider.auth_token = "token"
     assert provider.get_options(None, search=None) == [] and calls == []
@@ -62,7 +62,6 @@ def test_provider_failure_returns_no_options(provider_class, method):
         backend=backend,
         id_prefix="test",
         text_prefix="Test",
-        base_url="https://sms.example/api",
         max_hits=10,
     )
     provider.auth_token = "token"
@@ -100,7 +99,9 @@ def _sms_config(*, backend_settings=None, provider=None, catalog=None):
 
 def test_provider_factory_keeps_resource_urls_and_entry_overrides(monkeypatch):
     requests = []
-    monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: requests.append(url) or {"data": []})
+    monkeypatch.setattr(
+        backend_assembly, "fetch_json", raising_fetch(lambda url, auth_token=None: requests.append(url) or {"data": []})
+    )
     config = _sms_config(
         backend_settings={
             "device_search_url": "https://sms.example/custom/devices",
@@ -127,7 +128,7 @@ def test_handler_factory_keeps_catalog_mapping_and_endpoint_overrides(monkeypatc
             else {"data": []}
         )
 
-    monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
+    monkeypatch.setattr(backend_assembly, "fetch_json", raising_fetch(fetch))
     config = _sms_config(
         backend_settings={"device": {"device_url": "{base_url}/catalog-device/{id}", "contact_url": "{base_url}/contacts/{id}"}},
         catalog={"catalog_uris": ["catalog"], "attribute_mapping": {"data.attributes.serial_number": "serial"}},

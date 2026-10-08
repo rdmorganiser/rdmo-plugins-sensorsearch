@@ -41,9 +41,8 @@ def _plan(
 
 
 class RecordingHandler:
-    def __init__(self, result, *, uses_auth_token=False):
+    def __init__(self, result):
         self.result = result
-        self.uses_auth_token = uses_auth_token
         self.calls = []
 
     def handle(self, **kwargs):
@@ -93,7 +92,7 @@ def test_fetch_service_invokes_only_refresh_plans_and_extracts_scoped_values():
     assert "instance" not in handler.calls[0]
     assert handler.calls[0]["context"].configuration_external_id is None
     assert handler.calls[0]["context"].device_detail_settings is settings
-    assert "auth_token" not in handler.calls[0]
+    assert handler.calls[0]["auth_token"] is None
 
 
 def test_fetch_service_combines_handler_and_enrichment_notices():
@@ -115,8 +114,6 @@ def test_fetch_service_passes_authentication_and_copies_context_into_worker():
     request_marker = ContextVar("request_marker", default="missing")
 
     class ContextHandler:
-        uses_auth_token = True
-
         def handle(self, **kwargs):
             return HandlerResult(
                 mapped_values={
@@ -235,8 +232,6 @@ def test_fetch_service_bounds_parallel_handler_calls():
     peak_calls = 0
 
     class SlowHandler:
-        uses_auth_token = False
-
         def handle(self, **_kwargs):
             nonlocal active_calls, peak_calls
             with lock:
