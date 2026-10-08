@@ -1,9 +1,8 @@
 import logging
 from html import escape
-from urllib.parse import quote
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
-from rdmo_sensorsearch.client import fetch_json
+from rdmo_sensorsearch.contracts import BackendFailure, DeviceSearch
 from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 
 logger = logging.getLogger(__name__)
@@ -25,22 +24,16 @@ class SensorManagementSystemDeviceProvider(BaseRemoteSearchProvider):
                             more data when using different instances.
         text_prefix (str):  Configured backend and entity label, for example
                             "KIT Sensor".
-        max_hits (int):     Maximum number of search results to return.
-                            Defaults to 10.
-        base_url (str):     Base URL for the SMS API endpoint. Must be set
-                            before calling get_options().
+        max_hits (int):     Maximum number of search results to return,
+                            supplied explicitly from parsed configuration.
     """
-
-    # The keys are set by config kwargs
-    # id_prefix and text_prefix are set by configuration.
-    # base_url is set by config
-    # max_hits = 10 from base provider
-
-    query_url = "{base_url}?q={query}"
-    uses_auth_token = True
 
     option_id = "{id_prefix}:{id}"
     option_text = "{prefix}({id}): {name}{serial}"
+
+    def __init__(self, *, backend: DeviceSearch, id_prefix: str, text_prefix: str, max_hits: int):
+        super().__init__(id_prefix=id_prefix, text_prefix=text_prefix, max_hits=max_hits)
+        self.backend = backend
 
     def get_options(self, project, search=None, user=None, site=None):
         """
@@ -62,23 +55,24 @@ class SensorManagementSystemDeviceProvider(BaseRemoteSearchProvider):
         if search is None:
             return []
 
-        query = quote(search)
-        url = self.query_url.format(base_url=self.base_url, query=query)
-        json_fetched = fetch_json(url, auth_token=getattr(self, "auth_token", None) or get_sms_auth_token(user=user))
-
-        json_data = json_fetched.get("data", [])
-        if not json_data:
-            logger.debug(f"Empty response from SMS API for {search}")
+        response = self.backend.search_devices(
+            search,
+            limit=self.max_hits,
+            auth_token=getattr(self, "auth_token", None) or get_sms_auth_token(user=user),
+        )
+        if isinstance(response, BackendFailure):
+            logger.debug("SMS search failed: %s", response.errors)
             return []
+        records = response.value
 
         optionset = []
 
-        for device in json_data[: self.max_hits]:
+        for device in records:
             optionset.append(
                 {
-                    "id": self.option_id.format(id_prefix=self.id_prefix, id=device["id"]),
-                    "text": self._format_device_text(device["id"], device["attributes"]),
-                    "help": self._format_device_help(device["attributes"]),
+                    "id": self.option_id.format(id_prefix=self.id_prefix, id=device.identifier),
+                    "text": self._format_device_text(device.identifier, device.attributes),
+                    "help": self._format_device_help(device.attributes),
                 }
             )
         return optionset

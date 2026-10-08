@@ -133,6 +133,12 @@ TOML path. The location can be overwritten with
 environment variable of the same name. Restart the RDMO application processes
 after changing the configuration because the validated model is cached.
 
+Define connections once in top-level `[[backends]]` entries; providers and
+handler `instances` reference their names. Use the installation definitions in
+[sensorsearch.toml](sensorsearch.toml) with the examples below. Existing overrides
+need the documented [one-time schema migration](docs/configuration-reference.md#named-backend-definitions-and-migration).
+Stored external IDs and catalog mappings keep their meaning.
+
 ### Configuration: Providers
 
 ```toml
@@ -151,12 +157,12 @@ min_search_len = 3
 
 [ProjectConfigurationDevicesProvider]
 [[ProjectConfigurationDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 
 [ProjectDataCollectionDevicesProvider]
 [[ProjectDataCollectionDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/configuration-set/selected-devices"
 
 [MetadataRefresh]
@@ -205,40 +211,35 @@ message_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refres
 timestamp_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/metadata-refresh/devices/timestamp"
 
 [[DeviceSearchProvider.providers.O2ARegistryItemProvider]]
+backend = "o2a"
 
 [[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
-id_prefix = "gfzsms"
+backend = "gfz"
 text_prefix = "GFZ Sensor"
-base_url = "https://sensors.gfz.de/backend/api/v1/devices"
 
 [[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
-id_prefix = "kitsms"
+backend = "kit"
 text_prefix = "KIT Sensor"
-base_url = "https://sms.atmohub.kit.edu/backend/api/v1/devices"
 
 [[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
-id_prefix = "ufzsms"
+backend = "ufz"
 text_prefix = "UFZ Sensor"
-base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
 [[DeviceSearchProvider.providers.GIPPInstrumentProvider]]
+backend = "gipp"
 
 [[ConfigurationSearchProvider.providers.SensorManagementSystemConfigurationProvider]]
-id_prefix = "gfzcfg"
+backend = "gfz"
 text_prefix = "GFZ Cfg"
-base_url = "https://sensors.gfz.de/backend/api/v1/configurations"
 
 [[ConfigurationSearchProvider.providers.O2ARegistryMissionProvider]]
-id_prefix = "o2amission"
+backend = "o2a"
 text_prefix = "O2A M"
-base_url = "https://registry.o2a-data.de/rest/v2/missions"
 where_template = "name=ILIKE=\"*{query}*\""
 
 [handlers.SensorManagementSystemConfigurationHandler]
-[[handlers.SensorManagementSystemConfigurationHandler.backends]]
-id_prefix = "gfzcfg"
-base_url = "https://sensors.gfz.de/backend/api/v1"
-device_id_prefix = "gfzsms"
+[[handlers.SensorManagementSystemConfigurationHandler.instances]]
+backend = "gfz"
 [handlers.SensorManagementSystemConfigurationHandler.defaults]
 search_attribute_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
 configuration_collection_attribute_uri = "http://example.com/terms/domain/configuration-set"
@@ -254,20 +255,21 @@ location_attribute_uri = "https://rdmorganiser.github.io/terms/domain/project/da
 "data.attributes.description" = "https://rdmorganiser.github.io/terms/domain/project/dataset/annotation"
 "data.links.self" = "https://rdmorganiser.github.io/terms/domain/project/dataset/source"
 [[handlers.SensorManagementSystemConfigurationHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
+catalog_uris = ["http://example.com/terms/questions/example-configurations-earth-sensor"]
 
 [handlers.O2ARegistryMissionHandler]
+[[handlers.O2ARegistryMissionHandler.instances]]
+backend = "o2a"
 [handlers.O2ARegistryMissionHandler.defaults]
 search_attribute_uri = "http://example.com/terms/domain/configuration-set/configuration-search"
 configuration_collection_attribute_uri = "http://example.com/terms/domain/configuration-set"
 selected_devices_attribute_uri = "http://example.com/terms/domain/configuration-set/member-sensor"
 device_collection_attribute_uri = "http://example.com/terms/domain/instruments/id"
-item_id_prefix = "o2aregistry"
 item_text_template = "{configuration} {prefix}({item_id}): {name}{serial}"
 [handlers.O2ARegistryMissionHandler.defaults.attribute_mapping]
 "description" = "http://example.com/terms/domain/configuration-set/description"
 [[handlers.O2ARegistryMissionHandler.catalogs]]
-catalog_uri = "http://example.com/terms/questions/example-configurations-earth-sensor"
+catalog_uris = ["http://example.com/terms/questions/example-configurations-earth-sensor"]
 # These are user-entered filtering inputs, not mission metadata outputs.
 period_start_attribute_uri = "http://example.com/terms/domain/configuration-set/start"
 period_end_attribute_uri = "http://example.com/terms/domain/configuration-set/end"
@@ -315,27 +317,15 @@ to an enabled backend. These initialization requests therefore avoid backend
 authentication and external API calls. Partial or otherwise unmatched searches
 continue to query the configured backends normally.
 
-The `O2ARegistryItemProvider` and `GIPPInstrumentProvider`
-use their default values for `id_prefix`, `text_prefix`, `base_url` and
-`max_hits`.
+Every remote provider declares `backend = "name"`. Its referenced definition
+supplies connection settings and the resource's external-ID namespace. SMS
+providers also declare `text_prefix`; O2A and GIPP use their existing label
+defaults unless overridden. `max_hits` defaults to `10`.
 
-There is no default `base_url` for `SensorManagementSystemDeviceProvider` defined,
-therefore the `base_url` for every instance must be set. In addition the
-`text_prefix` and `id_prefix` is configured. The `text_prefix` is displayed
-before the result, so that the user can identify the correct registry and
-device. The `id_prefix` is used internally, to prefix the id which is saved
-along the value in `external_id`. This is used by the handler to query the
-correct registry when filling out questions with attribute mapping
-automatically.
-
-In conclusion, every remote provider has the following options:
-- `id_prefix` to identify the instance internally and used by the handler
-- `text_prefix` is displayed next to the queried result to identify the used
-  registry
-- `max_hits` defaults to `10` and limits the results to display
-- `base_url` the API URL of the used instance, must be set for the
-  `SensorManagementSystemDeviceProvider` and
-  `SensorManagementSystemConfigurationProvider`
+The provider label is displayed with search results. The backend's
+`device_id_prefix` or `configuration_id_prefix` identifies the namespace stored
+in `external_id` and used to route metadata requests. These persisted values
+are independent of the backend name.
 
 To avoid repeating shared provider settings, provider defaults can be declared
 once per aggregate provider and backend provider class:
@@ -502,8 +492,8 @@ same autocomplete field.
 
 ```toml
 [handlers.O2ARegistryItemHandler]
-#[[handlers.O2ARegistryItemHandler.backends]]
-#id_prefix = "o2aregistry"
+[[handlers.O2ARegistryItemHandler.instances]]
+backend = "o2a"
 [handlers.O2ARegistryItemHandler.defaults]
 search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
 materialize_device_details = true
@@ -514,19 +504,16 @@ device_link_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/device-li
 "serialNumber" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
 [[handlers.O2ARegistryItemHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+catalog_uris = ["http://rdmo-dev.local/terms/questions/sensor-awi-test"]
 # optional per-catalog overrides can be added here
 
 [handlers.SensorManagementSystemDeviceHandler]
-[[handlers.SensorManagementSystemDeviceHandler.backends]]
-id_prefix = "gfzsms"
-base_url = "https://sensors.gfz.de/backend/api/v1"
-[[handlers.SensorManagementSystemDeviceHandler.backends]]
-id_prefix = "kitsms"
-base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
-[[handlers.SensorManagementSystemDeviceHandler.backends]]
-id_prefix = "ufzsms"
-base_url = "https://web.app.ufz.de/sms/backend/api/v1"
+[[handlers.SensorManagementSystemDeviceHandler.instances]]
+backend = "gfz"
+[[handlers.SensorManagementSystemDeviceHandler.instances]]
+backend = "kit"
+[[handlers.SensorManagementSystemDeviceHandler.instances]]
+backend = "ufz"
 [handlers.SensorManagementSystemDeviceHandler.defaults]
 search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
 [handlers.SensorManagementSystemDeviceHandler.defaults.attribute_mapping]
@@ -535,9 +522,11 @@ search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
 "data.attributes.serial_number" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+catalog_uris = ["http://rdmo-dev.local/terms/questions/sensor-awi-test"]
 
 [handlers.GIPPInstrumentHandler]
+[[handlers.GIPPInstrumentHandler.instances]]
+backend = "gipp"
 [handlers.GIPPInstrumentHandler.defaults]
 search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
 [handlers.GIPPInstrumentHandler.defaults.attribute_mapping]
@@ -546,20 +535,19 @@ search_attribute_uri = "http://rdmo-dev.local/terms/domain/sensor/awi/search"
 "Instrument.serialNo" = "http://rdmo-dev.local/terms/domain/sensor/awi/serial"
 
 [[handlers.GIPPInstrumentHandler.catalogs]]
-catalog_uri = "http://rdmo-dev.local/terms/questions/sensor-awi-test"
+catalog_uris = ["http://rdmo-dev.local/terms/questions/sensor-awi-test"]
 ```
 
-A `backends` configuration must be defined in the case of
-`SensorManagementSystemDeviceHandler` or if more than one instance of one provider is
-used. Here the `id_prefix` and the `base_url` is critical and must be the same
-as in the `providers` configuration, so that additional requests can be made
-to the correct endpoint.
+Every provider and handler instance references a named backend. Its separate
+device/configuration namespaces determine stored IDs; they are independent of
+the backend's configuration name. Connection URLs and API policies belong to
+typed backend-specific settings.
 
 The `catalogs` configuration is used to identify the catalog(s) where the
 attribute mapping should be used to map values from the API response to
 attributes of the catalog. It is possible to configure more than one catalog.
-- `catalog_uri` is the uri of the catalog where the handler should map values
-  to attributes
+- `catalog_uris` lists the catalog URIs where the handler should map values
+  to attributes; omission makes the mapping available in all catalogs.
 - `search_attribute_uri` is the uri of the question with the option set
   provider used in the catalog
 - `managed_attribute_uris` adds attributes to the handler's ownership beyond

@@ -5,7 +5,7 @@ from rdmo.options.providers import Provider
 from rdmo.projects.models import Value
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
-from rdmo_sensorsearch.config import get_config_file_path, load_config
+from rdmo_sensorsearch.config import get_config_file_path, load_config_model
 from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog
 from rdmo_sensorsearch.naming import canonical_configuration_label, canonical_device_label
 from rdmo_sensorsearch.providers.factory import build_provider_instances
@@ -27,11 +27,11 @@ class AggregatingSearchProvider(Provider):
         if self.config_section_name is None:
             raise NotImplementedError(f"{type(self).__name__} must define `config_section_name`")
 
-        plugin_config = load_config()
-        section_config = plugin_config.get(self.config_section_name, {})
-        min_search_len = section_config.get("min_search_len", 3)
+        plugin_config = load_config_model()
+        section_config = plugin_config.search_provider(self.config_section_name)
+        min_search_len = section_config.minimum_search_length
         providers = build_provider_instances(self.config_section_name)
-        if section_config.get("filter_sms_devices_by_selected_configuration", False):
+        if section_config.filter_sms_devices_by_selected_configuration:
             providers = self._filter_providers_for_project(project, providers)
 
         logger.debug(
@@ -71,10 +71,8 @@ class AggregatingSearchProvider(Provider):
 
         auth_token = get_sms_auth_token(user=user)
         for provider in providers:
-            if getattr(provider, "uses_auth_token", False):
-                provider.auth_token = auth_token
+            provider.auth_token = auth_token
 
-        logger.debug("Configuration top-level keys: %s", sorted(plugin_config.keys()))
         logger.debug("Search term: %s", search)
 
         if len(providers) == 1:
@@ -191,7 +189,7 @@ class AggregatingSearchProvider(Provider):
 
         filtered = []
         for provider in providers:
-            if provider.__class__.__name__ != "SensorManagementSystemDeviceProvider":
+            if getattr(provider, "backend_type", None) != "sms":
                 filtered.append(provider)
                 continue
 
@@ -215,7 +213,7 @@ class AggregatingSearchProvider(Provider):
         configuration_search_attribute_uris = {
             binding.search_attribute_uri
             for binding in get_handler_bindings_for_catalog(catalog_uri)
-            if type(binding.handler).__name__ == "SensorManagementSystemConfigurationHandler"
+            if binding.backend_type == "sms" and binding.resource_kind == "configuration"
         }
         if not configuration_search_attribute_uris:
             return set()
@@ -231,8 +229,10 @@ class AggregatingSearchProvider(Provider):
             if not isinstance(external_id, str) or ":" not in external_id:
                 continue
             configuration_prefix = external_id.split(":", 1)[0]
-            if configuration_prefix.endswith("cfg"):
-                prefixes.add(f"{configuration_prefix[:-3]}sms")
+            for definition in load_config_model().backends.values():
+                if definition.type == "sms" and definition.configuration_id_prefix == configuration_prefix:
+                    if definition.device_id_prefix:
+                        prefixes.add(definition.device_id_prefix)
         return prefixes
 
 

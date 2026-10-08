@@ -29,10 +29,13 @@ def test_routing_includes_all_stage_inputs_and_wildcards(monkeypatch):
     ]
     monkeypatch.setattr(
         event_routing,
-        "load_config",
-        lambda: {
-            "MetadataRefresh": {"actions": [{"catalog_uris": ["catalog:a", "catalog:b"]}]},
-        },
+        "load_config_model",
+        lambda: SimpleNamespace(
+            data_collection_variable_sync=SimpleNamespace(catalogs=()),
+            metadata_refresh=SimpleNamespace(
+                actions=(SimpleNamespace(scope=SimpleNamespace(catalog_uris=("catalog:a", "catalog:b"))),)
+            ),
+        ),
     )
     monkeypatch.setattr(event_routing, "handler_bindings_by_catalog", lambda: {"*": bindings})
     monkeypatch.setattr(event_routing, "get_handler_bindings_for_catalog", lambda uri: bindings)

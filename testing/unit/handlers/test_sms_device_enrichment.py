@@ -1,6 +1,9 @@
 import sys
 from types import ModuleType, SimpleNamespace
 
+from rdmo_sensorsearch.transport import TransportError
+from testing.transport_helpers import raising_fetch
+
 django = sys.modules.setdefault("django", ModuleType("django"))
 django_conf = sys.modules.setdefault("django.conf", ModuleType("django.conf"))
 django_conf.settings = getattr(django_conf, "settings", SimpleNamespace())
@@ -8,7 +11,10 @@ django.conf = django_conf
 rdmo = sys.modules.setdefault("rdmo", ModuleType("rdmo"))
 rdmo.__version__ = getattr(rdmo, "__version__", "test")
 
-from rdmo_sensorsearch.handlers import sms_device_enrichment as enrichment_module  # noqa: E402
+from rdmo_sensorsearch import backend_assembly  # noqa: E402
+from rdmo_sensorsearch.backends.sms.backend import SMSBackend  # noqa: E402
+from rdmo_sensorsearch.backends.sms.mounting import MountLocationNoticeCode  # noqa: E402
+from rdmo_sensorsearch.contracts import SelectedDevice  # noqa: E402
 from rdmo_sensorsearch.handlers.sms_device_enrichment import (  # noqa: E402
     INSTRUMENT_END_ATTRIBUTE_URI,
     INSTRUMENT_LOCATION_AMSL_ATTRIBUTE_URI,
@@ -18,8 +24,8 @@ from rdmo_sensorsearch.handlers.sms_device_enrichment import (  # noqa: E402
     SURFACE_OFFSET_Z_ATTRIBUTE_URI,
     SMSDeviceMetadataEnricher,
 )
-from rdmo_sensorsearch.handlers.sms_mounting import MountLocationNoticeCode  # noqa: E402
-from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, SelectedDevice  # noqa: E402
+from rdmo_sensorsearch.services.device_details import DeviceBlockPlan  # noqa: E402
+from testing.sms_helpers import sms_backend_settings  # noqa: E402
 
 
 def _plan(device: SelectedDevice, handler, configuration_external_id="sms-configuration:27"):
@@ -36,10 +42,13 @@ def _plan(device: SelectedDevice, handler, configuration_external_id="sms-config
 
 def _handler(*, period=True, location=True, **settings):
     return SimpleNamespace(
-        base_url="https://sms.example/api/v1",
+        backend=SMSBackend(
+            fetch=raising_fetch(backend_assembly.fetch_json),
+            base_url="https://sms.example/api/v1",
+            settings=sms_backend_settings("device", **settings),
+        ),
         supports_mount_period_lookup=period,
         supports_mount_location_lookup=location,
-        **settings,
     )
 
 
@@ -72,9 +81,9 @@ def _device_action(
 
 def test_selected_device_metadata_takes_precedence_without_sms_requests(monkeypatch):
     monkeypatch.setattr(
-        enrichment_module,
+        backend_assembly,
         "fetch_json",
-        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("SMS request was not expected")),
+        raising_fetch(lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("SMS request was not expected"))),
     )
     device = SelectedDevice(
         text="Device 607",
@@ -102,9 +111,9 @@ def test_selected_device_metadata_takes_precedence_without_sms_requests(monkeypa
 
 def test_existing_mapped_start_is_not_replaced(monkeypatch):
     monkeypatch.setattr(
-        enrichment_module,
+        backend_assembly,
         "fetch_json",
-        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("SMS request was not expected")),
+        raising_fetch(lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("SMS request was not expected"))),
     )
     device = SelectedDevice(
         text="Device 607",
@@ -151,7 +160,7 @@ def test_sms_mount_period_and_location_are_resolved_from_action_endpoints(monkey
             }
         raise AssertionError(f"Unexpected URL: {url}")
 
-    monkeypatch.setattr(enrichment_module, "fetch_json", fetch_json)
+    monkeypatch.setattr(backend_assembly, "fetch_json", raising_fetch(fetch_json))
     mapped_values = {SERIAL_NUMBER_ATTRIBUTE_URI: " abc-123 "}
     plan = _plan(
         SelectedDevice(text="Device 607", external_id="sms-device:607"),
@@ -199,7 +208,7 @@ def test_enrichment_applies_direct_offset_policy_and_returns_nonfatal_notices(mo
             }
         raise AssertionError(f"Unexpected URL: {url}")
 
-    monkeypatch.setattr(enrichment_module, "fetch_json", fetch_json)
+    monkeypatch.setattr(backend_assembly, "fetch_json", raising_fetch(fetch_json))
     mapped_values = {SERIAL_NUMBER_ATTRIBUTE_URI: "ABC-123"}
     notices = SMSDeviceMetadataEnricher(configuration_external_id="sms-configuration:27")(
         mapped_values,
@@ -220,9 +229,9 @@ def test_enrichment_applies_direct_offset_policy_and_returns_nonfatal_notices(mo
 
 def test_unsupported_handler_produces_empty_enrichment_without_requests(monkeypatch):
     monkeypatch.setattr(
-        enrichment_module,
+        backend_assembly,
         "fetch_json",
-        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("SMS request was not expected")),
+        raising_fetch(lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("SMS request was not expected"))),
     )
     mapped_values = {}
 
@@ -243,9 +252,9 @@ def test_unsupported_handler_produces_empty_enrichment_without_requests(monkeypa
 
 def test_sms_endpoint_errors_degrade_to_empty_mount_metadata(monkeypatch):
     monkeypatch.setattr(
-        enrichment_module,
+        backend_assembly,
         "fetch_json",
-        lambda url, auth_token=None: {"errors": ["backend unavailable"]},
+        raising_fetch(lambda url, auth_token=None: TransportError("backend unavailable")),
     )
     mapped_values = {}
 

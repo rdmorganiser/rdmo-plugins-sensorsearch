@@ -4,16 +4,16 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.handlers.sms_mounting import (
-    ResolvedMountLocation,
-    resolve_mount_location,
-    select_latest_device_mount_action,
-    select_latest_device_mount_period,
+from rdmo_sensorsearch.contracts import (
+    BackendFailure,
+    BackendSuccess,
+    DeviceDetailSettings,
+    MountLocation,
+    RefreshNotice,
+    SelectedDevice,
 )
-from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS, DeviceDetailSettings
-from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, SelectedDevice, parse_external_id
-from rdmo_sensorsearch.services.refresh import RefreshNotice
+from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
+from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, parse_external_id
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +97,9 @@ class SMSDeviceMetadataEnricher:
                 handler_binding,
                 configuration_external_id,
             )
-            station_height_amsl = location.station_height_amsl if location is not None else None
-            vertical_surface_offset = location.vertical_surface_offset if location is not None else None
-            site_name = location.site_name if location is not None else None
+            station_height_amsl = location.value.station_height_amsl if location is not None else None
+            vertical_surface_offset = location.value.vertical_surface_offset if location is not None else None
+            site_name = location.value.site_name if location is not None else None
             notices = location.notices if location is not None else ()
 
         mapped_values[self.detail_settings.instrument_location_amsl_attribute_uri] = (
@@ -129,28 +129,24 @@ class SMSDeviceMetadataEnricher:
         if not getattr(handler, "supports_mount_period_lookup", False):
             return None, None
 
-        mount_actions = self._fetch_device_mount_actions(handler, device_id)
-        if not mount_actions:
-            return None, None
-
         serial_number = mapped_values.get(self.detail_settings.serial_number_attribute_uri)
         if not isinstance(serial_number, str) or not serial_number.strip():
             serial_number = _serial_number_from_text(device.text)
 
-        period = select_latest_device_mount_period(
-            mount_actions,
-            configuration_id,
-            device_id,
-            serial_number=serial_number,
+        period = handler.backend.get_mount_period(
+            device_id, configuration_id, serial_number=serial_number, auth_token=self.auth_token
         )
-        return period.formatted() if period is not None else (None, None)
+        if isinstance(period, BackendFailure):
+            logger.warning("Could not fetch device mount actions for %s: %s", device_id, period.errors)
+            return None, None
+        return (period.value.start, period.value.end) if period.value is not None else (None, None)
 
     def _resolve_mount_location(
         self,
         device: SelectedDevice,
         handler_binding: Any,
         configuration_external_id: str | None,
-    ) -> ResolvedMountLocation | None:
+    ) -> BackendSuccess[MountLocation] | None:
         if not configuration_external_id:
             return None
 
@@ -163,77 +159,13 @@ class SMSDeviceMetadataEnricher:
         if configuration_id is None or device_id is None:
             return None
 
-        device_actions = self._fetch_configuration_mount_actions(
-            handler,
-            "configuration_device_mount_actions_url",
-            (
-                "{base_url}/device-mount-actions?filter[configuration_id]={id}"
-                "&page[size]=10000&include=parent_platform,parent_device,configuration"
-            ),
-            configuration_id,
-        )
-        device_action = select_latest_device_mount_action(
-            device_actions,
-            configuration_id,
-            device_id,
-        )
-        if device_action is None:
+        location = handler.backend.get_mount_location(device_id, configuration_id, best_effort=True, auth_token=self.auth_token)
+        if isinstance(location, BackendFailure):
+            logger.warning("Could not fetch SMS configuration mount metadata: %s", location.errors)
             return None
-
-        platform_actions = self._fetch_configuration_mount_actions(
-            handler,
-            "configuration_platform_mount_actions_url",
-            "{base_url}/platform-mount-actions?filter[configuration_id]={id}&page[size]=10000",
-            configuration_id,
-        )
-        static_location_actions = self._fetch_configuration_mount_actions(
-            handler,
-            "configuration_static_location_actions_url",
-            "{base_url}/static-location-actions?filter[configuration_id]={id}&page[size]=10000",
-            configuration_id,
-        )
-        mount_location = resolve_mount_location(
-            device_action,
-            device_actions,
-            platform_actions,
-            static_location_actions,
-            static_location_end_tolerance_seconds=getattr(handler, "static_location_end_tolerance_seconds", 0),
-            incomplete_mount_chain_policy=getattr(handler, "incomplete_mount_chain_policy", "strict"),
-        )
-        return mount_location
-
-    def _fetch_device_mount_actions(self, handler: Any, device_id: str) -> list[dict]:
-        template = getattr(
-            handler,
-            "device_mount_actions_url",
-            "{base_url}/devices/{id}/device-mount-actions"
-            "?page[size]=10000&include=begin_contact,end_contact,parent_platform,parent_device,configuration",
-        )
-        url = template.format(base_url=handler.base_url, id=device_id)
-        payload = fetch_json(url, auth_token=self.auth_token)
-        return _payload_data(payload, url, f"device mount actions for {device_id}")
-
-    def _fetch_configuration_mount_actions(
-        self,
-        handler: Any,
-        template_attribute: str,
-        default_template: str,
-        configuration_id: str,
-    ) -> list[dict]:
-        template = getattr(handler, template_attribute, default_template)
-        url = template.format(base_url=handler.base_url, id=configuration_id)
-        payload = fetch_json(url, auth_token=self.auth_token)
-        return _payload_data(payload, url, "SMS configuration mount metadata")
-
-
-def _payload_data(payload: Any, url: str, description: str) -> list[dict]:
-    if isinstance(payload, dict) and "errors" in payload:
-        logger.warning("Could not fetch %s from %s: %s", description, url, payload["errors"])
-        return []
-    if not isinstance(payload, dict):
-        return []
-    data = payload.get("data", [])
-    return data if isinstance(data, list) else []
+        for diagnostic in location.diagnostics:
+            logger.warning("Could not fetch SMS configuration mount metadata: %s", diagnostic)
+        return location if location.value is not None else None
 
 
 def _serial_number_from_text(text: str) -> str | None:

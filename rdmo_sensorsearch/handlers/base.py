@@ -1,48 +1,8 @@
 import logging
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from collections.abc import Mapping
 from typing import Any
-from urllib.parse import urlsplit
-
-from rdmo_sensorsearch.services.refresh import RefreshNotice
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class CollectionAssignment:
-    attribute_uri: str
-    page_uri: str
-    values: tuple[dict[str, Any], ...] = ()
-    replace_existing: bool = True
-
-
-@dataclass(frozen=True)
-class HandlerResult:
-    mapped_values: Mapping[str, Any] = field(default_factory=dict)
-    collections: tuple[CollectionAssignment, ...] = ()
-    post_actions: tuple[Callable[[], Any], ...] = ()
-    notices: tuple[RefreshNotice, ...] = ()
-
-
-@dataclass(frozen=True)
-class HandlerExecutionContext:
-    preserve_existing_collections: bool = False
-    require_configuration_period: bool = False
-    device_detail_settings: Any | None = None
-
-
-def deduplicate_collection_values(values: tuple[dict[str, Any], ...]) -> tuple[dict[str, Any], ...]:
-    unique_values = []
-    seen_external_ids = set()
-    for value in values:
-        external_id = value.get("external_id")
-        if external_id:
-            if external_id in seen_external_ids:
-                continue
-            seen_external_ids.add(external_id)
-        unique_values.append(value)
-    return tuple(unique_values)
 
 
 class BackendRecordHandler:
@@ -56,78 +16,28 @@ class BackendRecordHandler:
 
     def __init__(
         self,
-        attribute_mapping=None,
-        id_prefix=None,
-        base_url=None,
-        **kwargs,
+        *,
+        id_prefix: str,
+        attribute_mapping: Mapping[str, str],
     ):
-        """
-        Initializes the BackendRecordHandler.
-
-        Args:
-
-            attribute_mapping (dict, optional): A dictionary mapping JMESPath
-                                                expressions to attribute URIs.
-                                                Defaults to an empty dictionary.
-            **kwargs:                           Additional keyword arguments.
-
-        """
+        """Own the mapping and connection values supplied by typed assembly."""
         self._id_prefix = id_prefix
-        self._base_url = base_url
-
-        if attribute_mapping is not None:
-            self.attribute_mapping = attribute_mapping  # must be set via the setter
-        else:
-            self._attribute_mapping = None  # internal default
-
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        self.attribute_mapping = attribute_mapping
 
     @property
     def id_prefix(self) -> str:
-        """
-        Return the default id_prefix of the handler.
-
-        This should be the same as defined as default in the provider classes
-        and can be set to use more than one instance of a provider.
-
-        Raises:
-            NotImplementedError: If not set in subclass.
-        """
-        value = self._id_prefix or getattr(type(self), "id_prefix", None)
-        if value is None:
-            raise NotImplementedError(f"{type(self).__name__} must define `id_prefix`")
-        return value
+        """Return the configured external-ID namespace."""
+        return self._id_prefix
 
     @property
-    def base_url(self) -> str:
-        value = self._base_url or getattr(type(self), "base_url", None)
-        if value is None:
-            raise NotImplementedError(f"{type(self).__name__} must define `base_url`")
-        return value
-
-    @base_url.setter
-    def base_url(self, value: str) -> None:
-        if not isinstance(value, str):
-            raise TypeError("base_url must be a string")
-        self._base_url = value
-
-    @property
-    def attribute_mapping(self) -> dict:
-        if self._attribute_mapping is not None:
-            return self._attribute_mapping
-
-        for handler_class in type(self).__mro__:
-            value = handler_class.__dict__.get("attribute_mapping")
-            if value is not None and not isinstance(value, property):
-                return value
-        raise ValueError(f"{self.__class__.__name__} requires `attribute_mapping` to be set before use.")
+    def attribute_mapping(self) -> dict[str, str]:
+        return self._attribute_mapping
 
     @attribute_mapping.setter
-    def attribute_mapping(self, mapping: dict) -> None:
-        if not isinstance(mapping, dict):
-            raise TypeError("attribute_mapping must be a dictionary")
-        self._attribute_mapping = mapping
+    def attribute_mapping(self, mapping: Mapping[str, str]) -> None:
+        if not isinstance(mapping, Mapping):
+            raise TypeError("attribute_mapping must be a mapping")
+        self._attribute_mapping = dict(mapping)
 
     @property
     def managed_attribute_uris(self) -> frozenset[str]:
@@ -169,8 +79,3 @@ class BackendRecordHandler:
             }
         )
         return authoritative_values
-
-    @property
-    def base_url_origin(self) -> str:
-        parsed = urlsplit(self.base_url)
-        return f"{parsed.scheme}://{parsed.netloc}"

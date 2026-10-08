@@ -3,7 +3,7 @@ from datetime import timezone as dt_timezone
 
 import pytest
 
-from rdmo_sensorsearch.handlers.sms_mounting import (
+from rdmo_sensorsearch.backends.sms.mounting import (
     MountLocationNoticeCode,
     format_sms_timepoint,
     resolve_mount_location,

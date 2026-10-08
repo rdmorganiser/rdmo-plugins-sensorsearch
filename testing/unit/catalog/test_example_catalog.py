@@ -96,3 +96,16 @@ def test_example_catalog_attribute_tree_derives_each_declared_uri():
 
 def test_example_catalog_is_currently_generated():
     assert CATALOG_PATH.read_bytes() == generate_catalog()
+
+
+def test_owner_question_accepts_sms_names_and_retains_ror_suggestions():
+    owner_uri = "https://rdmo.nfdi4earth.de/terms/questions/instrument_owner"
+    for path, uri in ((SOURCE_PATH, owner_uri), (CATALOG_PATH, mirror_uri(owner_uri))):
+        root = _root(path)
+        question = next(element for element in root.findall("question") if element.attrib[DC_URI] == uri)
+        assert question.findtext("widget_type") == "select_creatable"
+        assert question.findtext("value_type") == "option"
+        assert question.findtext("is_collection") == "False"
+        optionset_uri = question.find("optionsets/optionset").attrib[DC_URI]
+        optionset = next(element for element in root.findall("optionset") if element.attrib[DC_URI] == optionset_uri)
+        assert optionset.findtext("provider_key") == "ror"

@@ -1,8 +1,7 @@
 import logging
-from urllib.parse import quote
 
 from rdmo_sensorsearch.auth import get_sms_auth_token
-from rdmo_sensorsearch.client import fetch_json
+from rdmo_sensorsearch.contracts import BackendFailure, ConfigurationSearch
 from rdmo_sensorsearch.providers.base import BaseRemoteSearchProvider
 
 logger = logging.getLogger(__name__)
@@ -16,37 +15,33 @@ class SensorManagementSystemConfigurationProvider(BaseRemoteSearchProvider):
     searches them by label and returns one option per matching configuration.
     """
 
-    # Match the SMS frontend configuration search more closely. `q` performs
-    # the free-text search; the other flags keep the result set aligned with
-    # the public UI behavior.
-    query_url = (
-        "{base_url}?page[size]={page_size}&page[number]=1&include=created_by.contact"
-        "&filter=[]&q={query}&sort=label&hide_archived=false"
-    )
-    uses_auth_token = True
-
     option_id = "{id_prefix}:{id}"
     option_text = "{prefix}({id}): {label}{project}{pid}"
+
+    def __init__(self, *, backend: ConfigurationSearch, id_prefix: str, text_prefix: str, max_hits: int):
+        super().__init__(id_prefix=id_prefix, text_prefix=text_prefix, max_hits=max_hits)
+        self.backend = backend
 
     def get_options(self, project, search=None, user=None, site=None):
         if search is None:
             return []
 
-        query = quote(search)
-        url = self.query_url.format(base_url=self.base_url, query=query, page_size=self.max_hits)
-        json_fetched = fetch_json(url, auth_token=getattr(self, "auth_token", None) or get_sms_auth_token(user=user))
-
-        json_data = json_fetched.get("data", [])
-        if not json_data:
-            logger.debug("Empty response from SMS configurations API for %s", search)
+        response = self.backend.search_configurations(
+            search,
+            limit=self.max_hits,
+            auth_token=getattr(self, "auth_token", None) or get_sms_auth_token(user=user),
+        )
+        if isinstance(response, BackendFailure):
+            logger.debug("SMS search failed: %s", response.errors)
             return []
+        records = response.value
 
         return [
             {
-                "id": self.option_id.format(id_prefix=self.id_prefix, id=configuration["id"]),
-                "text": self._format_configuration_text(configuration["id"], configuration["attributes"]),
+                "id": self.option_id.format(id_prefix=self.id_prefix, id=configuration.identifier),
+                "text": self._format_configuration_text(configuration.identifier, configuration.attributes),
             }
-            for configuration in json_data[: self.max_hits]
+            for configuration in records
         ]
 
     def _format_configuration_text(self, configuration_id: str, attrs: dict) -> str:

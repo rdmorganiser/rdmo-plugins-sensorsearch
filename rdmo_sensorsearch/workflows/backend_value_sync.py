@@ -7,13 +7,25 @@ from django.db import transaction
 
 from rdmo.domain.models import Attribute
 
-from rdmo_sensorsearch.handlers.base import CollectionAssignment, HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.config import load_config_model
+from rdmo_sensorsearch.contracts import (
+    CollectionAssignment,
+    HandlerExecutionContext,
+    HandlerFailure,
+    HandlerResult,
+    RefreshDeviceDetails,
+)
 from rdmo_sensorsearch.handlers.catalog_registry import (
     get_handler_bindings_for_catalog,
     handler_bindings_by_catalog,
 )
 from rdmo_sensorsearch.naming import canonical_device_label
 from rdmo_sensorsearch.persistence.collection_binding import CollectionBinding, CollectionBindingError, CollectionScope
+from rdmo_sensorsearch.persistence.handler_context import (
+    DEFAULT_DEVICE_COLLECTION_ATTRIBUTE_URI,
+    device_configuration_reference,
+    read_configuration_period,
+)
 from rdmo_sensorsearch.persistence.value_reconciliation import (
     reconcile_handler_result,
     replace_scalar_value_in_scopes,
@@ -26,6 +38,7 @@ from rdmo_sensorsearch.services.refresh import (
 )
 from rdmo_sensorsearch.workflows.device_details import (
     get_selected_device_values_for_configuration_scope,
+    reconcile_device_details_from_selected_devices,
     reconcile_device_details_from_selected_values,
 )
 
@@ -59,8 +72,8 @@ def _device_nested_questionset_scope(instance) -> tuple[str, int]:
     return str(instance.set_index), 0
 
 
-def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
-    detail_settings = get_device_detail_settings(instance.project.catalog.uri)
+def _reconcile_result(instance, handler, result: HandlerResult) -> None:
+    detail_settings = get_device_detail_settings(instance.project.catalog.uri, config=load_config_model())
     scoped_attribute_uris = {
         attribute_uri
         for attribute_uri in (
@@ -77,7 +90,7 @@ def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
         )
         if attribute_uri
     }
-    post_actions = reconcile_handler_result(
+    reconcile_handler_result(
         instance,
         handler,
         result,
@@ -93,7 +106,6 @@ def _reconcile_result(instance, handler, result: HandlerResult) -> tuple:
             scopes_to_set=[_device_nested_questionset_scope(instance)],
             scopes_to_clear=[(instance.set_prefix or "", instance.set_index)],
         )
-    return post_actions
 
 
 def sync_backend_value_after_save(instance, auth_token: str | None = None) -> None:
@@ -177,21 +189,14 @@ def refresh_value_from_backend(
         return _failed_refresh(external_id, "Multiple matching backend handlers are configured.")
 
     binding = bindings[0]
-    context = HandlerExecutionContext(
-        preserve_existing_collections=preserve_existing_collections,
-        require_configuration_period=require_configuration_period,
-        device_detail_settings=get_device_detail_settings(catalog.uri),
-    )
     try:
-        if getattr(binding.handler, "uses_auth_token", False):
-            handler_output = binding.handler.handle(
-                backend_id=backend_id,
-                instance=instance,
-                auth_token=auth_token,
-                context=context,
-            )
-        else:
-            handler_output = binding.handler.handle(backend_id=backend_id, instance=instance, context=context)
+        context = _handler_execution_context(
+            instance,
+            binding.handler,
+            preserve_existing_collections=preserve_existing_collections,
+            require_configuration_period=require_configuration_period,
+        )
+        handler_output = binding.handler.handle(backend_id=backend_id, context=context, auth_token=auth_token)
     except Exception as error:
         logger.exception(
             "Handler %s failed while processing external_id=%s for catalog=%s",
@@ -201,8 +206,8 @@ def refresh_value_from_backend(
         )
         return _failed_refresh(external_id, str(error) or type(error).__name__)
 
-    if isinstance(handler_output, dict) and "errors" in handler_output:
-        return _failed_refresh(external_id, _format_handler_errors(handler_output["errors"]))
+    if isinstance(handler_output, HandlerFailure):
+        return _failed_refresh(external_id, "; ".join(handler_output.errors))
     if not isinstance(handler_output, HandlerResult):
         return _failed_refresh(external_id, f"Handler returned {type(handler_output).__name__}, expected HandlerResult.")
 
@@ -213,15 +218,15 @@ def refresh_value_from_backend(
                 collections=_preserved_collection_assignments(instance, binding.handler),
             )
         with transaction.atomic():
-            post_actions = _reconcile_result(instance, binding.handler, handler_output)
+            _reconcile_result(instance, binding.handler, handler_output)
     except Exception as error:
         logger.exception("Failed to apply backend data for external_id=%s", external_id)
         return _failed_refresh(external_id, f"Could not store backend data: {error}")
 
     try:
-        post_action_results = [post_action() for post_action in post_actions]
+        effect_results = [_execute_effect(instance, effect, auth_token) for effect in handler_output.effects]
         if preserve_existing_collections:
-            post_action_results.append(
+            effect_results.append(
                 _refresh_selected_configuration_devices(
                     instance,
                     binding.handler,
@@ -230,10 +235,10 @@ def refresh_value_from_backend(
                 )
             )
     except Exception as error:
-        logger.exception("Failed to run post-update actions for external_id=%s", external_id)
+        logger.exception("Failed to run backend effects for external_id=%s", external_id)
         return _failed_refresh(external_id, f"Could not complete backend update: {error}")
 
-    device_result = combine_refresh_results(result for result in post_action_results if isinstance(result, RefreshResult))
+    device_result = combine_refresh_results(result for result in effect_results if isinstance(result, RefreshResult))
     notices = tuple(handler_output.notices) + tuple(device_result.notices)
     for notice in notices:
         logger.info(
@@ -249,6 +254,50 @@ def refresh_value_from_backend(
         device_requested_count=device_result.requested_count,
         device_refreshed_count=device_result.refreshed_count,
         notices=notices,
+    )
+
+
+def _handler_execution_context(
+    instance, handler, *, preserve_existing_collections: bool, require_configuration_period: bool
+) -> HandlerExecutionContext:
+    period = None
+    if require_configuration_period and getattr(handler, "membership_filter_enabled", False):
+        start_uri = getattr(handler, "membership_filter_start_attribute_uri", None)
+        end_uri = getattr(handler, "membership_filter_end_attribute_uri", None)
+        if not start_uri or not end_uri:
+            raise ValueError("The SMS membership filter inputs are not configured for this catalog.")
+        period, error = read_configuration_period(instance, start_uri, end_uri)
+        if error:
+            raise ValueError(error)
+    configuration_external_id = None
+    if getattr(handler, "supports_mount_period_lookup", False):
+        configuration_external_id = device_configuration_reference(
+            instance, getattr(handler, "device_collection_attribute_uri", DEFAULT_DEVICE_COLLECTION_ATTRIBUTE_URI)
+        )
+    return HandlerExecutionContext(
+        preserve_existing_collections=preserve_existing_collections,
+        require_configuration_period=require_configuration_period,
+        device_detail_settings=get_device_detail_settings(instance.project.catalog.uri, config=load_config_model()),
+        configuration_external_id=configuration_external_id,
+        configuration_period=period,
+    )
+
+
+def _execute_effect(instance, effect: RefreshDeviceDetails, auth_token: str | None) -> RefreshResult:
+    if not isinstance(effect, RefreshDeviceDetails):
+        raise TypeError(f"Unsupported handler effect: {type(effect).__name__}.")
+    return reconcile_device_details_from_selected_devices(
+        project=instance.project,
+        catalog=instance.project.catalog,
+        scope_prefix=instance.set_prefix,
+        source_set_index=instance.set_index,
+        selected_devices=effect.selected_devices,
+        selected_devices_attribute_uri=effect.selected_devices_attribute_uri,
+        device_collection_attribute_uri=effect.device_collection_attribute_uri,
+        configuration_search_attribute_uri=instance.attribute.uri,
+        configuration_external_id=instance.external_id,
+        auth_token=auth_token,
+        force_refresh=True,
     )
 
 
@@ -289,9 +338,7 @@ def _refresh_selected_configuration_devices(
         scope.set_index,
     )
     period_resolver = getattr(handler, "get_member_device_period", None)
-    instrument_start, instrument_end = (
-        period_resolver(instance, configuration_values) if callable(period_resolver) else (None, None)
-    )
+    instrument_start, instrument_end = period_resolver(configuration_values) if callable(period_resolver) else (None, None)
     return reconcile_device_details_from_selected_values(
         project=instance.project,
         catalog=instance.project.catalog,
@@ -358,9 +405,3 @@ def _failed_refresh(external_id: str, message: str) -> RefreshResult:
         refreshed_count=0,
         errors=(RefreshError(external_id=external_id, message=message),),
     )
-
-
-def _format_handler_errors(errors) -> str:
-    if isinstance(errors, (list, tuple)):
-        return "; ".join(str(error) for error in errors)
-    return str(errors)
