@@ -1,6 +1,9 @@
 import sys
 from types import ModuleType, SimpleNamespace
 
+from rdmo_sensorsearch.transport import TransportError
+from testing.transport_helpers import raising_fetch
+
 django = sys.modules.setdefault("django", ModuleType("django"))
 django_conf = sys.modules.setdefault("django.conf", ModuleType("django.conf"))
 django_conf.settings = getattr(django_conf, "settings", SimpleNamespace())
@@ -40,7 +43,8 @@ def _plan(device: SelectedDevice, handler, configuration_external_id="sms-config
 def _handler(*, period=True, location=True, **settings):
     return SimpleNamespace(
         backend=SMSBackend(
-            fetch=backend_assembly.fetch_json, device_settings=SMSDeviceSettings("https://sms.example/api/v1", **settings)
+            fetch=raising_fetch(backend_assembly.fetch_json),
+            device_settings=SMSDeviceSettings("https://sms.example/api/v1", **settings),
         ),
         supports_mount_period_lookup=period,
         supports_mount_location_lookup=location,
@@ -249,7 +253,7 @@ def test_sms_endpoint_errors_degrade_to_empty_mount_metadata(monkeypatch):
     monkeypatch.setattr(
         backend_assembly,
         "fetch_json",
-        lambda url, auth_token=None: {"errors": ["backend unavailable"]},
+        lambda url, auth_token=None: TransportError("backend unavailable"),
     )
     mapped_values = {}
 

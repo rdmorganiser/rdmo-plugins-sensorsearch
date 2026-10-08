@@ -23,6 +23,4 @@ def request_json(fetch: JSONFetcher, url: str, auth_token: str | None) -> Backen
         payload = fetch(url, auth_token=auth_token)
     except TransportError as error:
         return BackendFailure((str(error),))
-    if isinstance(payload, dict) and "errors" in payload:
-        return BackendFailure(tuple(payload["errors"]))
     return BackendSuccess(deepcopy(payload))
