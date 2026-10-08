@@ -3,7 +3,6 @@ from urllib.parse import quote
 from rdmo_sensorsearch.backends.sms.configuration import SMSConfigurationAPI
 from rdmo_sensorsearch.backends.sms.device import SMSDeviceAPI
 from rdmo_sensorsearch.backends.sms.settings import SMSConfigurationSettings, SMSDeviceSettings, SMSSearchSettings
-from rdmo_sensorsearch.backends.sms.transport import JSONFetcher, request_json
 from rdmo_sensorsearch.contracts import (
     BackendFailure,
     BackendResult,
@@ -17,6 +16,7 @@ from rdmo_sensorsearch.contracts import (
     SearchRecord,
     StaticLocation,
 )
+from rdmo_sensorsearch.transport import JSONFetcher, request_json
 
 
 class SMSBackend:
@@ -95,11 +95,18 @@ class SMSBackend:
         return self._configuration.get_configuration(configuration_id, auth_token=auth_token)
 
     def get_configuration_members(
-        self, configuration: ConfigurationMetadata, *, period: ConfigurationPeriod | None = None, auth_token: str | None = None
+        self,
+        configuration: ConfigurationMetadata,
+        *,
+        period: ConfigurationPeriod | None = None,
+        require_configuration_period: bool = False,
+        auth_token: str | None = None,
     ) -> BackendResult[ConfigurationMembership]:
         if self._configuration is None:
             raise ValueError("Configuration metadata endpoints are not configured.")
-        return self._configuration.get_configuration_members(configuration, period=period, auth_token=auth_token)
+        return self._configuration.get_configuration_members(
+            configuration, period=period, require_configuration_period=require_configuration_period, auth_token=auth_token
+        )
 
     def get_static_location(
         self, configuration_id: str, *, auth_token: str | None = None

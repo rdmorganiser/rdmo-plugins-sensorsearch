@@ -151,8 +151,10 @@ def test_backends_do_not_import_consumers_or_deployment_infrastructure():
     } == set()
 
 
-def test_sms_consumers_use_capabilities_without_direct_transport_or_concrete_backend_imports():
+def test_remote_consumers_use_capabilities_without_direct_transport_or_concrete_backend_imports():
     consumers = [
+        *[PACKAGE_ROOT / "handlers" / f"{name}.py" for name in ("o2a_item", "o2a_mission")],
+        *[PACKAGE_ROOT / "providers" / f"{name}.py" for name in ("o2a_item", "o2a_mission")],
         PACKAGE_ROOT / "handlers" / "sms_device.py",
         PACKAGE_ROOT / "handlers" / "sms_configuration.py",
         PACKAGE_ROOT / "handlers" / "sms_device_enrichment.py",

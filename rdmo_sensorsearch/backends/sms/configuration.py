@@ -8,7 +8,6 @@ from rdmo_sensorsearch.backends.sms.jsonapi import fetch_paginated_jsonapi_colle
 from rdmo_sensorsearch.backends.sms.membership import SMSConfigurationMembershipResolver
 from rdmo_sensorsearch.backends.sms.mounting import select_static_location_action
 from rdmo_sensorsearch.backends.sms.settings import SMSConfigurationSettings
-from rdmo_sensorsearch.backends.sms.transport import JSONFetcher, request_json
 from rdmo_sensorsearch.contracts import (
     BackendFailure,
     BackendResult,
@@ -18,6 +17,7 @@ from rdmo_sensorsearch.contracts import (
     ConfigurationPeriod,
     StaticLocation,
 )
+from rdmo_sensorsearch.transport import JSONFetcher, request_json
 
 
 class SMSConfigurationAPI:
@@ -54,8 +54,15 @@ class SMSConfigurationAPI:
         return BackendSuccess(ConfigurationMetadata(payload, api_link, frontend_link, configuration_id))
 
     def get_configuration_members(
-        self, configuration: ConfigurationMetadata, *, period: ConfigurationPeriod | None = None, auth_token: str | None = None
+        self,
+        configuration: ConfigurationMetadata,
+        *,
+        period: ConfigurationPeriod | None = None,
+        require_configuration_period: bool = False,
+        auth_token: str | None = None,
     ) -> BackendResult[ConfigurationMembership]:
+        if require_configuration_period and period is None:
+            return BackendFailure(("A validated configuration period is required for SMS membership filtering.",))
         settings = self.settings
         identifier = configuration.identifier or configuration.document["data"].get("id")
         devices = self._collection(

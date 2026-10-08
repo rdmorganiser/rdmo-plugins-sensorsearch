@@ -236,11 +236,26 @@ class DeviceSource(DeviceMetadataSource, DeviceMountSource, Protocol):
     pass
 
 
-class ConfigurationSource(ConfigurationMetadataSource, Protocol):
+class ConfigurationMembershipSource(Protocol):
     def get_configuration_members(
-        self, configuration: ConfigurationMetadata, *, period: ConfigurationPeriod | None = None, auth_token: str | None = None
+        self,
+        configuration: ConfigurationMetadata,
+        *,
+        period: ConfigurationPeriod | None = None,
+        require_configuration_period: bool = False,
+        auth_token: str | None = None,
     ) -> BackendResult[ConfigurationMembership]: ...
 
+
+class StaticLocationSource(Protocol):
     def get_static_location(
         self, configuration_id: str, *, auth_token: str | None = None
     ) -> BackendResult[StaticLocation | None]: ...
+
+
+class ConfigurationWithMembersSource(ConfigurationMetadataSource, ConfigurationMembershipSource, Protocol):
+    pass
+
+
+class ConfigurationSource(ConfigurationWithMembersSource, StaticLocationSource, Protocol):
+    pass

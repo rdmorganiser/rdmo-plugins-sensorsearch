@@ -5,10 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Protocol
 
+from rdmo_sensorsearch.backends.o2a.backend import O2ABackend
 from rdmo_sensorsearch.backends.sms.backend import SMSBackend
 from rdmo_sensorsearch.backends.sms.settings import SMSConfigurationSettings, SMSDeviceSettings, SMSSearchSettings
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.config_models.backend_settings import GIPPBackendSettings, O2ABackendSettings, SMSBackendSettings
+from rdmo_sensorsearch.config_models.backend_settings import (
+    GIPPBackendSettings,
+    O2ABackendSettings,
+    O2AMissionQuerySettings,
+    SMSBackendSettings,
+)
 from rdmo_sensorsearch.config_models.consumer_settings import (
     GIPPInstrumentCatalogSettings,
     O2AMissionSearchSettings,
@@ -42,21 +48,13 @@ Capability = Literal["device", "configuration", "device_search", "configuration_
 
 
 @dataclass(frozen=True)
-class O2AConnectionBinding:
-    api_url: str
-    item_search_url: str
-    mission_search_url: str
-    settings: O2ABackendSettings
-
-
-@dataclass(frozen=True)
 class GIPPConnectionBinding:
     search_url: str
     metadata_url: str
     settings: GIPPBackendSettings
 
 
-BackendBinding = SMSBackend | O2AConnectionBinding | GIPPConnectionBinding
+BackendBinding = SMSBackend | O2ABackend | GIPPConnectionBinding
 
 
 class BackendBuilder(Protocol):
@@ -131,15 +129,10 @@ def build_sms_backend(
 
 def build_o2a_backend(
     definition: BackendDefinition, capability: Capability, *, self_link_fallback_enabled: bool = False
-) -> O2AConnectionBinding:
+) -> O2ABackend:
     settings = definition.settings
     assert isinstance(settings, O2ABackendSettings)
-    return O2AConnectionBinding(
-        settings.api_url.format(base_url=definition.base_url),
-        settings.item_search_url.format(base_url=definition.base_url),
-        settings.mission_search_url.format(base_url=definition.base_url),
-        settings,
-    )
+    return O2ABackend(base_url=definition.base_url, settings=settings, fetch=fetch_json)
 
 
 def build_gipp_backend(
@@ -215,12 +208,13 @@ def build_o2a_item_provider(config: ProviderInstanceConfig, definition: BackendD
     from rdmo_sensorsearch.providers.o2a_item import O2ARegistryItemProvider
 
     connection = build_backend(definition, "device_search")
-    assert isinstance(connection, O2AConnectionBinding)
+    assert isinstance(connection, O2ABackend)
     settings = config.settings
     provider = O2ARegistryItemProvider(
+        base_url=connection._item.search_url,
         id_prefix=definition.prefix("device"),
         text_prefix=settings.text_prefix,
-        base_url=connection.item_search_url,
+        backend=connection,
         max_hits=settings.max_hits,
     )
     if settings.option_id is not None:
@@ -236,20 +230,22 @@ def build_o2a_item_provider(config: ProviderInstanceConfig, definition: BackendD
 def build_o2a_mission_provider(config: ProviderInstanceConfig, definition: BackendDefinition) -> O2ARegistryMissionProvider:
     from rdmo_sensorsearch.providers.o2a_mission import O2ARegistryMissionProvider
 
-    connection = build_backend(definition, "configuration_search")
-    assert isinstance(connection, O2AConnectionBinding)
     settings = config.settings
+    assert isinstance(settings, O2AMissionSearchSettings)
+    assert isinstance(definition.settings, O2ABackendSettings)
+    connection = O2ABackend(
+        base_url=definition.base_url,
+        settings=definition.settings,
+        fetch=fetch_json,
+        mission_query_settings=O2AMissionQuerySettings(settings.where_template, settings.sorts, settings.offset),
+    )
     provider = O2ARegistryMissionProvider(
+        base_url=connection._mission.search_url,
         id_prefix=definition.prefix("configuration"),
         text_prefix=settings.text_prefix,
-        base_url=connection.mission_search_url,
+        backend=connection,
         max_hits=settings.max_hits,
     )
-    provider.query_url = connection.settings.mission_query_url
-    assert isinstance(settings, O2AMissionSearchSettings)
-    provider.where_template = settings.where_template
-    provider.sorts = settings.sorts
-    provider.offset = settings.offset
     if settings.option_id is not None:
         provider.option_id = settings.option_id
     if settings.option_text is not None:
@@ -370,9 +366,12 @@ def build_o2a_item_handler(
     settings = catalog.settings
     assert isinstance(settings, O2ARegistryItemCatalogSettings)
     connection = build_backend(definition, "device")
-    assert isinstance(connection, O2AConnectionBinding)
+    assert isinstance(connection, O2ABackend)
     handler = O2ARegistryItemHandler(
-        id_prefix=definition.prefix("device"), base_url=connection.api_url, attribute_mapping=dict(catalog.attribute_mapping)
+        base_url=connection._item.base_url,
+        id_prefix=definition.prefix("device"),
+        backend=connection,
+        attribute_mapping=dict(catalog.attribute_mapping),
     )
     if settings.device_collection_attribute_uri is not None:
         handler.device_collection_attribute_uri = settings.device_collection_attribute_uri
@@ -382,12 +381,6 @@ def build_o2a_item_handler(
     handler.materialize_device_details = settings.materialize_device_details
     handler.supports_mount_location_lookup = settings.supports_mount_location_lookup
     handler.supports_mount_period_lookup = settings.supports_mount_period_lookup
-    handler.item_url = connection.settings.item.item_url
-    handler.contacts_url = connection.settings.item.contacts_url
-    handler.parameters_url = connection.settings.item.parameters_url
-    handler.units_url = connection.settings.item.units_url
-    handler.item_api_link_template = connection.settings.item.item_api_link_template
-    handler.item_frontend_link_template = connection.settings.item.item_frontend_link_template
     return handler
 
 
@@ -397,10 +390,11 @@ def build_o2a_mission_handler(
     settings = catalog.settings
     assert isinstance(settings, O2ARegistryMissionCatalogSettings)
     connection = build_backend(definition, "configuration")
-    assert isinstance(connection, O2AConnectionBinding)
+    assert isinstance(connection, O2ABackend)
     handler = O2ARegistryMissionHandler(
+        base_url=connection._mission.base_url,
         id_prefix=definition.prefix("configuration"),
-        base_url=connection.api_url,
+        backend=connection,
         attribute_mapping=dict(catalog.attribute_mapping),
     )
     if settings.api_link_attribute_uri is not None:
@@ -426,13 +420,6 @@ def build_o2a_mission_handler(
     handler.item_id_prefix = definition.device_id_prefix
     handler.item_text_prefix = instance.item_text_prefix
     handler.item_text_template = instance.item_text_template
-    handler.mission_url = connection.settings.mission.mission_url
-    handler.mission_items_url = connection.settings.mission.mission_items_url
-    handler.item_url = connection.settings.mission.item_url
-    handler.mission_item_page_size = connection.settings.mission.mission_item_page_size
-    handler.max_collection_pages = connection.settings.mission.max_collection_pages
-    handler.api_link_template = connection.settings.mission.api_link_template
-    handler.frontend_link_template = connection.settings.mission.frontend_link_template
     return handler
 
 

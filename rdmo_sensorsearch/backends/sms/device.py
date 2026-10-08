@@ -7,7 +7,6 @@ from rdmo_sensorsearch.backends.sms.mounting import (
     select_latest_device_mount_period,
 )
 from rdmo_sensorsearch.backends.sms.settings import SMSDeviceSettings
-from rdmo_sensorsearch.backends.sms.transport import JSONFetcher, request_json
 from rdmo_sensorsearch.contracts import (
     BackendFailure,
     BackendResult,
@@ -17,6 +16,7 @@ from rdmo_sensorsearch.contracts import (
     MountPeriod,
     RefreshNotice,
 )
+from rdmo_sensorsearch.transport import JSONFetcher, request_json
 
 OWNER_ORGANIZATIONS_PATH = "sms_owner_organizations"
 

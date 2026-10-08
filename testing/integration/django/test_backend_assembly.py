@@ -77,7 +77,8 @@ def test_all_provider_builders_use_typed_connection_and_presentation_values(conf
         assert provider.base_url == _expected_url(definition, resource, provider=True)
         assert (provider.text_prefix, provider.max_hits) == (instance.settings.text_prefix, instance.settings.max_hits)
         if instance.provider_name == "O2ARegistryMissionProvider":
-            assert provider.query_url == definition.settings.mission_query_url
+            assert provider.backend._mission.query_url == definition.settings.mission_query_url
+            assert provider.backend._mission.search_settings.where_template == instance.settings.where_template
         elif instance.provider_name == "GIPPInstrumentProvider":
             assert provider.instruments_url == definition.settings.instruments_url
         with pytest.raises(TypeError, match="required keyword-only"):

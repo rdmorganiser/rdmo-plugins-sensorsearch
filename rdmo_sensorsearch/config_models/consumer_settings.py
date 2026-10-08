@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from rdmo_sensorsearch.config_models.backend_settings import O2AMissionQuerySettings
+
 
 @dataclass(frozen=True)
 class O2ARegistryItemCatalogSettings:
@@ -80,10 +82,8 @@ class SearchSettings:
 
 
 @dataclass(frozen=True)
-class O2AMissionSearchSettings(SearchSettings):
-    where_template: str = 'name=ILIKE="*{query}*"'
-    sorts: str = ""
-    offset: int = 0
+class O2AMissionSearchSettings(O2AMissionQuerySettings, SearchSettings):
+    pass
 
 
 @dataclass(frozen=True)

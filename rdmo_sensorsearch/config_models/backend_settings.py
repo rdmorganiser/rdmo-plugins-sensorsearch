@@ -87,6 +87,13 @@ class O2AMissionEndpoints:
 
 
 @dataclass(frozen=True)
+class O2AMissionQuerySettings:
+    where_template: str = 'name=ILIKE="*{query}*"'
+    sorts: str = ""
+    offset: int = 0
+
+
+@dataclass(frozen=True)
 class O2ABackendSettings:
     api_url: str = "{base_url}/rest/v2"
     item_search_url: str = "{base_url}/index/rest/search/sensor-v2"
