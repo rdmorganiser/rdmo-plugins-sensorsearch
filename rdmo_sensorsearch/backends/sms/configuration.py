@@ -7,7 +7,7 @@ from jmespath.exceptions import JMESPathError
 from rdmo_sensorsearch.backends.sms.jsonapi import fetch_paginated_jsonapi_collection
 from rdmo_sensorsearch.backends.sms.membership import SMSConfigurationMembershipResolver
 from rdmo_sensorsearch.backends.sms.mounting import select_static_location_action
-from rdmo_sensorsearch.backends.sms.settings import SMSConfigurationSettings
+from rdmo_sensorsearch.config_models.backend_settings import SMSBackendSettings
 from rdmo_sensorsearch.contracts import (
     BackendFailure,
     BackendResult,
@@ -21,14 +21,19 @@ from rdmo_sensorsearch.transport import JSONFetcher, request_json
 
 
 class SMSConfigurationAPI:
-    def __init__(self, settings: SMSConfigurationSettings, fetch: JSONFetcher):
-        self.settings = settings
+    def __init__(
+        self, base_url: str, settings: SMSBackendSettings, fetch: JSONFetcher, *, self_link_fallback_enabled: bool = False
+    ):
+        self.base_url = base_url
+        self.settings = settings.configuration
+        self.backend_settings = settings
         self.fetch = fetch
+        self.self_link_fallback_enabled = self_link_fallback_enabled
 
     def get_configuration(self, configuration_id: str, *, auth_token: str | None = None) -> BackendResult[ConfigurationMetadata]:
         settings = self.settings
         response = request_json(
-            self.fetch, settings.configuration_url.format(base_url=settings.base_url, id=configuration_id), auth_token
+            self.fetch, settings.configuration_url.format(base_url=self.base_url, id=configuration_id), auth_token
         )
         if isinstance(response, BackendFailure):
             return response
@@ -38,16 +43,16 @@ class SMSConfigurationAPI:
         if not isinstance(payload.get("data"), dict):
             return BackendFailure((f"SMS configuration request for ID {configuration_id} returned no configuration data.",))
         link = payload["data"].get("links", {}).get("self")
-        if (not isinstance(link, str) or not link) and settings.self_link_fallback_enabled:
+        if (not isinstance(link, str) or not link) and self.self_link_fallback_enabled:
             try:
                 link = jmespath.search(settings.configuration_self_link_path, payload)
             except JMESPathError:
                 link = None
         api_link = frontend_link = None
         if isinstance(link, str) and link:
-            origin = urlsplit(settings.base_url)
+            origin = urlsplit(self.base_url)
             api_link = urljoin(f"{origin.scheme}://{origin.netloc}", link)
-            frontend_link = api_link.replace(settings.backend_link_marker, "/", 1)
+            frontend_link = api_link.replace(self.backend_settings.backend_link_marker, "/", 1)
             suffix = settings.frontend_link_suffix
             if suffix and not frontend_link.endswith(suffix):
                 frontend_link = f"{frontend_link.rstrip('/')}{suffix}"
@@ -81,8 +86,8 @@ class SMSConfigurationAPI:
         resolver = SMSConfigurationMembershipResolver(
             fetch_device=partial(self._device, auth_token=auth_token),
             fetch_mount_action=partial(self._mount_action, auth_token=auth_token),
-            static_location_end_tolerance_seconds=settings.static_location_end_tolerance_seconds,
-            incomplete_mount_chain_policy=settings.incomplete_mount_chain_policy,
+            static_location_end_tolerance_seconds=self.backend_settings.static_location_end_tolerance_seconds,
+            incomplete_mount_chain_policy=self.backend_settings.incomplete_mount_chain_policy,
         )
         members = resolver.resolve(
             configuration_data=configuration.document,
@@ -125,10 +130,10 @@ class SMSConfigurationAPI:
 
     def _collection(self, template: str, identifier: str, page_size: int, auth_token: str | None) -> BackendResult[dict]:
         settings = self.settings
-        origin = urlsplit(settings.base_url)
+        origin = urlsplit(self.base_url)
         return fetch_paginated_jsonapi_collection(
             url_template=template,
-            base_url=settings.base_url,
+            base_url=self.base_url,
             object_id=identifier,
             page_size=page_size,
             max_pages=settings.max_collection_pages,
@@ -140,7 +145,7 @@ class SMSConfigurationAPI:
     def _mount_action(self, action_id: str, auth_token: str | None) -> BackendResult[dict | None]:
         settings = self.settings
         response = request_json(
-            self.fetch, settings.device_mount_action_url.format(base_url=settings.base_url, id=action_id), auth_token
+            self.fetch, settings.device_mount_action_url.format(base_url=self.base_url, id=action_id), auth_token
         )
         if isinstance(response, BackendFailure):
             return BackendFailure(
@@ -154,7 +159,7 @@ class SMSConfigurationAPI:
 
     def _device(self, device_id: str, auth_token: str | None) -> BackendResult[dict | None]:
         settings = self.settings
-        response = request_json(self.fetch, settings.device_url.format(base_url=settings.base_url, id=device_id), auth_token)
+        response = request_json(self.fetch, settings.device_url.format(base_url=self.base_url, id=device_id), auth_token)
         if isinstance(response, BackendFailure):
             return BackendFailure(
                 tuple(f"SMS device request for mounted device {device_id} failed: {error}" for error in response.errors)

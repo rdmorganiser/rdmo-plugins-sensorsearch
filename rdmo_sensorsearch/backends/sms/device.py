@@ -6,7 +6,7 @@ from rdmo_sensorsearch.backends.sms.mounting import (
     select_latest_device_mount_action,
     select_latest_device_mount_period,
 )
-from rdmo_sensorsearch.backends.sms.settings import SMSDeviceSettings
+from rdmo_sensorsearch.config_models.backend_settings import SMSBackendSettings
 from rdmo_sensorsearch.contracts import (
     BackendFailure,
     BackendResult,
@@ -49,13 +49,15 @@ def extract_owner_organizations(
 
 
 class SMSDeviceAPI:
-    def __init__(self, settings: SMSDeviceSettings, fetch: JSONFetcher):
-        self.settings = settings
+    def __init__(self, base_url: str, settings: SMSBackendSettings, fetch: JSONFetcher):
+        self.base_url = base_url
+        self.settings = settings.device
+        self.backend_settings = settings
         self.fetch = fetch
 
     def get_device(self, device_id: str, *, auth_token: str | None = None) -> BackendResult[DeviceMetadata]:
         settings = self.settings
-        response = request_json(self.fetch, settings.device_url.format(base_url=settings.base_url, id=device_id), auth_token)
+        response = request_json(self.fetch, settings.device_url.format(base_url=self.base_url, id=device_id), auth_token)
         if isinstance(response, BackendFailure):
             return response
         data = response.value
@@ -65,15 +67,13 @@ class SMSDeviceAPI:
             return BackendFailure((f"SMS device request for device {device_id} returned no device data.",))
         contacts = fetch_paginated_jsonapi_collection(
             url_template=settings.contact_url,
-            base_url=settings.base_url,
+            base_url=self.base_url,
             object_id=device_id,
             page_size=100,
             max_pages=100,
             fetch_page=lambda url: self._contact_page(url, device_id, auth_token),
             error_label="SMS contact roles",
-            next_link_base_url=settings.contact_url.format(
-                base_url=settings.base_url, id=device_id, page_size=100, page_number=1
-            ),
+            next_link_base_url=settings.contact_url.format(base_url=self.base_url, id=device_id, page_size=100, page_number=1),
         )
         if isinstance(contacts, BackendFailure):
             return contacts
@@ -83,13 +83,13 @@ class SMSDeviceAPI:
         link = data["data"].get("links", {}).get("self")
         frontend_link = None
         if isinstance(link, str) and link:
-            parsed = urlsplit(settings.base_url)
+            parsed = urlsplit(self.base_url)
             api_link = urljoin(f"{parsed.scheme}://{parsed.netloc}", link)
-            frontend_link = api_link.replace(settings.backend_link_marker, "/", 1)
+            frontend_link = api_link.replace(self.backend_settings.backend_link_marker, "/", 1)
         return BackendSuccess(DeviceMetadata(data, names, frontend_link), notices)
 
     def _contact_page(self, url: str, device_id: str, auth_token: str | None) -> BackendResult[dict]:
-        if urlsplit(url)[:2] != urlsplit(self.settings.base_url)[:2]:
+        if urlsplit(url)[:2] != urlsplit(self.base_url)[:2]:
             return BackendFailure(("SMS contact pagination points to a different backend.",))
         response = request_json(self.fetch, url, auth_token)
         if isinstance(response, BackendFailure):
@@ -165,8 +165,8 @@ class SMSDeviceAPI:
             devices.value or (list(period.device_actions) if period is not None else []),
             platforms.value,
             locations.value,
-            static_location_end_tolerance_seconds=settings.static_location_end_tolerance_seconds,
-            incomplete_mount_chain_policy=settings.incomplete_mount_chain_policy,
+            static_location_end_tolerance_seconds=self.backend_settings.static_location_end_tolerance_seconds,
+            incomplete_mount_chain_policy=self.backend_settings.incomplete_mount_chain_policy,
         )
         return BackendSuccess(
             MountLocation(location.station_height_amsl, location.vertical_surface_offset, location.site_name),
@@ -177,7 +177,7 @@ class SMSDeviceAPI:
     def _actions(
         self, template: str, identifier: str, entity: str, label: str, auth_token: str | None
     ) -> BackendResult[list[dict]]:
-        response = request_json(self.fetch, template.format(base_url=self.settings.base_url, id=identifier), auth_token)
+        response = request_json(self.fetch, template.format(base_url=self.base_url, id=identifier), auth_token)
         if isinstance(response, BackendFailure):
             return BackendFailure(
                 tuple(f"SMS {label} request for {entity} {identifier} failed: {error}" for error in response.errors)

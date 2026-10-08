@@ -61,9 +61,8 @@ def test_all_provider_builders_use_typed_connection_and_presentation_values(conf
         names.add(instance.provider_name)
         assert (provider.backend_name, provider.backend_type, provider.resource_kind) == (definition.name, backend_type, resource)
         assert provider.id_prefix == definition.prefix(resource)
-        if definition.type != "sms":
-            assert provider.backend.base_url == definition.base_url
-            assert provider.backend.settings is definition.settings
+        assert provider.backend.base_url == definition.base_url
+        assert provider.backend.settings is definition.settings
         assert not hasattr(provider, "base_url")
         assert (provider.text_prefix, provider.max_hits) == (instance.settings.text_prefix, instance.settings.max_hits)
         if instance.provider_name == "O2ARegistryMissionProvider":
@@ -86,9 +85,8 @@ def test_all_handler_builders_use_typed_connections_and_own_catalog_mappings(con
             for catalog in handler_config.catalogs:
                 handler = backend_assembly.HANDLER_BUILDERS[handler_config.handler_name](instance, catalog, definition)
                 assert handler.id_prefix == definition.prefix(resource)
-                if definition.type != "sms":
-                    assert handler.backend.base_url == definition.base_url
-                    assert handler.backend.settings is definition.settings
+                assert handler.backend.base_url == definition.base_url
+                assert handler.backend.settings is definition.settings
                 assert not hasattr(handler, "base_url")
                 assert handler.attribute_mapping == dict(catalog.attribute_mapping)
                 assert handler.managed_attribute_uris == (

@@ -1,7 +1,7 @@
 from rdmo_sensorsearch.backends.sms.backend import SMSBackend
-from rdmo_sensorsearch.backends.sms.settings import SMSConfigurationSettings
 from rdmo_sensorsearch.contracts import BackendFailure, BackendSuccess, StaticLocation
 from rdmo_sensorsearch.transport import TransportError
+from testing.sms_helpers import sms_backend_settings
 from testing.transport_helpers import raising_fetch
 
 
@@ -32,7 +32,7 @@ def test_configuration_returns_normalized_members_and_reuses_static_locations():
         raise AssertionError(url)
 
     backend = SMSBackend(
-        fetch=raising_fetch(fetch), configuration_settings=SMSConfigurationSettings("https://sms.example/backend/api/v1")
+        fetch=raising_fetch(fetch), base_url="https://sms.example/backend/api/v1", settings=sms_backend_settings("configuration")
     )
     configuration = backend.get_configuration("49", auth_token="token")
     assert isinstance(configuration, BackendSuccess)
@@ -55,7 +55,9 @@ def test_configuration_uses_requested_id_when_payload_has_no_id():
         requests.append(url)
         return {"data": {}} if "/configurations/49" in url else {"data": []}
 
-    backend = SMSBackend(fetch=raising_fetch(fetch), configuration_settings=SMSConfigurationSettings("https://sms.example/api"))
+    backend = SMSBackend(
+        fetch=raising_fetch(fetch), base_url="https://sms.example/api", settings=sms_backend_settings("configuration")
+    )
     configuration = backend.get_configuration("49")
     assert isinstance(backend.get_configuration_members(configuration.value), BackendSuccess)
     assert all("filter[configuration_id]=49" in url for url in requests[1:])
@@ -64,7 +66,8 @@ def test_configuration_uses_requested_id_when_payload_has_no_id():
 def test_configuration_static_location_failure_retains_existing_message():
     backend = SMSBackend(
         fetch=raising_fetch(lambda *args, **kwargs: TransportError("Unavailable")),
-        configuration_settings=SMSConfigurationSettings("https://sms.example/api"),
+        base_url="https://sms.example/api",
+        settings=sms_backend_settings("configuration"),
     )
     assert backend.get_static_location("49") == BackendFailure(
         ("SMS static location request for configuration 49 failed: Unavailable",)

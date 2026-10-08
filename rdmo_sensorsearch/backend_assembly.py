@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Literal, Protocol
 from rdmo_sensorsearch.backends.gipp.backend import GIPPBackend
 from rdmo_sensorsearch.backends.o2a.backend import O2ABackend
 from rdmo_sensorsearch.backends.sms.backend import SMSBackend
-from rdmo_sensorsearch.backends.sms.settings import SMSConfigurationSettings, SMSDeviceSettings, SMSSearchSettings
 from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.config_models.backend_settings import (
     GIPPBackendSettings,
@@ -71,53 +70,9 @@ def build_sms_backend(
 ) -> SMSBackend:
     settings = definition.settings
     assert isinstance(settings, SMSBackendSettings)
-    if capability in {"device_search", "configuration_search"}:
-        resource_url = settings.device_search_url if capability == "device_search" else settings.configuration_search_url
-        query_url = settings.device_query_url if capability == "device_search" else settings.configuration_query_url
-        return SMSBackend(
-            fetch=fetch_json, search_settings=SMSSearchSettings(resource_url.format(base_url=definition.base_url), query_url)
-        )
-    if capability == "device":
-        return SMSBackend(
-            fetch=fetch_json,
-            device_settings=SMSDeviceSettings(
-                base_url=definition.base_url,
-                device_url=settings.device.device_url,
-                contact_url=settings.device.contact_url,
-                device_mount_actions_url=settings.device.device_mount_actions_url,
-                configuration_device_mount_actions_url=settings.device.configuration_device_mount_actions_url,
-                configuration_platform_mount_actions_url=settings.device.configuration_platform_mount_actions_url,
-                configuration_static_location_actions_url=settings.device.configuration_static_location_actions_url,
-                backend_link_marker=settings.backend_link_marker,
-                static_location_end_tolerance_seconds=settings.static_location_end_tolerance_seconds,
-                incomplete_mount_chain_policy=settings.incomplete_mount_chain_policy,
-            ),
-        )
-    if capability == "configuration":
-        return SMSBackend(
-            fetch=fetch_json,
-            configuration_settings=SMSConfigurationSettings(
-                base_url=definition.base_url,
-                configuration_url=settings.configuration.configuration_url,
-                device_url=settings.configuration.device_url,
-                device_mount_action_url=settings.configuration.device_mount_action_url,
-                device_mount_actions_url=settings.configuration.device_mount_actions_url,
-                platform_mount_actions_url=settings.configuration.platform_mount_actions_url,
-                static_location_actions_url=settings.configuration.static_location_actions_url,
-                mounting_action_timepoints_url=settings.configuration.mounting_action_timepoints_url,
-                device_mount_action_page_size=settings.configuration.device_mount_action_page_size,
-                platform_mount_action_page_size=settings.configuration.platform_mount_action_page_size,
-                static_location_action_page_size=settings.configuration.static_location_action_page_size,
-                max_collection_pages=settings.configuration.max_collection_pages,
-                configuration_self_link_path=settings.configuration.configuration_self_link_path,
-                self_link_fallback_enabled=self_link_fallback_enabled,
-                frontend_link_suffix=settings.configuration.frontend_link_suffix,
-                backend_link_marker=settings.backend_link_marker,
-                static_location_end_tolerance_seconds=settings.static_location_end_tolerance_seconds,
-                incomplete_mount_chain_policy=settings.incomplete_mount_chain_policy,
-            ),
-        )
-    raise ValueError(f"Unsupported SMS capability {capability!r}")
+    return SMSBackend(
+        base_url=definition.base_url, settings=settings, fetch=fetch_json, self_link_fallback_enabled=self_link_fallback_enabled
+    )
 
 
 def build_o2a_backend(

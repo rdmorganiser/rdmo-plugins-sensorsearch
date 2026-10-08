@@ -3,9 +3,10 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from rdmo_sensorsearch.backends.sms.backend import SMSBackend
-from rdmo_sensorsearch.backends.sms.settings import SMSDeviceSettings, SMSSearchSettings
+from rdmo_sensorsearch.config_models.backend_settings import SMSBackendSettings
 from rdmo_sensorsearch.contracts import BackendFailure, BackendSuccess, SearchRecord
 from rdmo_sensorsearch.transport import TransportError
+from testing.sms_helpers import sms_backend_settings
 from testing.transport_helpers import raising_fetch
 
 
@@ -20,9 +21,12 @@ def test_search_uses_resource_url_query_limit_and_per_call_auth(method, resource
 
     backend = SMSBackend(
         fetch=raising_fetch(fetch),
-        search_settings=SMSSearchSettings(
-            f"https://sms.example/api/{resource}",
-            "{base_url}?q={query}&size={page_size}",
+        base_url=f"https://sms.example/api/{resource}",
+        settings=SMSBackendSettings(
+            device_search_url="{base_url}",
+            configuration_search_url="{base_url}",
+            device_query_url="{base_url}?q={query}&size={page_size}",
+            configuration_query_url="{base_url}?q={query}&size={page_size}",
         ),
     )
     first = getattr(backend, method)("a & b", limit=2, auth_token="first")
@@ -45,7 +49,13 @@ def test_search_uses_resource_url_query_limit_and_per_call_auth(method, resource
 def test_search_failure_is_distinct_from_empty_success(payload, expected):
     backend = SMSBackend(
         fetch=raising_fetch(lambda *args, **kwargs: payload),
-        search_settings=SMSSearchSettings("https://sms.example/devices", "{base_url}"),
+        base_url="https://sms.example/devices",
+        settings=SMSBackendSettings(
+            device_search_url="{base_url}",
+            configuration_search_url="{base_url}",
+            device_query_url="{base_url}",
+            configuration_query_url="{base_url}",
+        ),
     )
     assert backend.search_devices("test", limit=10) == expected
 
@@ -55,7 +65,8 @@ def test_device_normalization_does_not_mutate_transport_documents():
     contacts = {"data": [], "included": []}
     backend = SMSBackend(
         fetch=raising_fetch(lambda url, **kwargs: contacts if "contact" in url else document),
-        device_settings=SMSDeviceSettings("https://sms.example/backend/api/v1"),
+        base_url="https://sms.example/backend/api/v1",
+        settings=sms_backend_settings("device"),
     )
     first = backend.get_device("1")
     assert isinstance(first, BackendSuccess)
@@ -70,11 +81,14 @@ def test_device_normalization_does_not_mutate_transport_documents():
 def test_mount_failure_is_typed_and_empty_mount_is_successful():
     backend = SMSBackend(
         fetch=raising_fetch(lambda *args, **kwargs: TransportError("Unavailable")),
-        device_settings=SMSDeviceSettings("https://sms.example/api"),
+        base_url="https://sms.example/api",
+        settings=sms_backend_settings("device"),
     )
     assert backend.get_mount_period("1", "2") == BackendFailure(("SMS mount action request for device 1 failed: Unavailable",))
     backend = SMSBackend(
-        fetch=raising_fetch(lambda *args, **kwargs: {"data": []}), device_settings=SMSDeviceSettings("https://sms.example/api")
+        fetch=raising_fetch(lambda *args, **kwargs: {"data": []}),
+        base_url="https://sms.example/api",
+        settings=sms_backend_settings("device"),
     )
     assert backend.get_mount_period("1", "2") == BackendSuccess(None)
 
@@ -100,7 +114,7 @@ def test_partial_mount_failure_preserves_strict_and_best_effort_request_policies
             return {"data": [{"id": "site", "attributes": {"begin_date": "2024-01-01T00:00:00Z", "z": 100, "label": "Plot"}}]}
         return {"data": [action]}
 
-    backend = SMSBackend(fetch=raising_fetch(fetch), device_settings=SMSDeviceSettings("https://sms.example/api"))
+    backend = SMSBackend(fetch=raising_fetch(fetch), base_url="https://sms.example/api", settings=sms_backend_settings("device"))
     strict = backend.get_mount_location("1", "2")
     assert isinstance(strict, BackendFailure)
     assert len(requests) == 2 and not any("static-location-actions" in url for url in requests)
