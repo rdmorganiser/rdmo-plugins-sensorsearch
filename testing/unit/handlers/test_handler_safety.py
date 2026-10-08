@@ -8,6 +8,7 @@ from types import ModuleType, SimpleNamespace
 
 import pytest
 
+from rdmo_sensorsearch.contracts import HandlerFailure
 from testing.paths import REPOSITORY_ROOT
 
 
@@ -186,7 +187,7 @@ def test_o2a_device_refresh_fails_when_an_auxiliary_request_fails(monkeypatch):
 
     result = handler.handle("42", context=contracts.HandlerExecutionContext())
 
-    assert result == {"errors": ["O2A contacts request for item 42 failed: contacts unavailable"]}
+    assert result == HandlerFailure(("O2A contacts request for item 42 failed: contacts unavailable",))
 
 
 def test_sms_device_refresh_fails_when_contact_request_fails(monkeypatch):
@@ -204,7 +205,7 @@ def test_sms_device_refresh_fails_when_contact_request_fails(monkeypatch):
 
     result = handler.handle("7", context=contracts.HandlerExecutionContext())
 
-    assert result == {"errors": ["contacts unavailable"]}
+    assert result == HandlerFailure(("contacts unavailable",))
 
 
 def _owner_role(contact_id, *, role_id="role-1", role_name="Owner"):
@@ -343,7 +344,7 @@ def test_sms_malformed_contact_pages_fail_instead_of_returning_authoritative_met
     responses = iter([{"data": {"id": "42"}}, payload])
     monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
 
-    assert "errors" in _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext())
+    assert isinstance(_sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()), HandlerFailure)
 
 
 def test_sms_no_owner_returns_an_explicit_clearing_scalar(monkeypatch):
@@ -366,9 +367,9 @@ def test_sms_contact_pagination_failure_discards_partial_results(monkeypatch):
     )
     monkeypatch.setattr(backend_assembly, "fetch_json", lambda url, auth_token=None: next(responses))
 
-    assert _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()) == {
-        "errors": ["second page unavailable"]
-    }
+    assert _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()) == HandlerFailure(
+        ("second page unavailable",)
+    )
 
 
 def test_sms_owner_contact_missing_relationship_preserves_other_resolved_owners():
@@ -397,7 +398,9 @@ def test_sms_contact_pagination_rejects_other_backends_and_repeated_pages(monkey
 
     monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
 
-    assert "errors" in _sms_owner_handler().handle("42", auth_token="test-token", context=contracts.HandlerExecutionContext())
+    assert isinstance(
+        _sms_owner_handler().handle("42", auth_token="test-token", context=contracts.HandlerExecutionContext()), HandlerFailure
+    )
     assert all(url.startswith("https://sms.example/") for url in calls)
     assert len(calls) <= 3
 
@@ -413,9 +416,9 @@ def test_sms_contact_pagination_limit_discards_incomplete_results(monkeypatch):
 
     monkeypatch.setattr(backend_assembly, "fetch_json", fetch)
 
-    assert _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()) == {
-        "errors": ["SMS contact roles collection pagination exceeded 100 pages."]
-    }
+    assert _sms_owner_handler().handle("42", context=contracts.HandlerExecutionContext()) == HandlerFailure(
+        ("SMS contact roles collection pagination exceeded 100 pages.",)
+    )
     assert len(pages) == 100
 
 
@@ -760,7 +763,7 @@ def test_sms_configuration_refresh_aborts_when_a_member_cannot_be_resolved(monke
 
     result = handler.handle("49", context=contracts.HandlerExecutionContext())
 
-    assert result == {"errors": ["SMS device request for mounted device 327 failed: device unavailable"]}
+    assert result == HandlerFailure(("SMS device request for mounted device 327 failed: device unavailable",))
 
 
 def test_sms_configuration_refresh_can_preserve_the_current_device_set(monkeypatch):
@@ -871,7 +874,7 @@ def test_sms_membership_filter_fails_closed_when_the_period_is_invalid(monkeypat
         context=contracts.HandlerExecutionContext(require_configuration_period=True),
     )
 
-    assert result == {"errors": ["A validated configuration period is required for SMS membership filtering."]}
+    assert result == HandlerFailure(("A validated configuration period is required for SMS membership filtering.",))
 
 
 def test_sms_membership_filter_action_requires_explicit_enablement(monkeypatch):
@@ -892,7 +895,7 @@ def test_sms_membership_filter_action_requires_explicit_enablement(monkeypatch):
         context=contracts.HandlerExecutionContext(require_configuration_period=True),
     )
 
-    assert result == {"errors": ["SMS membership filtering is not enabled for this catalog."]}
+    assert result == HandlerFailure(("SMS membership filtering is not enabled for this catalog.",))
 
 
 def test_o2a_mission_collection_fetches_every_page(monkeypatch):
@@ -964,7 +967,7 @@ def test_o2a_mission_refresh_aborts_when_a_member_cannot_be_resolved(monkeypatch
 
     result = handler.handle("30", context=contracts.HandlerExecutionContext())
 
-    assert result == {"errors": ["O2A item request for mission item 4152 failed: item unavailable"]}
+    assert result == HandlerFailure(("O2A item request for mission item 4152 failed: item unavailable",))
 
 
 def test_o2a_mission_refresh_can_preserve_the_current_device_set(monkeypatch):
@@ -1099,7 +1102,7 @@ def test_o2a_mission_rejects_historical_membership_filtering(monkeypatch):
         context=contracts.HandlerExecutionContext(require_configuration_period=True),
     )
 
-    assert result == {"errors": ["O2A Registry does not support historical mission-membership filtering."]}
+    assert result == HandlerFailure(("O2A Registry does not support historical mission-membership filtering.",))
 
 
 def test_o2a_mission_exposes_the_backend_period_for_preserved_devices():

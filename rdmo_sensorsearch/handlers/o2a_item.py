@@ -1,7 +1,7 @@
 import logging
 
 from rdmo_sensorsearch.client import fetch_json
-from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerFailure, HandlerOutcome, HandlerResult
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
 from rdmo_sensorsearch.handlers.parser import evaluate_jmespath_mapping
 
@@ -33,7 +33,7 @@ class O2ARegistryItemHandler(BackendRecordHandler):
     item_frontend_link_template = "{base_url_origin}/items/{id}"
     device_link_attribute_uri = "https://rdmo.nfdi4earth.de/terms/domain/dataset/usage_technology/device-link"
 
-    def handle(self, backend_id: str, *, context: HandlerExecutionContext, auth_token: str | None = None):
+    def handle(self, backend_id: str, *, context: HandlerExecutionContext, auth_token: str | None = None) -> HandlerOutcome:
         """
         Synchronizes one O2A item with its RDMO value.
 
@@ -65,7 +65,7 @@ class O2ARegistryItemHandler(BackendRecordHandler):
             backend_id,
         )
         if response_errors:
-            return {"errors": response_errors}
+            return HandlerFailure(tuple(response_errors))
 
         # extend basic data with contacts
         self.add_contacts_to_data(data, contacts_data)

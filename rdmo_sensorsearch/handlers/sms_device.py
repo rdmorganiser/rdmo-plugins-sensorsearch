@@ -7,6 +7,8 @@ from rdmo_sensorsearch.contracts import (
     BackendFailure,
     DeviceSource,
     HandlerExecutionContext,
+    HandlerFailure,
+    HandlerOutcome,
     HandlerResult,
     RefreshNotice,
 )
@@ -50,7 +52,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
         *,
         auth_token: str | None = None,
         context: HandlerExecutionContext,
-    ) -> dict | HandlerResult:
+    ) -> HandlerOutcome:
         """
         Synchronizes one SMS device with its RDMO value.
 
@@ -64,7 +66,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
 
         response = self.backend.get_device(backend_id, auth_token=auth_token)
         if isinstance(response, BackendFailure):
-            return {"errors": list(response.errors)}
+            return HandlerFailure(tuple(response.errors))
         metadata = response.value
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, metadata.document)
         owner_attribute_uri = self.attribute_mapping.get(OWNER_ORGANIZATIONS_PATH)
@@ -85,7 +87,7 @@ class SensorManagementSystemDeviceHandler(BackendRecordHandler):
             detail_settings=detail_settings,
         )
         if mount_metadata_errors:
-            return {"errors": mount_metadata_errors}
+            return HandlerFailure(tuple(mount_metadata_errors))
         return HandlerResult(mapped_values=mapped_values, notices=tuple(notices))
 
     def _set_mount_metadata(

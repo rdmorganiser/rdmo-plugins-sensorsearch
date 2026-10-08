@@ -4,7 +4,7 @@ import sys
 from importlib import import_module
 from types import ModuleType, SimpleNamespace
 
-from rdmo_sensorsearch.contracts import HandlerExecutionContext
+from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerFailure
 from testing.paths import REPOSITORY_ROOT
 
 
@@ -111,4 +111,4 @@ def test_handler_propagates_backend_errors(monkeypatch):
 
     result = handler.handle("1", context=HandlerExecutionContext())
 
-    assert result == {"errors": ["instrument unavailable"]}
+    assert result == HandlerFailure(("instrument unavailable",))

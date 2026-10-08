@@ -6,7 +6,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerResult, RefreshDeviceDetails, RefreshNotice, SelectedDevice
+from rdmo_sensorsearch.contracts import (
+    CollectionAssignment,
+    HandlerFailure,
+    HandlerResult,
+    RefreshDeviceDetails,
+    RefreshNotice,
+    SelectedDevice,
+)
 from rdmo_sensorsearch.services.device_detail_profile import DEFAULT_DEVICE_DETAIL_SETTINGS
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan
 from rdmo_sensorsearch.services.device_metadata import fetch_device_metadata_batch
@@ -135,7 +142,8 @@ def test_fetch_service_passes_authentication_and_copies_context_into_worker():
 @pytest.mark.parametrize(
     ("external_id", "handler_result", "expected_message"),
     (
-        ("kitsms:1", {"errors": ["not found", "not authorized"]}, "not found; not authorized"),
+        ("kitsms:1", HandlerFailure(("not found", "not authorized")), "not found; not authorized"),
+        ("kitsms:legacy", {"errors": ["legacy"]}, "Device handler returned unexpected payload type: dict."),
         ("kitsms:2", "unexpected", "Device handler returned unexpected payload type: str."),
         (
             "kitsms:4",
@@ -188,6 +196,24 @@ def test_fetch_service_isolates_handler_exceptions_per_device():
 
     assert result.payloads["cfg:1||kitsms:2"].mapped_values == {"attribute:name": "working"}
     assert [(error.external_id, error.message) for error in result.errors] == [("cfg:1||kitsms:1", "backend unavailable")]
+
+
+def test_fetch_service_isolates_typed_failures_and_only_enriches_successful_payloads():
+    enriched = []
+    result = fetch_device_metadata_batch(
+        (
+            _plan("kitsms:1", RecordingHandler(HandlerFailure(("unavailable", "try later")))),
+            _plan("kitsms:2", RecordingHandler(HandlerResult(mapped_values={"name": "working"}))),
+        ),
+        device_detail_settings=DEFAULT_DEVICE_DETAIL_SETTINGS,
+        scoped_attribute_uris=(),
+        enrich_payload=lambda mapped_values, plan: enriched.append(plan.block_key),
+    )
+
+    assert set(result.payloads) == {"cfg:1||kitsms:2"}
+    assert result.payloads["cfg:1||kitsms:2"].mapped_values == {"name": "working"}
+    assert [(error.external_id, error.message) for error in result.errors] == [("cfg:1||kitsms:1", "unavailable; try later")]
+    assert enriched == ["cfg:1||kitsms:2"]
 
 
 def test_fetch_service_rejects_an_external_id_without_a_backend_value():

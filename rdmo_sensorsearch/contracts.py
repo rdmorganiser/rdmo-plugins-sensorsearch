@@ -100,6 +100,16 @@ class HandlerResult:
 
 
 @dataclass(frozen=True)
+class HandlerFailure:
+    """A failed handler operation that must not be reconciled."""
+
+    errors: tuple[str, ...]
+
+
+HandlerOutcome = HandlerResult | HandlerFailure
+
+
+@dataclass(frozen=True)
 class HandlerExecutionContext:
     preserve_existing_collections: bool = False
     require_configuration_period: bool = False

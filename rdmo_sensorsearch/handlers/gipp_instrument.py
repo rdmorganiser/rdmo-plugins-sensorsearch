@@ -1,6 +1,6 @@
 import logging
 
-from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerResult
+from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerFailure, HandlerOutcome, HandlerResult
 from rdmo_sensorsearch.handlers.base import BackendRecordHandler
 
 from ..client import fetch_json
@@ -20,7 +20,7 @@ class GIPPInstrumentHandler(BackendRecordHandler):
 
     json_url = "{base_url}/{id}.json"
 
-    def handle(self, backend_id: str, *, context: HandlerExecutionContext, auth_token: str | None = None):
+    def handle(self, backend_id: str, *, context: HandlerExecutionContext, auth_token: str | None = None) -> HandlerOutcome:
         """
         Synchronizes one GIPP instrument with its RDMO value.
 
@@ -35,11 +35,11 @@ class GIPPInstrumentHandler(BackendRecordHandler):
 
         data = fetch_json(self.json_url.format(base_url=self.base_url, id=backend_id))
         if isinstance(data, dict) and "errors" in data:
-            return data
+            return HandlerFailure(tuple(data["errors"]))
         if not isinstance(data, dict):
-            return {"errors": [f"Unexpected GIPP payload for instrument {backend_id}: {type(data).__name__}"]}
+            return HandlerFailure((f"Unexpected GIPP payload for instrument {backend_id}: {type(data).__name__}",))
         if not data:
-            return {"errors": [f"GIPP request for instrument {backend_id} returned no instrument data."]}
+            return HandlerFailure((f"GIPP request for instrument {backend_id} returned no instrument data.",))
 
         logger.debug("data: %s", data)
         return HandlerResult(mapped_values=evaluate_jmespath_mapping(self.attribute_mapping, data))

@@ -8,7 +8,13 @@ from django.db import transaction
 from rdmo.domain.models import Attribute
 
 from rdmo_sensorsearch.config import load_config_model
-from rdmo_sensorsearch.contracts import CollectionAssignment, HandlerExecutionContext, HandlerResult, RefreshDeviceDetails
+from rdmo_sensorsearch.contracts import (
+    CollectionAssignment,
+    HandlerExecutionContext,
+    HandlerFailure,
+    HandlerResult,
+    RefreshDeviceDetails,
+)
 from rdmo_sensorsearch.handlers.catalog_registry import (
     get_handler_bindings_for_catalog,
     handler_bindings_by_catalog,
@@ -207,8 +213,8 @@ def refresh_value_from_backend(
         )
         return _failed_refresh(external_id, str(error) or type(error).__name__)
 
-    if isinstance(handler_output, dict) and "errors" in handler_output:
-        return _failed_refresh(external_id, _format_handler_errors(handler_output["errors"]))
+    if isinstance(handler_output, HandlerFailure):
+        return _failed_refresh(external_id, "; ".join(handler_output.errors))
     if not isinstance(handler_output, HandlerResult):
         return _failed_refresh(external_id, f"Handler returned {type(handler_output).__name__}, expected HandlerResult.")
 
@@ -406,9 +412,3 @@ def _failed_refresh(external_id: str, message: str) -> RefreshResult:
         refreshed_count=0,
         errors=(RefreshError(external_id=external_id, message=message),),
     )
-
-
-def _format_handler_errors(errors) -> str:
-    if isinstance(errors, (list, tuple)):
-        return "; ".join(str(error) for error in errors)
-    return str(errors)

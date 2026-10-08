@@ -6,10 +6,43 @@ from django.db import transaction
 
 from rdmo.projects.models import Value
 
-from rdmo_sensorsearch.contracts import HandlerResult, RefreshDeviceDetails, RefreshNotice, SelectedDevice
+from rdmo_sensorsearch.contracts import HandlerFailure, HandlerResult, RefreshDeviceDetails, RefreshNotice, SelectedDevice
 from rdmo_sensorsearch.services.refresh import RefreshResult
 from rdmo_sensorsearch.workflows import backend_value_sync
 from testing.performance.fixtures import make_workload
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("preserve", (False, True))
+@pytest.mark.parametrize(
+    ("output", "message"),
+    (
+        (HandlerFailure(("unavailable", "try later")), "unavailable; try later"),
+        ({"errors": ["legacy"]}, "Handler returned dict, expected HandlerResult."),
+    ),
+)
+def test_handler_failures_skip_persistence_and_effects(monkeypatch, preserve, output, message):
+    workload = make_workload(0)
+    source = Value.objects.create(
+        project=workload.project, attribute=workload.attributes["search"], external_id="sms:42", text="selected"
+    )
+    handler = SimpleNamespace(uses_auth_token=True, handle=lambda **kwargs: output)
+    binding = SimpleNamespace(id_prefix="sms", search_attribute_uri=source.attribute.uri, handler=handler)
+    monkeypatch.setattr(backend_value_sync, "get_handler_bindings_for_catalog", lambda uri: [binding])
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("Failed handler output must not reach persistence or effects")
+
+    for name in ("_reconcile_result", "_execute_effect", "_refresh_selected_configuration_devices"):
+        monkeypatch.setattr(backend_value_sync, name, unexpected)
+
+    result = backend_value_sync.refresh_value_from_backend(source, preserve_existing_collections=preserve)
+
+    source.refresh_from_db()
+    assert source.text == "selected"
+    assert result.requested_count == 1
+    assert result.refreshed_count == result.device_requested_count == result.device_refreshed_count == 0
+    assert [(error.external_id, error.message) for error in result.errors] == [("sms:42", message)]
 
 
 @pytest.mark.django_db(transaction=True)

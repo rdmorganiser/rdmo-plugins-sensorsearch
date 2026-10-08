@@ -7,7 +7,13 @@ from contextvars import copy_context
 from dataclasses import dataclass
 from typing import Any
 
-from rdmo_sensorsearch.contracts import DeviceDetailSettings, HandlerExecutionContext, HandlerResult, RefreshNotice
+from rdmo_sensorsearch.contracts import (
+    DeviceDetailSettings,
+    HandlerExecutionContext,
+    HandlerFailure,
+    HandlerResult,
+    RefreshNotice,
+)
 from rdmo_sensorsearch.services.device_details import DeviceBlockPlan, parse_external_id
 from rdmo_sensorsearch.services.performance import measure_phase
 
@@ -117,11 +123,11 @@ def _fetch_device_metadata(
     else:
         handler_result = handler.handle(backend_id=device_id, context=context)
 
-    if isinstance(handler_result, dict) and "errors" in handler_result:
-        logger.error("Device handler returned errors for %s: %s", plan.device.external_id, handler_result["errors"])
+    if isinstance(handler_result, HandlerFailure):
+        logger.error("Device handler returned errors for %s: %s", plan.device.external_id, handler_result.errors)
         return DeviceFetchError(
             external_id=plan.block_key,
-            message=_format_handler_errors(handler_result["errors"]),
+            message="; ".join(handler_result.errors),
         )
     if not isinstance(handler_result, HandlerResult):
         logger.warning(
@@ -149,9 +155,3 @@ def _fetch_device_metadata(
         scoped_scalar_values=scoped_scalar_values,
         notices=tuple(notices),
     )
-
-
-def _format_handler_errors(errors: Any) -> str:
-    if isinstance(errors, list):
-        return "; ".join(str(error) for error in errors)
-    return str(errors)

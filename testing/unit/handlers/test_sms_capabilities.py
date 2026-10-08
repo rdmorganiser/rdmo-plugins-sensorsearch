@@ -14,6 +14,7 @@ from rdmo_sensorsearch.contracts import (
     ConfigurationPeriod,
     DeviceMetadata,
     HandlerExecutionContext,
+    HandlerFailure,
     HandlerResult,
     MountLocation,
     RefreshNotice,
@@ -114,7 +115,7 @@ def test_membership_failure_returns_existing_error_contract_without_effects():
         base_url="https://sms.example/api",
     )
     handler.selected_devices_attribute_uri = "selected"
-    assert handler.handle("2", context=HandlerExecutionContext()) == {"errors": ["Unavailable"]}
+    assert handler.handle("2", context=HandlerExecutionContext()) == HandlerFailure(("Unavailable",))
 
 
 def test_bulk_enricher_uses_custom_profile_and_logs_partial_capability_failures(caplog):

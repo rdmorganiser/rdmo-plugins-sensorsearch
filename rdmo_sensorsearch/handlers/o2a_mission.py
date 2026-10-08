@@ -6,6 +6,8 @@ from rdmo_sensorsearch.client import fetch_json
 from rdmo_sensorsearch.contracts import (
     CollectionAssignment,
     HandlerExecutionContext,
+    HandlerFailure,
+    HandlerOutcome,
     HandlerResult,
     RefreshDeviceDetails,
     SelectedDevice,
@@ -46,16 +48,16 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
         *,
         context: HandlerExecutionContext,
         auth_token: str | None = None,
-    ) -> dict | HandlerResult:
+    ) -> HandlerOutcome:
         mission_data = fetch_json(self.mission_url.format(base_url=self.base_url, id=backend_id))
         if isinstance(mission_data, dict) and "errors" in mission_data:
             logger.debug("Errors in O2A mission data returned for ID %s: %s", backend_id, mission_data["errors"])
-            return mission_data
+            return HandlerFailure(tuple(mission_data["errors"]))
         if not isinstance(mission_data, dict):
             logger.warning("Unexpected O2A mission payload for ID %s: %s", backend_id, type(mission_data).__name__)
-            return {"errors": [f"Unexpected O2A mission payload for ID {backend_id}"]}
+            return HandlerFailure((f"Unexpected O2A mission payload for ID {backend_id}",))
         if not mission_data:
-            return {"errors": [f"O2A mission request for ID {backend_id} returned no mission data."]}
+            return HandlerFailure((f"O2A mission request for ID {backend_id} returned no mission data.",))
 
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, mission_data)
         self._set_mission_links(mapped_values, backend_id)
@@ -70,7 +72,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
             return HandlerResult(mapped_values=mapped_values)
 
         if require_configuration_period:
-            return {"errors": ["O2A Registry does not support historical mission-membership filtering."]}
+            return HandlerFailure(("O2A Registry does not support historical mission-membership filtering.",))
 
         mission_items_data = self._fetch_mission_items(backend_id)
         if isinstance(mission_items_data, dict) and "errors" in mission_items_data:
@@ -79,7 +81,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
                 backend_id,
                 mission_items_data["errors"],
             )
-            return mission_items_data
+            return HandlerFailure(tuple(mission_items_data["errors"]))
 
         mission_period = (
             self._format_timepoint(mission_data.get(self.mission_start_date_path)),
@@ -92,7 +94,7 @@ class O2ARegistryMissionHandler(BackendRecordHandler):
             mission_period=mission_period,
         )
         if member_errors:
-            return {"errors": member_errors}
+            return HandlerFailure(tuple(member_errors))
         collections.append(
             CollectionAssignment(
                 attribute_uri=selected_devices_attribute_uri,

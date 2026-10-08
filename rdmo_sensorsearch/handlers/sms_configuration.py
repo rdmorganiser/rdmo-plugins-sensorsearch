@@ -8,6 +8,8 @@ from rdmo_sensorsearch.contracts import (
     ConfigurationMember,
     ConfigurationSource,
     HandlerExecutionContext,
+    HandlerFailure,
+    HandlerOutcome,
     HandlerResult,
     RefreshDeviceDetails,
     SelectedDevice,
@@ -38,10 +40,10 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
         *,
         auth_token: str | None = None,
         context: HandlerExecutionContext,
-    ) -> dict | HandlerResult:
+    ) -> HandlerOutcome:
         response = self.backend.get_configuration(backend_id, auth_token=auth_token)
         if isinstance(response, BackendFailure):
-            return {"errors": list(response.errors)}
+            return HandlerFailure(tuple(response.errors))
         configuration = response.value
         configuration_data = configuration.document
 
@@ -54,19 +56,19 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
 
         configuration_period = None
         if require_configuration_period and not membership_filter_enabled:
-            return {"errors": ["SMS membership filtering is not enabled for this catalog."]}
+            return HandlerFailure(("SMS membership filtering is not enabled for this catalog.",))
         if require_configuration_period and (not filter_start_attribute_uri or not filter_end_attribute_uri):
-            return {"errors": ["The SMS membership filter inputs are not configured for this catalog."]}
+            return HandlerFailure(("The SMS membership filter inputs are not configured for this catalog.",))
         if require_configuration_period:
             configuration_period = context.configuration_period
             if configuration_period is None:
-                return {"errors": ["A validated configuration period is required for SMS membership filtering."]}
+                return HandlerFailure(("A validated configuration period is required for SMS membership filtering.",))
 
         membership = None
         if selected_devices_attribute_uri and not preserve_existing_collections:
             members = self.backend.get_configuration_members(configuration, period=configuration_period, auth_token=auth_token)
             if isinstance(members, BackendFailure):
-                return {"errors": list(members.errors)}
+                return HandlerFailure(tuple(members.errors))
             membership = members.value
         needs_configuration_location = any(
             getattr(self, name, None) for name in ("location_attribute_uri", "latitude_attribute_uri", "longitude_attribute_uri")
@@ -75,7 +77,7 @@ class SensorManagementSystemConfigurationHandler(BackendRecordHandler):
         if needs_configuration_location and membership is None:
             locations = self.backend.get_static_location(backend_id, auth_token=auth_token)
             if isinstance(locations, BackendFailure):
-                return {"errors": list(locations.errors)}
+                return HandlerFailure(tuple(locations.errors))
             location = locations.value
 
         mapped_values = evaluate_jmespath_mapping(self.attribute_mapping, configuration_data)
