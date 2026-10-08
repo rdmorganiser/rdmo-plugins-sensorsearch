@@ -35,6 +35,13 @@ standard library. Consumers import these types directly rather than depending
 on their former implementation packages. Scalar reconciliation accepts the
 small `ScalarScopeResolver` protocol declared there.
 
+Every handler returns `HandlerOutcome`: either `HandlerResult` with mapped
+values, collections, effects, and notices, or `HandlerFailure` with an ordered
+tuple of error messages. Consumers report failures before enrichment,
+persistence, or effect execution. Handler error dictionaries are unsupported.
+SMS, O2A, and GIPP adapters return `BackendFailure`; handlers translate it into
+`HandlerFailure` before applying catalog mappings.
+
 Device-profile selection is a pure service receiving an explicit `PluginConfig`.
 Workflows load deployment configuration before calling it, so services do not
 acquire an indirect Django dependency through the configuration loader.
@@ -82,7 +89,7 @@ service while making allocation, stale detection, routing failures, and refresh
 decisions directly unit-testable.
 
 The metadata fetch service propagates the current Python context into each
-worker, passes an authentication token only to handlers that declare support,
+worker, passes an optional authentication token to every handler,
 and rejects handler results containing nested collections or effects.
 Backend-specific enrichment remains an injected callback; the catalog adapter
 uses it to add mount periods and resolved location values without making the generic
@@ -102,19 +109,19 @@ documents retain their existing JSON and `sms_owner_organizations` paths.
 `backend_assembly.py` receives typed definitions and consumer profiles. Its
 builder registry is keyed by the explicit backend type; consumer builders
 request device, configuration, or search capabilities. SMS constructs an
-injected adapter; O2A and GIPP receive typed connection bindings while retaining
-their current API implementations. No runtime consumer reads `.raw`, calls the
+injected adapter, as do O2A and GIPP. No runtime consumer reads `.raw`, calls the
 removed mapping loader, or serializes configuration back into constructor
 kwargs. The TOML was migrated once; persisted identifiers remain unchanged.
 
 Typed assembly is the supported construction path for backend-specific
-consumers. Providers require keyword-only `id_prefix`, `text_prefix`, `base_url`,
-and `max_hits`; handlers require keyword-only `id_prefix`, `base_url`, and
-`attribute_mapping`. SMS consumers also require their injected capability
-backend. Handlers own a mutable copy of the supplied mapping. Constructors do
+consumers. Providers require keyword-only `id_prefix`, `text_prefix`,
+`max_hits`, and an injected capability backend; handlers require keyword-only
+`id_prefix`, `attribute_mapping`, and an injected capability backend.
+Handlers own a mutable copy of the supplied mapping. Constructors do
 not accept arbitrary settings or fall back to class-level connection defaults.
-Assembly assigns catalog settings and endpoint templates explicitly after
-construction. RDMO-facing aggregate and project-local providers retain their
+Assembly assigns catalog settings after construction. Endpoint templates and
+canonical typed SMS settings belong to backend adapters, without a second set
+of runtime defaults. RDMO-facing aggregate and project-local providers retain their
 framework entry points and normal construction behavior.
 
 Backend definitions distinguish installation names from device/configuration
@@ -139,6 +146,31 @@ mount-request errors; bulk refresh requests best-effort resolution, logs typed
 failure diagnostics and retains the previous partial-data policy. Authentication
 and cache lifetime remain outside the backend; adapters have no mutable
 request-specific state.
+
+## Remote adapters and transport
+
+All remote providers and handlers consume small protocols from `contracts.py`.
+Metadata, membership, mounts, and static locations remain separate capabilities;
+composition protocols describe consumers that need more than one.
+
+`backends/o2a/` separates item and mission API mechanics. It owns contact joins,
+unit lookup, bounded membership pagination, validation, and identity-derived
+links. O2A handlers retain JMESPath mapping, datetime formats, member labels,
+collection assignments, and refresh effects. Backend-specific mapping fields
+remain in the metadata document. `backends/gipp/` owns instrument search and
+metadata requests while its consumers apply configured presentation and mapping.
+Both adapters ignore the optional SMS authentication token.
+
+`client.py` returns decoded JSON or raises `TransportError` for HTTP, connection,
+timeout, and JSON decoding failures. The neutral `transport.py` helper translates
+only that exception into `BackendFailure` and copies successful documents before
+normalization. Unexpected programming errors propagate.
+
+The request cache keys responses and transport failures by URL and authentication
+token. Concurrent waiters and later callers reuse the failure within the current
+request or refresh scope; a fresh scope retries. Exceptions release waiters,
+and successful empty JSON values remain cacheable. Cache lifetime and metrics
+stay outside backend adapters.
 
 ## Data-collection variable synchronization
 
@@ -257,7 +289,7 @@ value context used by scalar writes lives privately in persistence.
 Architecture tests prohibit services from importing implementation layers or
 the configuration loader, handlers from importing workflows/storage/frameworks,
 and any runtime module other than the scope adapter from importing `AnswerTree`.
-They also prohibit concrete backend and HTTP-client imports in SMS consumers,
+They also prohibit concrete backend and HTTP-client imports in all remote consumers,
 and framework, consumer, or deployment-loader imports in backend adapters.
 They inspect nested packages and relative imports as well as absolute imports.
 

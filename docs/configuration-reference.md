@@ -417,7 +417,7 @@ This index is exhaustive for the validated TOML schema. `catalog_uris` is
 allowed on every `catalogs` entry. `attribute_mapping` is a
 table of JMESPath source expressions to RDMO attribute URI strings. URL fields
 are templates where documented placeholders such as `{base_url}` and `{id}`
-are substituted by the handler.
+are substituted by the backend adapter.
 
 | Settings | Accepted by | Purpose |
 | --- | --- | --- |
