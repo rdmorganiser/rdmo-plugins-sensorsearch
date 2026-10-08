@@ -80,7 +80,7 @@ def test_all_provider_builders_use_typed_connection_and_presentation_values(conf
             assert provider.backend._mission.query_url == definition.settings.mission_query_url
             assert provider.backend._mission.search_settings.where_template == instance.settings.where_template
         elif instance.provider_name == "GIPPInstrumentProvider":
-            assert provider.instruments_url == definition.settings.instruments_url
+            assert provider.backend.settings.instruments_url == definition.settings.instruments_url
         with pytest.raises(TypeError, match="required keyword-only"):
             type(provider)()
     assert names == set(backend_assembly.PROVIDER_BUILDERS)

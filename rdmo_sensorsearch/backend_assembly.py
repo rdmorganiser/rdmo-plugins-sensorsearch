@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Protocol
 
+from rdmo_sensorsearch.backends.gipp.backend import GIPPBackend
 from rdmo_sensorsearch.backends.o2a.backend import O2ABackend
 from rdmo_sensorsearch.backends.sms.backend import SMSBackend
 from rdmo_sensorsearch.backends.sms.settings import SMSConfigurationSettings, SMSDeviceSettings, SMSSearchSettings
@@ -47,14 +47,7 @@ if TYPE_CHECKING:
 Capability = Literal["device", "configuration", "device_search", "configuration_search"]
 
 
-@dataclass(frozen=True)
-class GIPPConnectionBinding:
-    search_url: str
-    metadata_url: str
-    settings: GIPPBackendSettings
-
-
-BackendBinding = SMSBackend | O2ABackend | GIPPConnectionBinding
+BackendBinding = SMSBackend | O2ABackend | GIPPBackend
 
 
 class BackendBuilder(Protocol):
@@ -137,10 +130,10 @@ def build_o2a_backend(
 
 def build_gipp_backend(
     definition: BackendDefinition, capability: Capability, *, self_link_fallback_enabled: bool = False
-) -> GIPPConnectionBinding:
+) -> GIPPBackend:
     settings = definition.settings
     assert isinstance(settings, GIPPBackendSettings)
-    return GIPPConnectionBinding(definition.base_url, settings.metadata_url.format(base_url=definition.base_url), settings)
+    return GIPPBackend(base_url=definition.base_url, settings=settings, fetch=fetch_json)
 
 
 BACKEND_BUILDERS: dict[str, BackendBuilder] = {"sms": build_sms_backend, "o2a": build_o2a_backend, "gipp": build_gipp_backend}
@@ -260,15 +253,15 @@ def build_gipp_instrument_provider(config: ProviderInstanceConfig, definition: B
     from rdmo_sensorsearch.providers.gipp_instrument import GIPPInstrumentProvider
 
     connection = build_backend(definition, "device_search")
-    assert isinstance(connection, GIPPConnectionBinding)
+    assert isinstance(connection, GIPPBackend)
     settings = config.settings
     provider = GIPPInstrumentProvider(
+        base_url=definition.base_url,
         id_prefix=definition.prefix("device"),
         text_prefix=settings.text_prefix,
-        base_url=connection.search_url,
+        backend=connection,
         max_hits=settings.max_hits,
     )
-    provider.instruments_url = connection.settings.instruments_url
     if settings.option_id is not None:
         provider.option_id = settings.option_id
     if settings.option_text is not None:
@@ -429,12 +422,14 @@ def build_gipp_instrument_handler(
     settings = catalog.settings
     assert isinstance(settings, GIPPInstrumentCatalogSettings)
     connection = build_backend(definition, "device")
-    assert isinstance(connection, GIPPConnectionBinding)
+    assert isinstance(connection, GIPPBackend)
     handler = GIPPInstrumentHandler(
-        id_prefix=definition.prefix("device"), base_url=connection.metadata_url, attribute_mapping=dict(catalog.attribute_mapping)
+        base_url=definition.settings.metadata_url.format(base_url=definition.base_url),
+        id_prefix=definition.prefix("device"),
+        backend=connection,
+        attribute_mapping=dict(catalog.attribute_mapping),
     )
     handler.managed_attribute_uris = settings.managed_attribute_uris
-    handler.json_url = connection.settings.json_url
     return handler
 
 

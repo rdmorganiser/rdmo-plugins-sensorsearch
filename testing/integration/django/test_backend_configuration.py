@@ -8,10 +8,9 @@ from rdmo_sensorsearch import backend_assembly
 from rdmo_sensorsearch.config import load_config_model
 from rdmo_sensorsearch.contracts import HandlerExecutionContext, HandlerResult
 from rdmo_sensorsearch.handlers import factory as handler_factory
-from rdmo_sensorsearch.handlers import gipp_instrument
 from rdmo_sensorsearch.providers import factory as provider_factory
-from rdmo_sensorsearch.providers import gipp_instrument as gipp_provider
 from rdmo_sensorsearch.providers import search as search_provider
+from testing.transport_helpers import raising_fetch
 
 
 def test_all_search_consumers_use_named_definitions_and_preserve_options(monkeypatch):
@@ -29,8 +28,7 @@ def test_all_search_consumers_use_named_definitions_and_preserve_options(monkeyp
             return {"records": [{"id": "7", "name": "foo"}]}
         return [{"Instrument": {"id": "2", "code": "foo"}}]
 
-    for module in (backend_assembly, gipp_provider):
-        monkeypatch.setattr(module, "fetch_json", fetch)
+    monkeypatch.setattr(backend_assembly, "fetch_json", raising_fetch(fetch))
     devices = provider_factory.build_provider_instances("DeviceSearchProvider")
     configurations = provider_factory.build_provider_instances("ConfigurationSearchProvider")
     results = {}
@@ -68,8 +66,7 @@ def test_o2a_and_gipp_metadata_use_existing_endpoints_and_mappings(monkeypatch):
             return {"Instrument": {"code": "Instrument"}}
         return {"records": []}
 
-    for module in (backend_assembly, gipp_instrument):
-        monkeypatch.setattr(module, "fetch_json", fetch)
+    monkeypatch.setattr(backend_assembly, "fetch_json", raising_fetch(fetch))
     bindings = {binding.id_prefix: binding for binding in handler_factory.build_handlers_by_catalog()["*"]}
     for prefix in ("o2aregistry", "o2amission", "gfzgipp"):
         result = bindings[prefix].handler.handle("1", context=HandlerExecutionContext())

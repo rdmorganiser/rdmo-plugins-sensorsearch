@@ -4,8 +4,9 @@ from dataclasses import replace
 
 import pytest
 
+from rdmo_sensorsearch.backends.gipp.backend import GIPPBackend
 from rdmo_sensorsearch.backends.o2a.backend import O2ABackend
-from rdmo_sensorsearch.config_models.backend_settings import O2ABackendSettings
+from rdmo_sensorsearch.config_models.backend_settings import GIPPBackendSettings, O2ABackendSettings
 from rdmo_sensorsearch.contracts import BackendFailure
 from rdmo_sensorsearch.transport import TransportError
 from testing.transport_helpers import raising_fetch
@@ -86,3 +87,18 @@ def test_o2a_mission_collection_failures_discard_partial_metadata(monkeypatch, p
     metadata = handler.get_configuration("30").value
 
     assert handler.get_configuration_members(metadata) == BackendFailure(errors)
+
+
+@pytest.mark.parametrize(
+    ("payload", "errors"),
+    (
+        (TransportError("unavailable; try later"), ("unavailable; try later",)),
+        ([], ("Unexpected GIPP payload for instrument 1: list",)),
+        ({}, ("GIPP request for instrument 1 returned no instrument data.",)),
+    ),
+)
+def test_gipp_metadata_failures(monkeypatch, payload, errors):
+    fetch = raising_fetch(lambda url, auth_token=None: payload)
+    handler = GIPPBackend(base_url="https://gipp.example", settings=GIPPBackendSettings(), fetch=fetch)
+
+    assert handler.get_device("1") == BackendFailure(errors)
