@@ -25,6 +25,8 @@ class GIPPBackend:
             return BackendFailure((f"Unexpected GIPP payload for instrument {device_id}: {type(data).__name__}",))
         if not data:
             return BackendFailure((f"GIPP request for instrument {device_id} returned no instrument data.",))
+        if data.get("error") or data.get("errors"):
+            return BackendFailure((f"GIPP request for instrument {device_id} returned an API error envelope.",))
         return BackendSuccess(DeviceMetadata(data))
 
     def search_devices(self, query: str, *, limit: int, auth_token: str | None = None) -> BackendResult[tuple[SearchRecord, ...]]:

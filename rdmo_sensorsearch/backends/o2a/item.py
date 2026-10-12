@@ -30,6 +30,8 @@ class O2AItemAPI:
             payload = response.value
             if not isinstance(payload, dict):
                 errors.append(f"Unexpected O2A {endpoint} payload for item {device_id}: {type(payload).__name__}")
+            elif payload.get("error") or payload.get("errors"):
+                errors.append(f"O2A {endpoint} request for item {device_id} returned an API error envelope.")
             elif endpoint == "item" and not payload:
                 errors.append(f"O2A item request for item {device_id} returned no data.")
             elif endpoint != "item" and (

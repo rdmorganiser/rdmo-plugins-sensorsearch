@@ -41,6 +41,8 @@ class O2AMissionAPI:
             return BackendFailure((f"Unexpected O2A mission payload for ID {identifier}",))
         if not data:
             return BackendFailure((f"O2A mission request for ID {identifier} returned no mission data.",))
+        if data.get("error") or data.get("errors"):
+            return BackendFailure((f"O2A mission request for ID {identifier} returned an API error envelope.",))
         origin = urlsplit(self.base_url)
         values = {"base_url": self.base_url, "base_url_origin": f"{origin.scheme}://{origin.netloc}", "id": identifier}
         return BackendSuccess(
@@ -81,6 +83,9 @@ class O2AMissionAPI:
                 continue
             if not data:
                 errors.append(f"O2A item request for mission item {item_id} returned no item data.")
+                continue
+            if data.get("error") or data.get("errors"):
+                errors.append(f"O2A item request for mission item {item_id} returned an API error envelope.")
                 continue
             attrs = {
                 "mission_item_id": mission_item.get("id", ""),
@@ -123,7 +128,9 @@ class O2AMissionAPI:
             payload = response.value
             if not isinstance(payload, (dict, list)):
                 return BackendFailure((f"Unexpected O2A mission items payload: {type(payload).__name__}",))
-            items = payload.get("records", []) if isinstance(payload, dict) else payload
+            if isinstance(payload, dict) and (payload.get("error") or payload.get("errors")):
+                return BackendFailure((f"O2A mission items request for ID {identifier} returned an API error envelope.",))
+            items = payload.get("records") if isinstance(payload, dict) else payload
             if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
                 return BackendFailure(("Malformed O2A mission items records.",))
             signature = tuple(str(item.get("@uuid") or item.get("id") or item.get("itemId")) for item in items)

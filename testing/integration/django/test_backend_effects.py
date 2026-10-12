@@ -5,11 +5,16 @@ import pytest
 from django.db import transaction
 
 from rdmo.projects.models import Value
+from rdmo.questions.models import Question
 
+from rdmo_sensorsearch.backends.o2a.backend import O2ABackend
+from rdmo_sensorsearch.config_models.backend_settings import O2ABackendSettings
 from rdmo_sensorsearch.contracts import HandlerFailure, HandlerResult, RefreshDeviceDetails, RefreshNotice, SelectedDevice
+from rdmo_sensorsearch.handlers.o2a_mission import O2ARegistryMissionHandler
 from rdmo_sensorsearch.services.refresh import RefreshResult
 from rdmo_sensorsearch.workflows import backend_value_sync
-from testing.performance.fixtures import make_workload
+from testing.performance.fixtures import insert_values, make_workload
+from testing.transport_helpers import raising_fetch
 
 
 @pytest.mark.django_db
@@ -98,3 +103,66 @@ def test_effects_follow_successful_persistence_and_preserve_failure_semantics(mo
         assert result.device_requested_count == 1
         assert result.notices == (RefreshNotice("test-notice"),)
     assert result.refreshed_count == (0 if failure else 1)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("payload", ({}, {"errors": ["Service unavailable"]}, {"records": []}, []))
+def test_o2a_membership_validation_protects_persisted_values(monkeypatch, payload):
+    workload = make_workload(1)
+    question = Question.objects.create(
+        uri_prefix="https://performance.example",
+        uri_path="selected",
+        attribute=workload.attributes["selected"],
+        is_collection=True,
+    )
+    workload.page.questions.add(question)
+    insert_values(
+        workload.project,
+        [
+            {
+                "attribute": workload.attributes["search"],
+                "external_id": "mission:30",
+                "text": "Existing mission",
+                "set_prefix": "dataset",
+                "set_index": 0,
+            },
+            {
+                "attribute": workload.attributes["usage"],
+                "text": "Existing metadata",
+                "set_prefix": "dataset",
+                "set_index": 0,
+            },
+        ],
+    )
+    source = Value.objects.get(project=workload.project, external_id="mission:30")
+    payloads = iter(({"id": 30, "name": "Updated mission"}, payload))
+    backend = O2ABackend(
+        base_url="https://registry.example",
+        settings=O2ABackendSettings(),
+        fetch=raising_fetch(lambda url, auth_token=None: next(payloads)),
+    )
+    handler = O2ARegistryMissionHandler(
+        backend=backend,
+        id_prefix="mission",
+        attribute_mapping={"name": workload.attributes["usage"].uri},
+    )
+    handler.selected_devices_attribute_uri = workload.attributes["selected"].uri
+    handler.selected_devices_page_uri = workload.page.uri
+    binding = SimpleNamespace(id_prefix="mission", search_attribute_uri=source.attribute.uri, handler=handler)
+    monkeypatch.setattr(backend_value_sync, "get_handler_bindings_for_catalog", lambda uri: [binding])
+    values = Value.objects.filter(project=workload.project).order_by("id")
+    before = list(values.values())
+
+    result = backend_value_sync.refresh_value_from_backend(source)
+
+    if payload in ({"records": []}, []):
+        assert result.refreshed_count == 1
+        assert not result.errors
+        assert not values.filter(attribute=workload.attributes["selected"]).exists()
+        assert values.filter(attribute=workload.attributes["usage"], text="Updated mission").exists()
+    else:
+        assert result.requested_count == 1
+        assert result.refreshed_count == 0
+        assert len(result.errors) == 1
+        assert result.errors[0].external_id == "mission:30"
+        assert list(values.values()) == before
