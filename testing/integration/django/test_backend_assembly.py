@@ -1,5 +1,7 @@
 """All configured consumers are assembled from typed profiles without HTTP."""
 
+from dataclasses import replace
+
 import pytest
 
 from django.conf import settings
@@ -65,6 +67,10 @@ def test_all_provider_builders_use_typed_connection_and_presentation_values(conf
         assert provider.backend.settings is definition.settings
         assert not hasattr(provider, "base_url")
         assert (provider.text_prefix, provider.max_hits) == (instance.settings.text_prefix, instance.settings.max_hits)
+        for field in ("option_id", "option_text"):
+            override = getattr(instance.settings, field)
+            expected = override if override is not None else getattr(type(provider), field, None)
+            assert getattr(provider, field, None) == expected
         if instance.provider_name == "O2ARegistryMissionProvider":
             assert provider.backend._mission.query_url == definition.settings.mission_query_url
             assert provider.backend._mission.search_settings.where_template == instance.settings.where_template
@@ -73,6 +79,29 @@ def test_all_provider_builders_use_typed_connection_and_presentation_values(conf
         with pytest.raises(TypeError, match="required keyword-only"):
             type(provider)()
     assert names == set(backend_assembly.PROVIDER_BUILDERS)
+
+
+@pytest.mark.parametrize(
+    "option_id,option_text",
+    (("custom:{id}", None), (None, "Custom {id}"), ("custom:{id}", "Custom {id}"), ("", "")),
+)
+def test_all_provider_builders_preserve_optional_presentation_overrides(config, option_id, option_text):
+    for instance in (*config.device_search.providers, *config.configuration_search.providers):
+        definition = config.backend(instance.backend)
+        settings = replace(instance.settings, option_id=option_id, option_text=option_text)
+        provider = backend_assembly.PROVIDER_BUILDERS[instance.provider_name](replace(instance, settings=settings), definition)
+
+        for field, override in (("option_id", option_id), ("option_text", option_text)):
+            if override is None:
+                assert field not in vars(provider)
+            else:
+                assert getattr(provider, field) == override
+        _, resource_kind = CONSUMER_CAPABILITIES[instance.provider_name]
+        assert (provider.backend_name, provider.backend_type, provider.resource_kind) == (
+            definition.name,
+            definition.type,
+            resource_kind,
+        )
 
 
 def test_all_handler_builders_use_typed_connections_and_own_catalog_mappings(config):

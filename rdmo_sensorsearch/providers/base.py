@@ -1,8 +1,4 @@
-import logging
-
 from rdmo.options.providers import Provider
-
-logger = logging.getLogger(__name__)
 
 
 class BaseRemoteSearchProvider(Provider):

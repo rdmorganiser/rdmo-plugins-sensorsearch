@@ -1,6 +1,7 @@
 """Exercise real provider/factory assembly with injected SMS capabilities."""
 
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -66,6 +67,26 @@ def test_provider_failure_returns_no_options(provider_class, method):
     )
     provider.auth_token = "token"
     assert provider.get_options(None, search="Sensor") == []
+
+
+@pytest.mark.parametrize(
+    "provider_class,method",
+    [
+        (SensorManagementSystemDeviceProvider, "search_devices"),
+        (SensorManagementSystemConfigurationProvider, "search_configurations"),
+    ],
+)
+def test_standalone_sms_provider_resolves_token_when_none_is_supplied(monkeypatch, provider_class, method):
+    user = object()
+    resolver = Mock(return_value="fallback-token")
+    monkeypatch.setattr(f"{provider_class.__module__}.get_sms_auth_token", resolver)
+    search = Mock(return_value=BackendSuccess(()))
+    provider = provider_class(backend=SimpleNamespace(**{method: search}), id_prefix="test", text_prefix="Test", max_hits=5)
+
+    assert provider.get_options(None, search="Sensor", user=user) == []
+
+    resolver.assert_called_once_with(user=user)
+    search.assert_called_once_with("Sensor", limit=5, auth_token="fallback-token")
 
 
 def _sms_config(*, backend_settings=None, provider=None, catalog=None):

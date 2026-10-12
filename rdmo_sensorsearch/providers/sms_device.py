@@ -41,10 +41,10 @@ class SensorManagementSystemDeviceProvider(BaseRemoteSearchProvider):
 
         Args:
             project (Project):      The RDMO project object.
-            search (str, optional): Search term to query the O2A Registry.
+            search (str, optional): Search term to query the SMS API.
                                     Defaults to None.
-            user (User, optional):  Current user object. Not used in this
-                                    implementation.
+            user (User, optional):  Current user used to resolve SMS authentication
+                                    when no token has been supplied.
             site (Site, optional):  Site object. Not used in this
                                     implementation.
 

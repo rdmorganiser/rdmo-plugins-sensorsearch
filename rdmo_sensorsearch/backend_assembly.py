@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import TYPE_CHECKING, Protocol, TypeVar
 
 from rdmo_sensorsearch.backends.gipp.backend import GIPPBackend
 from rdmo_sensorsearch.backends.o2a.backend import O2ABackend
@@ -19,6 +19,7 @@ from rdmo_sensorsearch.config_models.consumer_settings import (
     O2AMissionSearchSettings,
     O2ARegistryItemCatalogSettings,
     O2ARegistryMissionCatalogSettings,
+    SearchSettings,
     SensorManagementSystemConfigurationCatalogSettings,
     SensorManagementSystemDeviceCatalogSettings,
 )
@@ -43,16 +44,12 @@ if TYPE_CHECKING:
     from rdmo_sensorsearch.providers.sms_configuration import SensorManagementSystemConfigurationProvider
     from rdmo_sensorsearch.providers.sms_device import SensorManagementSystemDeviceProvider
 
-Capability = Literal["device", "configuration", "device_search", "configuration_search"]
-
-
 BackendBinding = SMSBackend | O2ABackend | GIPPBackend
+TProvider = TypeVar("TProvider", bound="BaseRemoteSearchProvider")
 
 
 class BackendBuilder(Protocol):
-    def __call__(
-        self, definition: BackendDefinition, capability: Capability, *, self_link_fallback_enabled: bool = False
-    ) -> BackendBinding: ...
+    def __call__(self, definition: BackendDefinition, *, self_link_fallback_enabled: bool = False) -> BackendBinding: ...
 
 
 class ProviderBuilder(Protocol):
@@ -65,9 +62,7 @@ class HandlerBuilder(Protocol):
     ) -> BackendRecordHandler: ...
 
 
-def build_sms_backend(
-    definition: BackendDefinition, capability: Capability, *, self_link_fallback_enabled: bool = False
-) -> SMSBackend:
+def build_sms_backend(definition: BackendDefinition, *, self_link_fallback_enabled: bool = False) -> SMSBackend:
     settings = definition.settings
     assert isinstance(settings, SMSBackendSettings)
     return SMSBackend(
@@ -75,17 +70,13 @@ def build_sms_backend(
     )
 
 
-def build_o2a_backend(
-    definition: BackendDefinition, capability: Capability, *, self_link_fallback_enabled: bool = False
-) -> O2ABackend:
+def build_o2a_backend(definition: BackendDefinition, *, self_link_fallback_enabled: bool = False) -> O2ABackend:
     settings = definition.settings
     assert isinstance(settings, O2ABackendSettings)
     return O2ABackend(base_url=definition.base_url, settings=settings, fetch=fetch_json)
 
 
-def build_gipp_backend(
-    definition: BackendDefinition, capability: Capability, *, self_link_fallback_enabled: bool = False
-) -> GIPPBackend:
+def build_gipp_backend(definition: BackendDefinition, *, self_link_fallback_enabled: bool = False) -> GIPPBackend:
     settings = definition.settings
     assert isinstance(settings, GIPPBackendSettings)
     return GIPPBackend(base_url=definition.base_url, settings=settings, fetch=fetch_json)
@@ -94,10 +85,24 @@ def build_gipp_backend(
 BACKEND_BUILDERS: dict[str, BackendBuilder] = {"sms": build_sms_backend, "o2a": build_o2a_backend, "gipp": build_gipp_backend}
 
 
-def build_backend(
-    definition: BackendDefinition, capability: Capability, *, self_link_fallback_enabled: bool = False
-) -> BackendBinding:
-    return BACKEND_BUILDERS[definition.type](definition, capability, self_link_fallback_enabled=self_link_fallback_enabled)
+def build_backend(definition: BackendDefinition, *, self_link_fallback_enabled: bool = False) -> BackendBinding:
+    return BACKEND_BUILDERS[definition.type](definition, self_link_fallback_enabled=self_link_fallback_enabled)
+
+
+def _configure_provider(
+    provider: TProvider,
+    settings: SearchSettings,
+    definition: BackendDefinition,
+    resource_kind: str,
+) -> TProvider:
+    if settings.option_id is not None:
+        provider.option_id = settings.option_id
+    if settings.option_text is not None:
+        provider.option_text = settings.option_text
+    provider.backend_name = definition.name
+    provider.backend_type = definition.type
+    provider.resource_kind = resource_kind
+    return provider
 
 
 def build_sms_device_provider(
@@ -105,7 +110,7 @@ def build_sms_device_provider(
 ) -> SensorManagementSystemDeviceProvider:
     from rdmo_sensorsearch.providers.sms_device import SensorManagementSystemDeviceProvider
 
-    connection = build_backend(definition, "device_search")
+    connection = build_backend(definition)
     assert isinstance(connection, SMSBackend)
     assert isinstance(definition.settings, SMSBackendSettings)
     settings = config.settings
@@ -115,14 +120,7 @@ def build_sms_device_provider(
         max_hits=settings.max_hits,
         backend=connection,
     )
-    if settings.option_id is not None:
-        provider.option_id = settings.option_id
-    if settings.option_text is not None:
-        provider.option_text = settings.option_text
-    provider.backend_name = definition.name
-    provider.backend_type = definition.type
-    provider.resource_kind = "device"
-    return provider
+    return _configure_provider(provider, settings, definition, "device")
 
 
 def build_sms_configuration_provider(
@@ -130,7 +128,7 @@ def build_sms_configuration_provider(
 ) -> SensorManagementSystemConfigurationProvider:
     from rdmo_sensorsearch.providers.sms_configuration import SensorManagementSystemConfigurationProvider
 
-    connection = build_backend(definition, "configuration_search")
+    connection = build_backend(definition)
     assert isinstance(connection, SMSBackend)
     assert isinstance(definition.settings, SMSBackendSettings)
     settings = config.settings
@@ -140,20 +138,13 @@ def build_sms_configuration_provider(
         max_hits=settings.max_hits,
         backend=connection,
     )
-    if settings.option_id is not None:
-        provider.option_id = settings.option_id
-    if settings.option_text is not None:
-        provider.option_text = settings.option_text
-    provider.backend_name = definition.name
-    provider.backend_type = definition.type
-    provider.resource_kind = "configuration"
-    return provider
+    return _configure_provider(provider, settings, definition, "configuration")
 
 
 def build_o2a_item_provider(config: ProviderInstanceConfig, definition: BackendDefinition) -> O2ARegistryItemProvider:
     from rdmo_sensorsearch.providers.o2a_item import O2ARegistryItemProvider
 
-    connection = build_backend(definition, "device_search")
+    connection = build_backend(definition)
     assert isinstance(connection, O2ABackend)
     settings = config.settings
     provider = O2ARegistryItemProvider(
@@ -162,14 +153,7 @@ def build_o2a_item_provider(config: ProviderInstanceConfig, definition: BackendD
         backend=connection,
         max_hits=settings.max_hits,
     )
-    if settings.option_id is not None:
-        provider.option_id = settings.option_id
-    if settings.option_text is not None:
-        provider.option_text = settings.option_text
-    provider.backend_name = definition.name
-    provider.backend_type = definition.type
-    provider.resource_kind = "device"
-    return provider
+    return _configure_provider(provider, settings, definition, "device")
 
 
 def build_o2a_mission_provider(config: ProviderInstanceConfig, definition: BackendDefinition) -> O2ARegistryMissionProvider:
@@ -190,20 +174,13 @@ def build_o2a_mission_provider(config: ProviderInstanceConfig, definition: Backe
         backend=connection,
         max_hits=settings.max_hits,
     )
-    if settings.option_id is not None:
-        provider.option_id = settings.option_id
-    if settings.option_text is not None:
-        provider.option_text = settings.option_text
-    provider.backend_name = definition.name
-    provider.backend_type = definition.type
-    provider.resource_kind = "configuration"
-    return provider
+    return _configure_provider(provider, settings, definition, "configuration")
 
 
 def build_gipp_instrument_provider(config: ProviderInstanceConfig, definition: BackendDefinition) -> GIPPInstrumentProvider:
     from rdmo_sensorsearch.providers.gipp_instrument import GIPPInstrumentProvider
 
-    connection = build_backend(definition, "device_search")
+    connection = build_backend(definition)
     assert isinstance(connection, GIPPBackend)
     settings = config.settings
     provider = GIPPInstrumentProvider(
@@ -212,14 +189,7 @@ def build_gipp_instrument_provider(config: ProviderInstanceConfig, definition: B
         backend=connection,
         max_hits=settings.max_hits,
     )
-    if settings.option_id is not None:
-        provider.option_id = settings.option_id
-    if settings.option_text is not None:
-        provider.option_text = settings.option_text
-    provider.backend_name = definition.name
-    provider.backend_type = definition.type
-    provider.resource_kind = "device"
-    return provider
+    return _configure_provider(provider, settings, definition, "device")
 
 
 PROVIDER_BUILDERS: dict[str, ProviderBuilder] = {
@@ -236,7 +206,7 @@ def build_sms_device_handler(
 ) -> SensorManagementSystemDeviceHandler:
     settings = catalog.settings
     assert isinstance(settings, SensorManagementSystemDeviceCatalogSettings)
-    connection = build_backend(definition, "device")
+    connection = build_backend(definition)
     assert isinstance(connection, SMSBackend)
     handler = SensorManagementSystemDeviceHandler(
         id_prefix=definition.prefix("device"),
@@ -261,7 +231,7 @@ def build_sms_configuration_handler(
     assert isinstance(settings, SensorManagementSystemConfigurationCatalogSettings)
     assert isinstance(definition.settings, SMSBackendSettings)
     fallback = definition.settings.configuration.configuration_self_link_path in catalog.attribute_mapping
-    connection = build_backend(definition, "configuration", self_link_fallback_enabled=fallback)
+    connection = build_backend(definition, self_link_fallback_enabled=fallback)
     assert isinstance(connection, SMSBackend)
     handler = SensorManagementSystemConfigurationHandler(
         id_prefix=definition.prefix("configuration"),
@@ -306,7 +276,7 @@ def build_o2a_item_handler(
 ) -> O2ARegistryItemHandler:
     settings = catalog.settings
     assert isinstance(settings, O2ARegistryItemCatalogSettings)
-    connection = build_backend(definition, "device")
+    connection = build_backend(definition)
     assert isinstance(connection, O2ABackend)
     handler = O2ARegistryItemHandler(
         id_prefix=definition.prefix("device"), backend=connection, attribute_mapping=dict(catalog.attribute_mapping)
@@ -327,7 +297,7 @@ def build_o2a_mission_handler(
 ) -> O2ARegistryMissionHandler:
     settings = catalog.settings
     assert isinstance(settings, O2ARegistryMissionCatalogSettings)
-    connection = build_backend(definition, "configuration")
+    connection = build_backend(definition)
     assert isinstance(connection, O2ABackend)
     handler = O2ARegistryMissionHandler(
         id_prefix=definition.prefix("configuration"),
@@ -365,7 +335,7 @@ def build_gipp_instrument_handler(
 ) -> GIPPInstrumentHandler:
     settings = catalog.settings
     assert isinstance(settings, GIPPInstrumentCatalogSettings)
-    connection = build_backend(definition, "device")
+    connection = build_backend(definition)
     assert isinstance(connection, GIPPBackend)
     handler = GIPPInstrumentHandler(
         id_prefix=definition.prefix("device"), backend=connection, attribute_mapping=dict(catalog.attribute_mapping)

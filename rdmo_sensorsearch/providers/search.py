@@ -69,9 +69,11 @@ class AggregatingSearchProvider(Provider):
             )
             return []
 
-        auth_token = get_sms_auth_token(user=user)
-        for provider in providers:
-            provider.auth_token = auth_token
+        sms_providers = [provider for provider in providers if provider.backend_type == "sms"]
+        if sms_providers:
+            auth_token = get_sms_auth_token(user=user)
+            for provider in sms_providers:
+                provider.auth_token = auth_token
 
         logger.debug("Search term: %s", search)
 

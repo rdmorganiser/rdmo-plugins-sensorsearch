@@ -1,17 +1,13 @@
-import logging
 from collections.abc import Mapping
 from typing import Any
-
-logger = logging.getLogger(__name__)
 
 
 class BackendRecordHandler:
     """
     Base class for synchronizing a selected backend record with RDMO values.
 
-    Derived classes are used to gather additional information from the
-    implemented API provider and map them to attributes in a catalog using
-    JMESPath.
+    Derived classes consume injected backend capabilities and map returned
+    metadata to attributes in a catalog using JMESPath.
     """
 
     def __init__(
@@ -20,7 +16,7 @@ class BackendRecordHandler:
         id_prefix: str,
         attribute_mapping: Mapping[str, str],
     ):
-        """Own the mapping and connection values supplied by typed assembly."""
+        """Own the external-ID prefix and mapping supplied by typed assembly."""
         self._id_prefix = id_prefix
         self.attribute_mapping = attribute_mapping
 
