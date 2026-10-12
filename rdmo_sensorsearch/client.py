@@ -6,6 +6,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import cache
 from threading import Event, Lock
+from typing import Any
 
 from django.conf import settings
 
@@ -14,6 +15,7 @@ import requests
 from rdmo import __version__
 
 from rdmo_sensorsearch.services.performance import count_event, measure_phase
+from rdmo_sensorsearch.transport import TransportError
 
 logger = logging.getLogger(__name__)
 
@@ -21,26 +23,29 @@ logger = logging.getLogger(__name__)
 @dataclass
 class _PendingRequest:
     event: Event = field(default_factory=Event)
-    response: dict | list | None = None
+    response: Any = None
     error: BaseException | None = None
 
 
 class _RequestCache:
     def __init__(self):
-        self._responses: dict[tuple[str, str | None], dict | list] = {}
+        self._responses: dict[tuple[str, str | None], Any] = {}
+        self._failures: dict[tuple[str, str | None], TransportError] = {}
         self._pending: dict[tuple[str, str | None], _PendingRequest] = {}
         self._lock = Lock()
 
     def get_or_fetch(
         self,
         key: tuple[str, str | None],
-        fetcher: Callable[[], dict | list],
-    ) -> dict | list:
+        fetcher: Callable[[], Any],
+    ) -> Any:
         with self._lock:
-            cached = self._responses.get(key)
-            if cached is not None:
+            if key in self._failures:
                 count_event("http.cache_hit")
-                return deepcopy(cached)
+                raise self._failures[key]
+            if key in self._responses:
+                count_event("http.cache_hit")
+                return deepcopy(self._responses[key])
 
             pending = self._pending.get(key)
             if pending is None:
@@ -62,6 +67,8 @@ class _RequestCache:
         except BaseException as error:
             with self._lock:
                 pending.error = error
+                if isinstance(error, TransportError):
+                    self._failures[key] = error
                 self._pending.pop(key, None)
                 pending.event.set()
             raise
@@ -95,7 +102,7 @@ def deduplicate_json_requests():
         _REQUEST_CACHE.reset(token)
 
 
-def fetch_json(url: str, auth_token: str | None = None) -> dict | list:
+def fetch_json(url: str, auth_token: str | None = None) -> Any:
     count_event("http.requested")
     request_cache = _REQUEST_CACHE.get()
     if request_cache is not None:
@@ -107,7 +114,7 @@ def fetch_json(url: str, auth_token: str | None = None) -> dict | list:
 
 
 @measure_phase("http.executed")
-def _fetch_json_uncached(url: str, auth_token: str | None = None) -> dict | list:
+def _fetch_json_uncached(url: str, auth_token: str | None = None) -> Any:
     timeout = get_request_timeout()
     logger.debug("Requesting JSON from %s with timeout=%s", url, timeout)
     headers = {"User-Agent": get_user_agent()}
@@ -123,7 +130,12 @@ def _fetch_json_uncached(url: str, auth_token: str | None = None) -> dict | list
         response.raise_for_status()
         count_event(f"http.status.{response.status_code}")
         logger.debug("Fetched data from %s with status=%s", url, response.status_code)
-        json_data = response.json()
+        try:
+            json_data = response.json()
+        except ValueError as error:
+            count_event("http.error")
+            logger.error("Invalid JSON returned from %s: %s", url, error)
+            raise TransportError(str(error), url=url, status_code=response.status_code) from error
         if not json_data:
             logger.debug("Fetched data is empty for %s with status=%s", url, response.status_code)
         return json_data
@@ -138,11 +150,11 @@ def _fetch_json_uncached(url: str, auth_token: str | None = None) -> dict | list
             status_code,
             response_text[:500],
         )
-        return {"errors": [str(e)]}
+        raise TransportError(str(e), url=url, status_code=getattr(e.response, "status_code", None)) from e
     except requests.exceptions.RequestException as e:
         count_event("http.error")
         logger.error("Request failed for %s: %s", url, e)
-        return {"errors": [str(e)]}
+        raise TransportError(str(e), url=url) from e
 
 
 @cache

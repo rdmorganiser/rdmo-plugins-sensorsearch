@@ -41,9 +41,9 @@ Validation currently covers:
 
 - known sections, provider and handler class names, and settings;
 - string, integer, boolean, and string-array value types;
-- required SMS URLs, labels, prefixes, and handler backends;
-- unique option ID prefixes and provider-to-handler prefix relationships;
-- SMS configuration-to-device and O2A mission-to-item prefix relationships;
+- named backend definitions, absolute HTTP(S) URLs, labels, and typed settings;
+- globally unique namespace declarations and provider-to-handler backend references;
+- backend type/capability compatibility and same-backend membership relationships;
 - paired and explicitly enabled SMS membership-filter start/end attributes;
 - required search and configuration-membership attributes;
 - explicit catalog scope for data-collection variable synchronization.
@@ -64,6 +64,68 @@ by production. Regenerate both assets with
 `python testing/tools/generate_plugin_dev_assets.py` after changing the original
 catalog or the production baseline.
 
+## Named backend definitions and migration
+
+This schema replaces the former inline connection layout. There is one
+`[[backends]]` definition per installation. `name` is configuration identity;
+`device_id_prefix` and `configuration_id_prefix` are persisted namespaces.
+Renaming a backend and updating its references does not change stored IDs.
+Prefixes must be globally unique and contain neither `:` nor `||`.
+
+```toml
+[[backends]]
+name = "gfz"
+type = "sms"
+base_url = "https://sensors.gfz.de/backend/api/v1"
+device_id_prefix = "gfzsms"
+configuration_id_prefix = "gfzcfg"
+[backends.settings]
+static_location_end_tolerance_seconds = 120
+incomplete_mount_chain_policy = "direct_device_offset"
+
+[[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
+backend = "gfz"
+text_prefix = "GFZ Sensor"
+
+[[handlers.SensorManagementSystemDeviceHandler.instances]]
+backend = "gfz"
+```
+
+`type` selects `sms`, `o2a`, or `gipp`. The `settings` table has a distinct
+validated type for each backend. SMS uses its API root as `base_url`; O2A uses
+its origin and separate search/API templates; GIPP uses its instruments root.
+See the maintained TOML for all five installation definitions.
+
+SMS optionally declares `[backends.auth]` with `source = "sms_user_token"`.
+Omitting it selects the same existing resolver. Tokens remain request-specific;
+TOML contains no credentials. O2A and GIPP remain anonymous. This field records
+the existing authentication mechanism and does not introduce new strategies.
+
+Migrate an existing override once:
+
+1. Gather each installation's root URL and existing device/configuration
+   namespaces into a top-level backend definition. Keep the namespace values
+   exactly, including `gfzsms`, `gfzcfg`, and other existing prefixes.
+2. Replace each provider's `id_prefix` and `base_url` with `backend = "name"`.
+   Move query/endpoint templates into the appropriate backend settings table.
+   Keep labels, result limits, option templates, and O2A query criteria with
+   providers.
+3. Replace handler `backends`/`backend_defaults` with named `instances`.
+   Move endpoint overrides and API policies into backend-specific settings.
+   Keep catalog mappings, capability flags, output formatting, and member
+   presentation with consumers. Member namespace overrides become the backend's
+   declared device namespace.
+4. Consolidate SMS tolerance and incomplete-chain policies once per installation.
+   If former consumers used different policies, select the intended shared
+   policy explicitly before deployment.
+5. Validate with `PluginConfig.from_mapping(tomllib.load(file))` (use `tomli`
+   on Python 3.10), update the plugin and TOML together, then restart RDMO.
+
+The runtime accepts only the new schema. Old tables report migration guidance;
+there is no permanent compatibility parser. Project values and catalog URIs
+require no migration. Configuration defaults are resolved during parsing;
+assembly receives immutable typed objects.
+
 ## Provider aggregators
 
 ### `[DeviceSearchProvider]`
@@ -75,8 +137,8 @@ catalog or the production baseline.
 
 Each `[[DeviceSearchProvider.providers.<ProviderClass>]]` entry enables one device
 source. Multiple entries of the same class are allowed. Common provider fields
-are `id_prefix`, `text_prefix`, and `base_url`; provider-specific URL templates
-can be overridden when required.
+are `backend`, `text_prefix`, and `max_hits`. The referenced backend supplies
+connection settings and the correct resource namespace.
 
 The example enables:
 
@@ -84,8 +146,8 @@ The example enables:
 - three `SensorManagementSystemDeviceProvider` instances for GFZ, KIT, and UFZ;
 - `GIPPInstrumentProvider`.
 
-Prefixes must be unique across the aggregate provider because they are used to
-route a selected option to its handler.
+Each provider/backend binding is unique. A matching handler must reference the
+same backend and resource capability.
 
 ### `[ConfigurationSearchProvider]`
 
@@ -108,8 +170,8 @@ For SMS, keep configuration and device prefixes paired:
 
 Each `[[ProjectConfigurationDevicesProvider.catalogs]]` entry selects an
 attribute whose project values become device options. In the Earth Sensor
-catalog it is the selected-devices attribute. Use `catalog_uri` for one catalog,
-`catalog_uris` for several, or omit both for a wildcard mapping.
+catalog it is the selected-devices attribute. Use `catalog_uris` for one or
+more catalogs, or omit it for a wildcard mapping.
 
 ### `[ProjectDataCollectionDevicesProvider]`
 
@@ -120,10 +182,8 @@ as `ProjectConfigurationDevicesProvider`.
 ## `[DataCollectionVariableSync]`
 
 `[[DataCollectionVariableSync.catalogs]]` enables automatic variable and unit
-rows for selected data-collection devices. `catalog_uri` selects one catalog;
-`catalog_uris` selects several. Do not add a wildcard entry unless every catalog
-using the plugin has compatible data-collection attributes and collection
-layout.
+rows for selected data-collection devices. `catalog_uris` must explicitly
+select one or more catalogs. Omitted or empty scope is rejected for this section.
 
 Each catalog entry can override these attributes; otherwise the built-in Earth
 Sensor defaults are used:
@@ -143,7 +203,7 @@ The concrete Earth Sensor elements are listed in the
 ## `[DeviceDetailSync]`
 
 `[[DeviceDetailSync.catalogs]]` controls the URIs that identify repeated device
-detail blocks and SMS mount metadata. It uses `catalog_uri`/`catalog_uris` like
+detail blocks and SMS mount metadata. It uses `catalog_uris` like
 other scoped tables; an exact match wins over a wildcard entry. The packaged
 profile is the Earth Sensor baseline, whose concrete elements are in the
 [catalog map](earth-sensor-catalog.md). All fields are required per profile:
@@ -189,15 +249,14 @@ is:
 ```toml
 [handlers.SomeHandler]
 
-[[handlers.SomeHandler.backends]]
-id_prefix = "example"
-base_url = "https://api.example.org"
+[[handlers.SomeHandler.instances]]
+backend = "example"
 
 [handlers.SomeHandler.defaults]
 # settings shared by all catalog mappings
 
 [[handlers.SomeHandler.catalogs]]
-catalog_uri = "https://example.org/catalog"
+catalog_uris = ["https://example.org/catalog"]
 search_attribute_uri = "https://example.org/attributes/search"
 managed_attribute_uris = ["https://example.org/attributes/output"]
 
@@ -206,14 +265,20 @@ managed_attribute_uris = ["https://example.org/attributes/output"]
 ```
 
 `defaults` are merged into each catalog entry. A catalog entry can override a
-default. Omitting `catalog_uri` and `catalog_uris` creates a wildcard catalog
+default. Omitting `catalog_uris` creates a wildcard catalog
 mapping. Prefer explicit scope when two catalogs use different attribute
 semantics.
 
-The optional `backend_defaults` table is merged into every entry in the
-handler's `backends` array. Likewise, provider `provider_defaults` is merged
-into its `providers` entries. Both avoid repeating shared backend URL or label
-settings while still allowing a later entry to override a value.
+Each handler `instances` entry references a named backend. SMS configuration
+instances carry `device_text_prefix`; O2A mission instances may carry
+`item_text_prefix` and `item_text_template`. These labels describe application
+usage and are independent of persisted namespaces.
+
+Provider `provider_defaults` supplies presentation and query criteria for its
+`providers` entries. Each instance overrides these defaults. Catalog mappings
+merge handler `defaults` with catalog-specific settings during parsing; mapping
+entries are merged by JMESPath key. Connection fields are rejected in consumer
+tables so their source is unambiguous.
 
 Common handler settings are:
 
@@ -224,7 +289,7 @@ Common handler settings are:
 | `managed_attribute_uris` | Additional fields authoritatively owned by the handler. |
 | `materialize_device_details` | Allows selected devices to be materialized into repeated detail collections. |
 | `device_link_attribute_uri` | Target for a backend or frontend record link. |
-| `catalog_uri`, `catalog_uris` | Catalog scope; omitted means wildcard. |
+| `catalog_uris` | Catalog scope; omitted means wildcard. |
 
 ### `O2ARegistryItemHandler`
 
@@ -235,8 +300,9 @@ links.
 
 ### `SensorManagementSystemDeviceHandler`
 
-This handler fetches one SMS device. Multiple `backends` associate SMS
-`id_prefix` values with base URLs. Important settings are:
+This handler fetches one SMS device. Its `instances` reference shared SMS
+definitions. API settings below belong to `backends.settings` or its `device`
+subtable; capability flags remain catalog settings:
 
 | Setting | Meaning |
 | --- | --- |
@@ -248,6 +314,43 @@ This handler fetches one SMS device. Multiple `backends` associate SMS
 
 SMS mount enrichment can derive a device's active period, site name, and
 vertical position. See [Operations and limitations](operations-and-limitations.md#sms-location-height-and-depth).
+
+The derived mapping input `sms_owner_organizations` contains the distinct,
+trimmed `attributes.organization` names of contacts linked to device roles
+whose `role_name` is exactly `Owner`. The handler joins contacts by resource
+type and ID; other contacts remain available to responsible-person mappings.
+Contact roles are paginated with 100 records per page and a 100-page limit,
+using the configured backend and the same authentication as the device request.
+Endpoint overrides for `contact_url` can use `{base_url}`, `{id}`, `{page_size}`,
+and `{page_number}`. Keep the page placeholders to support APIs that omit a
+next-page link. Relative next-page links resolve against the contact endpoint.
+
+```toml
+[handlers.SensorManagementSystemDeviceHandler.catalogs.attribute_mapping]
+"sms_owner_organizations" = "https://rdmo.nfdi.de/terms/domain/dataset/usage_technology/owner"
+```
+
+This exact mapping key opts its configured target into backend-authoritative
+scalar synchronization, rather than the normal array-to-collection behavior.
+Use a single optional
+`select_creatable` question with `value_type=option` and provider `ror` for the
+target. A successful metadata refresh replaces the complete current Owner
+answer with the distinct SMS Owner organizations, joined using `; ` in backend
+role order. Each organization name is trimmed and treated as one atomic name;
+embedded semicolons are preserved. Matching is exact after trimming, without
+fuzzy institution matching. A successful response without usable Owner names
+clears the answer. Failed or malformed contact requests do not persist
+device metadata; unresolved Owner contact references produce nonfatal feedback.
+Backend text is stored as free text with `value_type=option`. Its previous ROR
+identifier and option are cleared even when the visible organization name
+already matches, because SMS supplies organization names rather than ROR IDs.
+Snapshot answers remain unchanged.
+Normal selection clearing and device-block deletion still clear managed data.
+
+Update both exact and wildcard catalog profiles if they share this field, then
+regenerate the development catalog and profile. Existing deployment overrides
+must add the mapping and import the updated owner question; a plugin upgrade
+alone does not change an already imported catalog.
 
 ### `SensorManagementSystemConfigurationHandler`
 
@@ -263,12 +366,13 @@ This handler fetches one SMS configuration and its mounted devices.
 | `latitude_attribute_uri`, `longitude_attribute_uri` | Configuration static-location targets. |
 | `membership_filter_enabled` | Explicit opt-in for a future SMS-only historical membership-filter extension. Omit for baseline catalogs. |
 | `membership_filter_start_attribute_uri`, `membership_filter_end_attribute_uri` | Separate user-owned filter inputs. They must be configured together when the extension is enabled and must not reuse question set 2.1.4. |
-| `device_id_prefix`, `device_text_prefix` | Converts a mounted SMS device into an option understood by the matching device handler. |
-| `static_location_end_tolerance_seconds` | Same bounded static-location fallback used by the SMS device handler. Configure both handlers identically. |
+| `device_text_prefix` | Converts a mounted SMS device into an option understood by the matching device handler. |
+| `static_location_end_tolerance_seconds` | Same bounded static-location fallback used by the SMS device handler. Declared once in `backends.settings`. |
 | `incomplete_mount_chain_policy` | Same `strict` or `direct_device_offset` policy used by the SMS device handler. |
 
-The configuration provider's `id_prefix` must match the handler backend entry,
-and `device_id_prefix` must match a configured SMS device provider and handler.
+The configuration provider and handler reference the same named backend.
+Its `device_id_prefix` supplies the namespace of configuration members, and a
+matching device handler must reference that same backend.
 The supplied `sensorsearch.toml` enables a 120-second location tolerance and
 the `direct_device_offset` fallback for both handlers. Invalid policies and
 negative or non-integer tolerance values are rejected while loading the
@@ -282,8 +386,9 @@ device collection, and frontend link settings have the same catalog meaning as
 for SMS.
 
 `mission_url`, `mission_items_url`, and `item_url` control API requests.
-`mission_item_page_size` limits the page size. `item_id_prefix` must match the
-O2A device provider. `mission_start_date_path`, `mission_end_date_path`, and
+`mission_item_page_size` limits the page size. These API settings live in
+`backends.settings.mission`; the member namespace is the backend's
+`device_id_prefix`. `mission_start_date_path`, `mission_end_date_path`, and
 `date_mapping_paths` describe dates present in the mission API. Their mapped
 targets are the backend-owned question set 2.1.4 answers, and materialized
 mission items inherit that mission period. O2A membership-filter settings are
@@ -300,7 +405,7 @@ and detail synchronization but not configuration or mission membership.
 The example configuration contains wildcard catalog entries so the same Earth
 Sensor attribute scheme can be reused by compatible catalogs. This is
 convenient but broad: a handler can run in any catalog containing its search
-attribute. To isolate behavior, add `catalog_uri` or `catalog_uris` to every
+attribute. To isolate behavior, add `catalog_uris` to every
 handler and project-local provider mapping.
 
 When two matching catalog entries could apply, avoid relying on file order.
@@ -308,38 +413,48 @@ Give each catalog one unambiguous mapping for a handler.
 
 ## Complete setting index
 
-This index is exhaustive for the validated TOML schema. `catalog_uri` and
-`catalog_uris` are allowed on every `catalogs` entry. `attribute_mapping` is a
+This index is exhaustive for the validated TOML schema. `catalog_uris` is
+allowed on every `catalogs` entry. `attribute_mapping` is a
 table of JMESPath source expressions to RDMO attribute URI strings. URL fields
 are templates where documented placeholders such as `{base_url}` and `{id}`
-are substituted by the handler.
+are substituted by the backend adapter.
 
 | Settings | Accepted by | Purpose |
 | --- | --- | --- |
-| `id_prefix`, `text_prefix`, `base_url`, `max_hits` | provider entries | Stable option ID namespace, displayed backend label, backend origin, and optional result cap. |
-| `query_url`, `option_id`, `option_text` | O2A/SMS search providers | Search endpoint and expressions selecting an option's ID and label. |
+| `backend`, `text_prefix`, `max_hits` | provider entries | Named connection, displayed label, and result cap. |
+| `name`, `type`, `base_url`, `device_id_prefix`, `configuration_id_prefix`, `settings`, `auth` | backend definitions | Configuration identity, backend discriminator, connection root, namespaces, and typed API/auth settings. |
+| `source` | SMS `auth` | Existing `sms_user_token` resolver. |
+| `instances` | handlers | Named backend bindings. |
+| `option_id`, `option_text` | SMS/GIPP and O2A mission providers | Option ID and display templates. |
+| `device_search_url`, `configuration_search_url`, `device_query_url`, `configuration_query_url` | SMS backend settings | Resource and query templates. |
+| `api_url`, `item_search_url`, `mission_search_url`, `mission_query_url` | O2A backend settings | Separate API and search templates. |
+| `metadata_url` | GIPP backend settings | Metadata API root template. |
 | `where_template`, `sorts`, `offset` | O2A mission provider | Registry query filter, ordering, and result offset. |
-| `instruments_url` | GIPP provider | GIPP instruments endpoint. |
-| `item_url`, `contacts_url`, `parameters_url`, `units_url` | O2A item handler | Endpoints used to enrich one Registry item. |
-| `item_api_link_template`, `item_frontend_link_template` | O2A item handler | API and browser link templates for an item. |
-| `device_url`, `contact_url` | SMS device handler | Endpoints for one SMS device and its contacts. |
-| `device_mount_actions_url` | SMS device handler | Device mount-action endpoint used for period enrichment. |
-| `configuration_device_mount_actions_url`, `configuration_platform_mount_actions_url`, `configuration_static_location_actions_url` | SMS device handler | Configuration-scoped endpoints used to resolve mount location. |
-| `backend_link_marker` | SMS device/configuration handler | API path fragment replaced when forming a browser link. |
-| `configuration_url`, `device_mount_action_url`, `platform_mount_actions_url`, `mounting_action_timepoints_url`, `static_location_actions_url` | SMS configuration handler | Endpoints used to fetch a configuration, members, time points, and locations. |
-| `device_mount_actions_url` | SMS configuration handler | Endpoint for a configuration's device mount actions. |
-| `device_mount_action_page_size`, `platform_mount_action_page_size`, `static_location_action_page_size`, `max_collection_pages` | SMS configuration handler | Remote pagination limits. |
-| `configuration_self_link_path`, `configuration_start_date_path`, `configuration_end_date_path`, `frontend_link_suffix` | SMS configuration handler | Response paths and browser-link suffix used to map configuration metadata. |
-| `device_id_prefix`, `device_text_prefix` | SMS configuration handler backend | Device option namespace and label when materializing configuration members. |
+| `instruments_url` | GIPP backend settings | GIPP instruments endpoint. |
+| `item_url`, `contacts_url`, `parameters_url`, `units_url` | O2A `settings.item` | Endpoints used to enrich one Registry item. |
+| `item_api_link_template`, `item_frontend_link_template` | O2A `settings.item` | API and browser link templates for an item. |
+| `device_url`, `contact_url` | SMS `settings.device` | Endpoints for one SMS device and its contacts. |
+| `device_mount_actions_url` | SMS `settings.device` | Device mount-action endpoint used for period enrichment. |
+| `configuration_device_mount_actions_url`, `configuration_platform_mount_actions_url`, `configuration_static_location_actions_url` | SMS `settings.device` | Configuration-scoped endpoints used to resolve mount location. |
+| `backend_link_marker` | SMS backend settings | API path fragment replaced when forming a browser link. |
+| `configuration_url`, `device_mount_action_url`, `platform_mount_actions_url`, `mounting_action_timepoints_url`, `static_location_actions_url` | SMS `settings.configuration` | Endpoints used to fetch a configuration, members, time points, and locations. |
+| `device_mount_actions_url` | SMS `settings.configuration` | Endpoint for a configuration's device mount actions. |
+| `device_mount_action_page_size`, `platform_mount_action_page_size`, `static_location_action_page_size`, `max_collection_pages` | SMS `settings.configuration` | Remote pagination limits. |
+| `configuration_self_link_path`, `frontend_link_suffix` | SMS `settings.configuration` | Response link path and browser-link suffix. |
+| `configuration_start_date_path`, `configuration_end_date_path` | SMS configuration catalogs | Date mapping paths. |
+| `device_text_prefix` | SMS configuration handler instance | Member display label. |
 | `location_attribute_uri`, `latitude_attribute_uri`, `longitude_attribute_uri` | SMS configuration handler | Optional location target and latitude/longitude targets. |
-| `mission_url`, `mission_items_url`, `item_url` | O2A mission handler | Endpoints for a mission, its items, and one item. |
-| `mission_item_page_size`, `max_collection_pages` | O2A mission handler | Mission-member page size and maximum pages. |
-| `item_id_prefix`, `item_text_prefix`, `item_text_template` | O2A mission handler | Namespace and display text for mission-member options. |
+| `mission_url`, `mission_items_url`, `item_url` | O2A `settings.mission` | Endpoints for a mission, its items, and one item. |
+| `mission_item_page_size`, `max_collection_pages` | O2A `settings.mission` | Mission-member page size and maximum pages. |
+| `item_text_prefix`, `item_text_template` | O2A mission handler instance | Mission-member display text. |
 | `mission_start_date_path`, `mission_end_date_path`, `date_mapping_paths`, `datetime_output_format` | O2A mission handler | Mission period source paths, alternate date paths, and output formatting. |
-| `api_link_template`, `frontend_link_template` | O2A mission handler | API and browser link templates for a mission. |
-| `json_url` | GIPP handler | Endpoint returning an instrument record. |
+| `api_link_template`, `frontend_link_template` | O2A `settings.mission` | API and browser link templates for a mission. |
+| `json_url` | GIPP backend settings | Endpoint returning an instrument record. |
 | `materialize_device_details`, `device_collection_attribute_uri`, `device_link_attribute_uri` | device handlers | Enable repeated device blocks, choose their root attribute, and choose the link output. |
 | `supports_mount_location_lookup`, `supports_mount_period_lookup` | device handlers | Explicitly enable SMS mount-location or deployment-period enrichment. |
-| `static_location_end_tolerance_seconds`, `incomplete_mount_chain_policy` | SMS device/configuration handlers | Bound static-location matching; use `strict` or `direct_device_offset` for incomplete mount chains. |
+| `static_location_end_tolerance_seconds`, `incomplete_mount_chain_policy` | SMS backend settings | Bound static-location matching; use `strict` or `direct_device_offset` for incomplete mount chains. |
 | `configuration_collection_attribute_uri`, `selected_devices_attribute_uri`, `selected_devices_page_uri`, `frontend_link_attribute_uri`, `api_link_attribute_uri` | configuration/mission handlers | Repeated configuration root, member devices, their page, and configuration link targets. |
 | `membership_filter_enabled`, `membership_filter_start_attribute_uri`, `membership_filter_end_attribute_uri` | SMS configuration handler | Explicit opt-in and paired user-owned historical-membership inputs. |
+
+Nested backend tables are `device` and `configuration` for SMS, and `item` and
+`mission` for O2A. They hold only that backend type's endpoint settings.

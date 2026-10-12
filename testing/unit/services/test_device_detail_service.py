@@ -1,8 +1,8 @@
 from types import SimpleNamespace
 
+from rdmo_sensorsearch.contracts import SelectedDevice
 from rdmo_sensorsearch.services.device_details import (
     DeviceBlockReference,
-    SelectedDevice,
     base_device_text,
     compose_device_block_key,
     configuration_key_from_device_block,

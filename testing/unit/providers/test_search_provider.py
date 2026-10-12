@@ -3,6 +3,7 @@
 import sys
 from importlib import import_module
 from types import ModuleType, SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -87,10 +88,11 @@ class FakeManager:
 
 
 class FakeBackendProvider:
-    def __init__(self, id_prefix, results=None, uses_auth_token=True):
+    def __init__(self, id_prefix, results=None, *, backend_type="sms"):
         self.id_prefix = id_prefix
+        self.backend_type = backend_type
+        self.auth_token = None
         self.results = results or []
-        self.uses_auth_token = uses_auth_token
         self.calls = []
 
     def get_options(self, project, search, user, site):
@@ -101,8 +103,12 @@ class FakeBackendProvider:
 def _configure_provider(monkeypatch, config_section_name, providers, rows, min_search_len=3):
     monkeypatch.setattr(
         search_provider,
-        "load_config",
-        lambda: {config_section_name: {"min_search_len": min_search_len}},
+        "load_config_model",
+        lambda: SimpleNamespace(
+            search_provider=lambda section: SimpleNamespace(
+                minimum_search_length=min_search_len, filter_sms_devices_by_selected_configuration=False
+            )
+        ),
     )
     monkeypatch.setattr(search_provider, "get_config_file_path", lambda: "test-config.toml")
     monkeypatch.setattr(search_provider, "build_provider_instances", lambda key: providers)
@@ -255,3 +261,29 @@ def test_search_shorter_than_minimum_skips_project_and_backend_queries(monkeypat
 
     assert options == []
     assert backend.calls == []
+
+
+@pytest.mark.parametrize("provider_class", (search_provider.DeviceSearchProvider, search_provider.ConfigurationSearchProvider))
+@pytest.mark.parametrize("backend_types", (("o2a",), ("gipp",), ("o2a", "gipp"), ("sms",), ("sms", "sms", "o2a", "gipp")))
+def test_aggregate_search_resolves_and_assigns_authentication_only_for_sms(monkeypatch, provider_class, backend_types):
+    project, user, site = object(), object(), object()
+    providers = [
+        FakeBackendProvider(str(index), [{"id": str(index)}], backend_type=backend_type)
+        for index, backend_type in enumerate(backend_types)
+    ]
+    for provider in providers:
+        provider.auth_token = "existing-token"
+    _configure_provider(monkeypatch, provider_class.config_section_name, providers, [])
+    resolver = Mock(return_value="sms-token")
+    monkeypatch.setattr(search_provider, "get_sms_auth_token", resolver)
+
+    options = provider_class().get_options(project, search="Sensor", user=user, site=site)
+
+    assert sorted(option["id"] for option in options) == [str(index) for index in range(len(providers))]
+    if "sms" in backend_types:
+        resolver.assert_called_once_with(user=user)
+    else:
+        resolver.assert_not_called()
+    for provider in providers:
+        assert provider.calls == [(project, "Sensor", user, site)]
+        assert provider.auth_token == ("sms-token" if provider.backend_type == "sms" else "existing-token")

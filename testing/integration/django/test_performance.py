@@ -12,7 +12,7 @@ from rdmo.questions.models import Question, QuestionSet
 from rdmo_sensorsearch.persistence.catalog_context import get_catalog_context, workflow_catalog_context
 from rdmo_sensorsearch.persistence.collection_binding import CollectionBinding, CollectionBindingError, CollectionLayout
 from rdmo_sensorsearch.persistence.device_details import catalog_attribute_ids
-from rdmo_sensorsearch.persistence.value_reconciliation import _ScalarScopeResolver
+from rdmo_sensorsearch.persistence.scope_resolver import RDMOAnswerTreeScopeResolver
 from rdmo_sensorsearch.services.data_collection_variables import ParameterUnitPair, variable_unit_marker
 from rdmo_sensorsearch.services.device_details import plan_device_detail_reconciliation
 from rdmo_sensorsearch.services.synchronization_context import mute_value_sync
@@ -337,7 +337,9 @@ def test_scalar_scope_scaling(count):
     def operation():
         project = Project.objects.select_related("catalog").get(pk=workload.project.pk)
         instance = SimpleNamespace(project=project, attribute_id=workload.attributes["root"].id, set_prefix="", set_index=0)
-        return _ScalarScopeResolver(instance).resolve(instance, workload.attributes["link"])
+        return RDMOAnswerTreeScopeResolver(instance.project).resolve(
+            instance.attribute_id, workload.attributes["link"].id, (instance.set_prefix or "", instance.set_index)
+        )
 
     assert operation() == [("", 0)]
     benchmark(f"scalar/{count}", operation)

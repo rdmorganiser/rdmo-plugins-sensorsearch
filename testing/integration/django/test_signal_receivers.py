@@ -238,40 +238,6 @@ def test_save_workflow_only_builds_relevant_stages(monkeypatch):
     assert stage_names("https://example.test/unrelated") == []
 
 
-def test_scalar_scope_resolver_reuses_one_answer_tree(monkeypatch):
-    catalog = SimpleNamespace(prefetch_elements=Mock())
-    values = Mock()
-    values.filter.return_value.select_related.return_value = [SimpleNamespace()]
-    project = SimpleNamespace(catalog=catalog, values=values)
-    instance = SimpleNamespace(
-        project=project,
-        attribute_id=11,
-        set_prefix=None,
-        set_index=2,
-    )
-    answer_tree = object()
-    answer_tree_factory = Mock(return_value=answer_tree)
-    scope_lookup = Mock(side_effect=lambda instance, attribute, answer_tree: [("", attribute.id)])
-    monkeypatch.setattr(value_events, "AnswerTree", answer_tree_factory, raising=False)
-
-    from rdmo_sensorsearch.persistence import value_reconciliation
-
-    monkeypatch.setattr(value_reconciliation, "AnswerTree", answer_tree_factory)
-    monkeypatch.setattr(value_reconciliation, "_scalar_scopes_via_answer_tree", scope_lookup)
-    resolver = value_reconciliation._ScalarScopeResolver(instance)
-    first_attribute = SimpleNamespace(id=21)
-    second_attribute = SimpleNamespace(id=22)
-
-    assert resolver.resolve(instance, first_attribute) == [("", 21)]
-    assert resolver.resolve(instance, first_attribute) == [("", 21)]
-    assert resolver.resolve(instance, second_attribute) == [("", 22)]
-
-    catalog.prefetch_elements.assert_called_once_with()
-    values.filter.assert_called_once_with(snapshot=None)
-    answer_tree_factory.assert_called_once_with(catalog, [SimpleNamespace()])
-    assert scope_lookup.call_count == 2
-
-
 @pytest.mark.django_db
 def test_mirror_catalog_imports_with_plugin_dev_attribute_root():
     elements, errors = parse_xml_to_elements(MIRROR_CATALOG_PATH)

@@ -1,9 +1,14 @@
+from dataclasses import fields, is_dataclass
+from typing import get_type_hints
+
+from rdmo_sensorsearch.config_models.backend_settings import GIPPBackendSettings, O2ABackendSettings, SMSBackendSettings
 from rdmo_sensorsearch.config_models.contracts import (
     CATALOG_SCOPE_KEYS,
     DEVICE_DETAIL_SYNC_SETTINGS,
     HANDLER_SETTINGS,
     PROVIDER_SETTINGS,
 )
+from rdmo_sensorsearch.config_models.models import AuthConfig, BackendDefinition, HandlerInstanceConfig
 from testing.paths import REPOSITORY_ROOT
 
 
@@ -22,7 +27,7 @@ def test_configuration_reference_mentions_every_validated_toml_setting():
             "catalogs",
             "attribute_mapping",
             "defaults",
-            "backend_defaults",
+            "instances",
             "backends",
             "kind",
             "trigger_attribute_uri",
@@ -41,6 +46,23 @@ def test_configuration_reference_mentions_every_validated_toml_setting():
             "unit_attribute_uri",
         }
     )
+
+    def setting_names(cls):
+        names = {field.name for field in fields(cls)}
+        for hint in get_type_hints(cls).values():
+            if is_dataclass(hint):
+                names.update(setting_names(hint))
+        return names
+
+    for cls in (
+        BackendDefinition,
+        AuthConfig,
+        HandlerInstanceConfig,
+        SMSBackendSettings,
+        O2ABackendSettings,
+        GIPPBackendSettings,
+    ):
+        settings.update(setting_names(cls))
 
     undocumented = sorted(setting for setting in settings if f"`{setting}`" not in reference)
     assert undocumented == []

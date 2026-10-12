@@ -6,7 +6,7 @@ from types import MappingProxyType
 from rdmo.domain.models import Attribute
 from rdmo.projects.models import Project
 
-from rdmo_sensorsearch.config import catalog_uri_values, load_config
+from rdmo_sensorsearch.config import load_config_model
 from rdmo_sensorsearch.handlers.catalog_registry import get_handler_bindings_for_catalog, handler_bindings_by_catalog
 from rdmo_sensorsearch.workflows.data_collection_variables import get_data_collection_variable_sync_settings
 from rdmo_sensorsearch.workflows.metadata_refresh import _get_refresh_actions
@@ -14,13 +14,13 @@ from rdmo_sensorsearch.workflows.metadata_refresh import _get_refresh_actions
 
 @cache
 def routing_attributes():
-    config = load_config()
+    config = load_config_model()
     catalogs = set(handler_bindings_by_catalog()) | {"*"}
     for rule in (
-        *config.get("DataCollectionVariableSync", {}).get("catalogs", ()),
-        *config.get("MetadataRefresh", {}).get("actions", ()),
+        *config.data_collection_variable_sync.catalogs,
+        *config.metadata_refresh.actions,
     ):
-        catalogs.update(catalog_uri_values(rule))
+        catalogs.update(rule.scope.catalog_uris)
     routes = {}
     for catalog_uri in catalogs:
         attributes = set()

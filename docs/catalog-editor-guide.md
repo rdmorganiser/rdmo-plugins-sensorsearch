@@ -15,7 +15,7 @@ keys, and collection indexes.
 
 | Catalog element | TOML counterpart | Purpose |
 | --- | --- | --- |
-| Catalog URI | `catalog_uri` or `catalog_uris` | Selects the mapping used for the current project. Omitting both makes a mapping a wildcard. |
+| Catalog URI | `catalog_uris` | Lists the catalogs using a mapping. Omission makes it a wildcard, except for `DataCollectionVariableSync`, which requires explicit scope. |
 | Search question attribute | `search_attribute_uri` | Starts item, device, configuration, or mission synchronization after selection. |
 | Output question attribute | `attribute_mapping` value | Receives a value selected from a backend response using the mapping's JMESPath expression. |
 | Managed output attribute | `managed_attribute_uris` | Declares fields owned by synchronization even when the current response contains no value. |

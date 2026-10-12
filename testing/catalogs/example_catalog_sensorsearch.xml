@@ -2911,7 +2911,7 @@ If you used the configuration/mission pipeline, individual device locations are 
     <verbose_name lang="de" />
     <default_option />
     <default_external_id />
-    <widget_type>select</widget_type>
+    <widget_type>select_creatable</widget_type>
     <value_type>option</value_type>
     <maximum />
     <minimum />

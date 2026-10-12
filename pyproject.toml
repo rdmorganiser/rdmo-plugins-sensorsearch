@@ -32,6 +32,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "tox>=4,<5",
 ]
 django-test = [
     "pytest>=9.0,<10.0",

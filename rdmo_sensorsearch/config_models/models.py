@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
-from rdmo_sensorsearch.config_models.contracts import (
-    HANDLER_DEFAULT_ID_PREFIXES,
-    PROVIDER_DEFAULT_ID_PREFIXES,
-)
+from rdmo_sensorsearch.config_models.backend_settings import BackendSettings
+from rdmo_sensorsearch.config_models.consumer_settings import DataCollectionSyncSettings, HandlerCatalogSettings, SearchSettings
+from rdmo_sensorsearch.contracts import DeviceDetailSettings
 
 
 @dataclass(frozen=True)
@@ -19,21 +18,38 @@ class CatalogScopeConfig:
 
 
 @dataclass(frozen=True)
+class AuthConfig:
+    source: Literal["sms_user_token"] = "sms_user_token"
+
+
+@dataclass(frozen=True)
+class BackendDefinition:
+    name: str
+    type: Literal["sms", "o2a", "gipp"]
+    base_url: str
+    settings: BackendSettings
+    auth: AuthConfig | None = None
+    device_id_prefix: str | None = None
+    configuration_id_prefix: str | None = None
+
+    def prefix(self, resource: Literal["device", "configuration"]) -> str:
+        value = self.device_id_prefix if resource == "device" else self.configuration_id_prefix
+        if value is None:
+            raise ValueError(f"Backend {self.name!r} has no {resource} namespace")
+        return value
+
+
+@dataclass(frozen=True)
 class ProviderInstanceConfig:
     provider_name: str
-    settings: Mapping[str, Any]
-
-    @property
-    def id_prefix(self) -> str | None:
-        value = self.settings.get("id_prefix", PROVIDER_DEFAULT_ID_PREFIXES.get(self.provider_name))
-        return value if isinstance(value, str) else None
+    backend: str
+    settings: SearchSettings
 
 
 @dataclass(frozen=True)
 class SearchProviderConfig:
     minimum_search_length: int
     providers: tuple[ProviderInstanceConfig, ...]
-    provider_defaults: Mapping[str, Mapping[str, Any]]
     filter_sms_devices_by_selected_configuration: bool = False
 
 
@@ -51,7 +67,7 @@ class ProjectOptionsProviderConfig:
 @dataclass(frozen=True)
 class DataCollectionSyncCatalogConfig:
     scope: CatalogScopeConfig
-    settings: Mapping[str, Any]
+    settings: DataCollectionSyncSettings
 
 
 @dataclass(frozen=True)
@@ -62,7 +78,7 @@ class DataCollectionVariableSyncConfig:
 @dataclass(frozen=True)
 class DeviceDetailSyncCatalogConfig:
     scope: CatalogScopeConfig
-    settings: Mapping[str, str]
+    settings: DeviceDetailSettings
 
 
 @dataclass(frozen=True)
@@ -93,36 +109,31 @@ class MetadataRefreshConfig:
 
 
 @dataclass(frozen=True)
+class HandlerInstanceConfig:
+    backend: str
+    device_text_prefix: str | None = None
+    item_text_prefix: str = "O2A Item"
+    item_text_template: str = "{configuration} {prefix}({item_id}): {name}{serial}"
+
+
+@dataclass(frozen=True)
 class HandlerCatalogConfig:
     scope: CatalogScopeConfig
-    search_attribute_uri: str | None
+    search_attribute_uri: str
     attribute_mapping: Mapping[str, str]
-    settings: Mapping[str, Any]
+    settings: HandlerCatalogSettings
 
 
 @dataclass(frozen=True)
 class HandlerConfig:
     handler_name: str
-    defaults: Mapping[str, Any]
-    default_attribute_mapping: Mapping[str, str]
-    backend_defaults: Mapping[str, Any]
-    backends: tuple[Mapping[str, Any], ...]
+    instances: tuple[HandlerInstanceConfig, ...]
     catalogs: tuple[HandlerCatalogConfig, ...]
-
-    @property
-    def id_prefixes(self) -> tuple[str, ...]:
-        if self.backends:
-            return tuple(
-                prefix
-                for backend in self.backends
-                if isinstance((prefix := backend.get("id_prefix", self.backend_defaults.get("id_prefix"))), str)
-            )
-        prefix = self.defaults.get("id_prefix", HANDLER_DEFAULT_ID_PREFIXES.get(self.handler_name))
-        return (prefix,) if isinstance(prefix, str) else ()
 
 
 @dataclass(frozen=True)
 class PluginConfig:
+    backends: Mapping[str, BackendDefinition]
     device_search: SearchProviderConfig
     configuration_search: SearchProviderConfig
     project_configuration_devices: ProjectOptionsProviderConfig
@@ -131,7 +142,20 @@ class PluginConfig:
     device_detail_sync: DeviceDetailSyncConfig
     metadata_refresh: MetadataRefreshConfig
     handlers: Mapping[str, HandlerConfig]
-    raw: Mapping[str, Any]
+
+    def backend(self, name: str) -> BackendDefinition:
+        return self.backends[name]
+
+    def search_provider(self, section_name: str) -> SearchProviderConfig:
+        return {"DeviceSearchProvider": self.device_search, "ConfigurationSearchProvider": self.configuration_search}[
+            section_name
+        ]
+
+    def project_options(self, section_name: str) -> ProjectOptionsProviderConfig:
+        return {
+            "ProjectConfigurationDevicesProvider": self.project_configuration_devices,
+            "ProjectDataCollectionDevicesProvider": self.project_data_collection_devices,
+        }[section_name]
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> PluginConfig:

@@ -1,30 +1,9 @@
-from dataclasses import dataclass
+"""Validate interview date ranges before fetching configuration membership."""
+
 from datetime import datetime
 from datetime import timezone as dt_timezone
 
-from rdmo_sensorsearch.handlers.parser import parse_datetime
-from rdmo_sensorsearch.project_values import get_scoped_project_value
-
-
-@dataclass(frozen=True)
-class ConfigurationPeriod:
-    start: datetime
-    end: datetime | None = None
-
-    @property
-    def formatted(self) -> tuple[str, str | None]:
-        return _format_timepoint(self.start), _format_timepoint(self.end)
-
-
-def read_configuration_period(
-    instance,
-    start_attribute_uri: str,
-    end_attribute_uri: str,
-) -> tuple[ConfigurationPeriod | None, str | None]:
-    return parse_configuration_period(
-        get_scoped_project_value(instance, start_attribute_uri),
-        get_scoped_project_value(instance, end_attribute_uri),
-    )
+from rdmo_sensorsearch.contracts import ConfigurationPeriod
 
 
 def parse_configuration_period(
@@ -53,15 +32,10 @@ def parse_configuration_period(
 def _parse_timepoint(value: str | None) -> datetime | None:
     if not value:
         return None
-    parsed = parse_datetime(value)
-    if parsed is None:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
         return None
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=dt_timezone.utc)
     return parsed.astimezone(dt_timezone.utc)
-
-
-def _format_timepoint(value: datetime | None) -> str | None:
-    if value is None:
-        return None
-    return value.astimezone(dt_timezone.utc).strftime("%Y-%m-%d %H:%M")

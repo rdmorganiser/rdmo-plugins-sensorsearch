@@ -26,20 +26,23 @@ def _config_data():
         return tomllib.load(config_file)
 
 
-def test_configuration_model_exposes_typed_sections_and_read_only_raw_data():
+def test_configuration_model_exposes_typed_sections_and_read_only_backend_definitions():
     config = PluginConfig.from_mapping(_config_data())
 
     assert config.device_search.minimum_search_length == 3
     assert config.device_search.filter_sms_devices_by_selected_configuration is False
     assert not any(action.require_configuration_period for action in config.metadata_refresh.actions)
-    assert config.handlers["SensorManagementSystemConfigurationHandler"].id_prefixes == (
+    assert tuple(
+        config.backend(instance.backend).configuration_id_prefix
+        for instance in config.handlers["SensorManagementSystemConfigurationHandler"].instances
+    ) == (
         "gfzcfg",
         "kitcfg",
         "ufzcfg",
     )
 
     with pytest.raises(TypeError):
-        config.raw["unexpected"] = {}
+        config.backends["unexpected"] = None
 
 
 def test_unknown_top_level_section_is_rejected_with_its_path():
@@ -77,20 +80,19 @@ def test_invalid_setting_type_is_rejected():
 def test_duplicate_provider_prefix_is_rejected():
     data = _config_data()
     providers = data["DeviceSearchProvider"]["providers"]["SensorManagementSystemDeviceProvider"]
-    providers[1]["id_prefix"] = providers[0]["id_prefix"]
+    providers[1]["backend"] = providers[0]["backend"]
 
-    with pytest.raises(ConfigValidationError, match=r"providers: duplicate id_prefix 'gfzsms'"):
+    with pytest.raises(ConfigValidationError, match=r"duplicate backend binding 'gfz'"):
         PluginConfig.from_mapping(data)
 
 
 def test_provider_prefix_without_matching_handler_is_rejected():
     data = _config_data()
-    providers = data["DeviceSearchProvider"]["providers"]["SensorManagementSystemDeviceProvider"]
-    providers[0]["id_prefix"] = "unmatchedsms"
+    data["handlers"]["SensorManagementSystemDeviceHandler"]["instances"].pop(0)
 
     with pytest.raises(
         ConfigValidationError,
-        match=r"providers\.SensorManagementSystemDeviceProvider: id_prefix 'unmatchedsms' has no matching",
+        match=r"providers\.SensorManagementSystemDeviceProvider: backend 'gfz' has no matching",
     ):
         PluginConfig.from_mapping(data)
 
@@ -107,16 +109,86 @@ def test_handler_catalog_requires_a_search_attribute():
         PluginConfig.from_mapping(data)
 
 
-def test_data_collection_sync_requires_explicit_catalog_scope():
+@pytest.mark.parametrize("scope", [None, []])
+def test_data_collection_sync_requires_explicit_catalog_scope(scope):
     data = _config_data()
     catalog = data["DataCollectionVariableSync"]["catalogs"][0]
-    del catalog["catalog_uris"]
+    if scope is None:
+        catalog.pop("catalog_uris")
+    else:
+        catalog["catalog_uris"] = scope
 
     with pytest.raises(
         ConfigValidationError,
-        match=r"DataCollectionVariableSync\.catalogs\[0\]: catalog_uri or catalog_uris is required",
+        match=r"DataCollectionVariableSync\.catalogs\[0\]: catalog_uris is required",
     ):
         PluginConfig.from_mapping(data)
+
+
+SCOPED_SECTIONS = (
+    "ProjectConfigurationDevicesProvider",
+    "ProjectDataCollectionDevicesProvider",
+    "DataCollectionVariableSync",
+    "DeviceDetailSync",
+    "MetadataRefresh",
+    "handlers",
+)
+
+
+def _scoped_entry(data, section):
+    if section == "handlers":
+        return data["handlers"]["SensorManagementSystemDeviceHandler"]["catalogs"][0]
+    if section == "MetadataRefresh":
+        return data[section]["actions"][0]
+    return data[section]["catalogs"][0]
+
+
+def _parsed_scope(config, section):
+    if section == "handlers":
+        return config.handlers["SensorManagementSystemDeviceHandler"].catalogs[0].scope
+    if section == "MetadataRefresh":
+        return config.metadata_refresh.actions[0].scope
+    sections = {
+        "ProjectConfigurationDevicesProvider": config.project_configuration_devices,
+        "ProjectDataCollectionDevicesProvider": config.project_data_collection_devices,
+        "DataCollectionVariableSync": config.data_collection_variable_sync,
+        "DeviceDetailSync": config.device_detail_sync,
+    }
+    return sections[section].catalogs[0].scope
+
+
+@pytest.mark.parametrize("section", SCOPED_SECTIONS)
+def test_singular_catalog_scope_is_rejected_in_every_scoped_section(section):
+    data = _config_data()
+    _scoped_entry(data, section)["catalog_uri"] = "catalog:a"
+    with pytest.raises(ConfigValidationError, match=r"unknown setting\(s\): catalog_uri$"):
+        PluginConfig.from_mapping(data)
+
+
+@pytest.mark.parametrize("section", SCOPED_SECTIONS)
+@pytest.mark.parametrize("uris", [["catalog:a"], ["catalog:a", "catalog:b", "catalog:a"]])
+def test_plural_catalog_scope_matches_and_deduplicates(section, uris):
+    data = _config_data()
+    _scoped_entry(data, section)["catalog_uris"] = uris
+    scope = _parsed_scope(PluginConfig.from_mapping(data), section)
+    assert scope.catalog_uris == tuple(dict.fromkeys(uris))
+    assert scope.matches("catalog:a")
+    assert scope.matches("catalog:b") == ("catalog:b" in uris)
+    assert not scope.matches("catalog:other")
+
+
+@pytest.mark.parametrize("section", [name for name in SCOPED_SECTIONS if name != "DataCollectionVariableSync"])
+@pytest.mark.parametrize("scope", [None, []])
+def test_omitted_or_empty_catalog_scope_remains_wildcard(section, scope):
+    data = _config_data()
+    entry = _scoped_entry(data, section)
+    if scope is None:
+        entry.pop("catalog_uris", None)
+    else:
+        entry["catalog_uris"] = scope
+    parsed = _parsed_scope(PluginConfig.from_mapping(data), section)
+    assert parsed.catalog_uris == ()
+    assert parsed.matches("catalog:any")
 
 
 def test_sms_provider_requires_routing_and_request_settings():
@@ -172,13 +244,9 @@ def test_o2a_membership_filter_settings_are_rejected_until_supported():
         PluginConfig.from_mapping(data)
 
 
-def test_o2a_mission_member_prefix_must_match_the_item_handler():
+def test_o2a_mission_requires_an_item_handler_for_the_same_backend():
     data = _config_data()
-    data["handlers"]["O2ARegistryMissionHandler"]["defaults"]["item_id_prefix"] = "unknownitems"
-
-    with pytest.raises(
-        ConfigValidationError,
-        match=r"handlers\.O2ARegistryMissionHandler\.defaults\.item_id_prefix: "
-        r"'unknownitems' has no matching O2A item handler",
-    ):
+    del data["handlers"]["O2ARegistryItemHandler"]
+    del data["DeviceSearchProvider"]["providers"]["O2ARegistryItemProvider"]
+    with pytest.raises(ConfigValidationError, match="has no matching O2ARegistryItemHandler"):
         PluginConfig.from_mapping(data)

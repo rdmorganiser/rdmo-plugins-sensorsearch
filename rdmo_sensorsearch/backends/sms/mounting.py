@@ -5,7 +5,7 @@ from datetime import timezone as dt_timezone
 from enum import Enum
 from typing import Any
 
-from rdmo_sensorsearch.services.refresh import RefreshNotice
+from rdmo_sensorsearch.contracts import RefreshNotice
 
 logger = logging.getLogger(__name__)
 

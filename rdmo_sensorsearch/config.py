@@ -6,10 +6,8 @@
 import logging
 import os
 import sys
-from collections.abc import Mapping
 from functools import cache
 from pathlib import Path
-from typing import Any
 
 from django.conf import settings
 
@@ -22,46 +20,6 @@ else:
 
 
 logger = logging.getLogger(__name__)
-
-
-def catalog_matches(catalog_config: Mapping[str, Any], catalog_uri: str) -> bool:
-    configured_catalog_uris = catalog_uri_values(catalog_config)
-    return not configured_catalog_uris or catalog_uri in configured_catalog_uris
-
-
-def catalog_uri_values(catalog_config: Mapping[str, Any]) -> list[str]:
-    catalog_uris = catalog_config.get("catalog_uris")
-    if catalog_uris is None:
-        catalog_uris = []
-    elif isinstance(catalog_uris, str):
-        catalog_uris = [catalog_uris]
-
-    configured_uri = catalog_config.get("catalog_uri")
-    if configured_uri:
-        catalog_uris = [configured_uri, *catalog_uris]
-
-    return list(dict.fromkeys(catalog_uris))
-
-
-def merge_config(base: Mapping[str, Any] | None, override: Mapping[str, Any] | None) -> dict[str, Any]:
-    """Merge two TOML-derived dictionaries recursively.
-
-    Nested tables are merged, while scalar values and lists from ``override``
-    replace the corresponding values from ``base``.
-    """
-    if not base:
-        return dict(override or {})
-    if not override:
-        return dict(base)
-
-    merged: dict[str, Any] = dict(base)
-    for key, value in override.items():
-        current = merged.get(key)
-        if isinstance(current, Mapping) and isinstance(value, Mapping):
-            merged[key] = merge_config(current, value)
-        else:
-            merged[key] = value
-    return merged
 
 
 def get_config_file_path() -> str:
@@ -122,7 +80,7 @@ def load_config_model() -> PluginConfig:
             logger.debug(
                 "Loaded sensor search configuration from %s with top-level keys: %s",
                 config_file_path,
-                sorted(plugin_config.raw.keys()),
+                sorted(raw_config.keys()),
             )
             return plugin_config
     except (FileNotFoundError, PermissionError) as e:
@@ -134,11 +92,6 @@ def load_config_model() -> PluginConfig:
     except ConfigValidationError:
         logger.exception("Invalid sensor search configuration: %s", config_file_path)
         raise
-
-
-def load_config() -> Mapping[str, Any]:
-    """Return the validated configuration through its read-only mapping view."""
-    return load_config_model().raw
 
 
 def clear_config_cache() -> None:

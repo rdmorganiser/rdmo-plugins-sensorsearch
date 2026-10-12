@@ -9,8 +9,8 @@ from rdmo.projects.models import Value
 from rdmo.questions.models import Question
 
 from rdmo_sensorsearch import client
-from rdmo_sensorsearch.handlers.base import HandlerResult
-from rdmo_sensorsearch.services.device_details import ConfigurationIdentity, SelectedDevice
+from rdmo_sensorsearch.contracts import HandlerFailure, HandlerResult, SelectedDevice
+from rdmo_sensorsearch.services.device_details import ConfigurationIdentity
 from rdmo_sensorsearch.services.performance import capture_performance
 from rdmo_sensorsearch.workflows import device_details
 from testing.performance.fixtures import make_workload
@@ -46,11 +46,13 @@ def device_workflow(monkeypatch):
     class Handler:
         materialize_device_details = True
 
-        def handle(self, backend_id, instance):
+        def handle(self, backend_id, *, context, auth_token=None):
+            assert context.device_detail_settings == settings
+            assert context.configuration_external_id is None
             client.fetch_json("https://backend.example/configuration")
             response = client.fetch_json(f"https://backend.example/devices/{backend_id}")
             if backend_id in failed_ids:
-                return {"errors": ["Synthetic backend failure"]}
+                return HandlerFailure(("Synthetic backend failure",))
             return HandlerResult(
                 mapped_values={
                     a["link"].uri: response["link"],
@@ -74,7 +76,7 @@ def device_workflow(monkeypatch):
             return ()
 
     binding = SimpleNamespace(id_prefix="sms", search_attribute_uri=a["search"].uri, handler=Handler())
-    monkeypatch.setattr(device_details, "get_device_detail_settings", lambda uri: settings)
+    monkeypatch.setattr(device_details, "get_device_detail_settings", lambda uri, **kwargs: settings)
     monkeypatch.setattr(device_details, "get_handler_bindings_for_catalog", lambda uri: [binding])
     monkeypatch.setattr(
         device_details,

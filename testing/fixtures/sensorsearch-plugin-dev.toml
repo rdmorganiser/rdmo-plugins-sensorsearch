@@ -7,6 +7,49 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+[[backends]]
+name = "gfz"
+type = "sms"
+base_url = "https://sensors.gfz.de/backend/api/v1"
+device_id_prefix = "gfzsms"
+configuration_id_prefix = "gfzcfg"
+[backends.settings]
+static_location_end_tolerance_seconds = 120
+incomplete_mount_chain_policy = "direct_device_offset"
+
+[[backends]]
+name = "kit"
+type = "sms"
+base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
+device_id_prefix = "kitsms"
+configuration_id_prefix = "kitcfg"
+[backends.settings]
+static_location_end_tolerance_seconds = 120
+incomplete_mount_chain_policy = "direct_device_offset"
+
+[[backends]]
+name = "ufz"
+type = "sms"
+base_url = "https://web.app.ufz.de/sms/backend/api/v1"
+device_id_prefix = "ufzsms"
+configuration_id_prefix = "ufzcfg"
+[backends.settings]
+static_location_end_tolerance_seconds = 120
+incomplete_mount_chain_policy = "direct_device_offset"
+
+[[backends]]
+name = "o2a"
+type = "o2a"
+base_url = "https://registry.o2a-data.de"
+device_id_prefix = "o2aregistry"
+configuration_id_prefix = "o2amission"
+
+[[backends]]
+name = "gipp"
+type = "gipp"
+base_url = "https://gipp.gfz.de/instruments"
+device_id_prefix = "gfzgipp"
+
 [DeviceSearchProvider]
 min_search_len = 3
 # Set to true only if SMS device searches should be restricted to the backend
@@ -18,12 +61,12 @@ min_search_len = 3
 
 [ProjectConfigurationDevicesProvider]
 [[ProjectConfigurationDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set/selected-devices"
 
 [ProjectDataCollectionDevicesProvider]
 [[ProjectDataCollectionDevicesProvider.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 source_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set/selected-devices"
 
 [DataCollectionVariableSync]
@@ -34,10 +77,16 @@ catalog_uris = [
     "https://example.com/terms/questions/plugin-dev/earth-sensor-with-refresh-feature-v1",
 ]
 
+devices_attribute_uri = "https://example.com/terms/domain/plugin-dev/project/dataset/collaboration_tools"
+device_collection_attribute_uri = "https://example.com/terms/domain/plugin-dev/moses/instruments/id"
+parameter_name_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/name"
+parameter_unit_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/unit"
+variable_attribute_uri = "https://example.com/terms/domain/plugin-dev/project/dataset/metadata/dc-variable"
+unit_attribute_uri = "https://example.com/terms/domain/plugin-dev/project/dataset/metadata/dc-unit"
 [DeviceDetailSync]
 # The default profile serves the Earth Sensor catalog and compatible deployments.
 [[DeviceDetailSync.catalogs]]
-catalog_uri = "https://example.com/terms/questions/plugin-dev/sensorsearch"
+catalog_uris = ["https://example.com/terms/questions/plugin-dev/sensorsearch"]
 device_details_page_uri = "https://example.com/terms/questions/plugin-dev/instruments_general"
 device_optional_info_page_uri = "https://example.com/terms/questions/plugin-dev/instruments/further-info"
 configuration_collection_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set"
@@ -83,9 +132,11 @@ message_attribute_uri = "https://example.com/terms/domain/plugin-dev/metadata-re
 timestamp_attribute_uri = "https://example.com/terms/domain/plugin-dev/metadata-refresh/devices/timestamp"
 
 [handlers.O2ARegistryItemHandler]
+[[handlers.O2ARegistryItemHandler.instances]]
+backend = "o2a"
 # Earth-Sensor-compatible mapping, also used by MOSES.
 [[handlers.O2ARegistryItemHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link",
@@ -98,6 +149,7 @@ managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/sop",
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/owner",
 ]
+device_link_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link"
 [handlers.O2ARegistryItemHandler.catalogs.attribute_mapping]
 "longName || shortName" = "https://example.com/terms/domain/plugin-dev/project/dataset/usage_technology"
 "type.generalName" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/type/title"
@@ -112,22 +164,17 @@ managed_attribute_uris = [
 
 [handlers.SensorManagementSystemDeviceHandler]
 [handlers.SensorManagementSystemDeviceHandler.defaults]
-static_location_end_tolerance_seconds = 120
-incomplete_mount_chain_policy = "direct_device_offset"
 
-[[handlers.SensorManagementSystemDeviceHandler.backends]]
-id_prefix = "gfzsms"
-base_url = "https://sensors.gfz.de/backend/api/v1"
-[[handlers.SensorManagementSystemDeviceHandler.backends]]
-id_prefix = "kitsms"
-base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
-[[handlers.SensorManagementSystemDeviceHandler.backends]]
-id_prefix = "ufzsms"
-base_url = "https://web.app.ufz.de/sms/backend/api/v1"
+[[handlers.SensorManagementSystemDeviceHandler.instances]]
+backend = "gfz"
+[[handlers.SensorManagementSystemDeviceHandler.instances]]
+backend = "kit"
+[[handlers.SensorManagementSystemDeviceHandler.instances]]
+backend = "ufz"
 
 # MOSES Catalog mapping
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
-catalog_uri = "https://example.com/terms/questions/plugin-dev/moses"
+catalog_uris = ["https://example.com/terms/questions/plugin-dev/moses"]
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link",
@@ -151,10 +198,11 @@ managed_attribute_uris = [
 "included[?type==`device_property`].attributes.property_name" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/name"
 "included[?type==`device_property`].attributes.unit_name" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/unit"
 "included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/responsible_person/name"
+"sms_owner_organizations" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/owner"
 
 # Earth-Sensor catalog https://example.com/terms/questions/plugin-dev/sensorsearch
 [[handlers.SensorManagementSystemDeviceHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link",
@@ -177,28 +225,21 @@ managed_attribute_uris = [
 "included[?type==`device_property`].attributes.property_name" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/name"
 "included[?type==`device_property`].attributes.unit_name" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/preservation/parameter/unit"
 "included[?type==`contact`].attributes.join(', ', [family_name, given_name][?@ != null])" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/responsible_person/name"
+"sms_owner_organizations" = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/owner"
 
 
 [handlers.SensorManagementSystemConfigurationHandler]
-[[handlers.SensorManagementSystemConfigurationHandler.backends]]
-id_prefix = "gfzcfg"
-base_url = "https://sensors.gfz.de/backend/api/v1"
-device_id_prefix = "gfzsms"
+[[handlers.SensorManagementSystemConfigurationHandler.instances]]
+backend = "gfz"
 device_text_prefix = "GFZ Sensor"
-[[handlers.SensorManagementSystemConfigurationHandler.backends]]
-id_prefix = "kitcfg"
-base_url = "https://sms.atmohub.kit.edu/backend/api/v1"
-device_id_prefix = "kitsms"
+[[handlers.SensorManagementSystemConfigurationHandler.instances]]
+backend = "kit"
 device_text_prefix = "KIT Sensor"
-[[handlers.SensorManagementSystemConfigurationHandler.backends]]
-id_prefix = "ufzcfg"
-base_url = "https://web.app.ufz.de/sms/backend/api/v1"
-device_id_prefix = "ufzsms"
+[[handlers.SensorManagementSystemConfigurationHandler.instances]]
+backend = "ufz"
 device_text_prefix = "UFZ Sensor"
 [handlers.SensorManagementSystemConfigurationHandler.defaults]
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set/configuration-search"
-static_location_end_tolerance_seconds = 120
-incomplete_mount_chain_policy = "direct_device_offset"
 configuration_collection_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set"
 selected_devices_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set/selected-devices"
 selected_devices_page_uri = "https://example.com/terms/questions/plugin-dev/instruments/configuration-set"
@@ -221,10 +262,12 @@ managed_attribute_uris = [
 
 # Earth-Sensor configuration catalog mapping
 [[handlers.SensorManagementSystemConfigurationHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 
 
 [handlers.O2ARegistryMissionHandler]
+[[handlers.O2ARegistryMissionHandler.instances]]
+backend = "o2a"
 [handlers.O2ARegistryMissionHandler.defaults]
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set/configuration-search"
 configuration_collection_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set"
@@ -232,7 +275,6 @@ selected_devices_attribute_uri = "https://example.com/terms/domain/plugin-dev/co
 selected_devices_page_uri = "https://example.com/terms/questions/plugin-dev/instruments/configuration-set"
 device_collection_attribute_uri = "https://example.com/terms/domain/plugin-dev/moses/instruments/id"
 frontend_link_attribute_uri = "https://example.com/terms/domain/plugin-dev/configuration-set/configuration-link"
-item_id_prefix = "o2aregistry"
 managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/configuration-set/configuration-description",
     "https://example.com/terms/domain/plugin-dev/configuration-set/configuration-link",
@@ -245,13 +287,15 @@ managed_attribute_uris = [
 "endDate" = "https://example.com/terms/domain/plugin-dev/configuration-set/configurations-end-datetime"
 
 [[handlers.O2ARegistryMissionHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 
 
 [handlers.GIPPInstrumentHandler]
+[[handlers.GIPPInstrumentHandler.instances]]
+backend = "gipp"
 # Earth-Sensor-compatible mapping, also used by MOSES.
 [[handlers.GIPPInstrumentHandler.catalogs]]
-# Omitting catalog_uri/catalog_uris makes this mapping available in all catalogs.
+# Omitting catalog_uris makes this mapping available in all catalogs.
 search_attribute_uri = "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/keywords"
 managed_attribute_uris = [
     "https://example.com/terms/domain/plugin-dev/dataset/usage_technology/device-link",
@@ -273,43 +317,37 @@ managed_attribute_uris = [
 
 
 [[DeviceSearchProvider.providers.O2ARegistryItemProvider]]
+backend = "o2a"
 
 [[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
-id_prefix = "gfzsms"
+backend = "gfz"
 text_prefix = "GFZ Sensor"
-base_url = "https://sensors.gfz.de/backend/api/v1/devices"
 
 [[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
-id_prefix = "kitsms"
+backend = "kit"
 text_prefix = "KIT Sensor"
-base_url = "https://sms.atmohub.kit.edu/backend/api/v1/devices"
 
 [[DeviceSearchProvider.providers.SensorManagementSystemDeviceProvider]]
-id_prefix = "ufzsms"
+backend = "ufz"
 text_prefix = "UFZ Sensor"
-base_url = "https://web.app.ufz.de/sms/backend/api/v1/devices"
 
 [[DeviceSearchProvider.providers.GIPPInstrumentProvider]]
+backend = "gipp"
 
 [[ConfigurationSearchProvider.providers.SensorManagementSystemConfigurationProvider]]
-id_prefix = "gfzcfg"
+backend = "gfz"
 text_prefix = "GFZ Cfg"
-base_url = "https://sensors.gfz.de/backend/api/v1/configurations"
 
 [[ConfigurationSearchProvider.providers.SensorManagementSystemConfigurationProvider]]
-id_prefix = "kitcfg"
+backend = "kit"
 text_prefix = "KIT Cfg"
-base_url = "https://sms.atmohub.kit.edu/backend/api/v1/configurations"
 
 [[ConfigurationSearchProvider.providers.SensorManagementSystemConfigurationProvider]]
-id_prefix = "ufzcfg"
+backend = "ufz"
 text_prefix = "UFZ Cfg"
-base_url = "https://web.app.ufz.de/sms/backend/api/v1/configurations"
 
 [[ConfigurationSearchProvider.providers.O2ARegistryMissionProvider]]
-id_prefix = "o2amission"
+backend = "o2a"
 text_prefix = "O2A M"
-base_url = "https://registry.o2a-data.de/rest/v2/missions"
-query_url = "{base_url}?where={where}&sorts={sorts}&offset={offset}&hits={hits}"
 where_template = "name=ILIKE=\"*{query}*\""
 option_text = "{prefix}({id}): {name}"

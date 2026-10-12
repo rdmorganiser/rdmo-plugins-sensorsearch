@@ -1,6 +1,7 @@
-from rdmo_sensorsearch.handlers.jsonapi import (
+from rdmo_sensorsearch.backends.sms.jsonapi import (
     fetch_paginated_jsonapi_collection,
 )
+from rdmo_sensorsearch.contracts import BackendFailure, BackendSuccess
 
 URL_TEMPLATE = "https://sms.example/backend/api/v1/items/{id}?page[size]={page_size}&page[number]={page_number}"
 
@@ -11,12 +12,14 @@ def test_jsonapi_pagination_follows_next_link_against_explicit_origin():
     def fetch_page(url):
         requested_urls.append(url)
         if len(requested_urls) == 1:
-            return {
-                "data": [{"type": "item", "id": "1"}],
-                "included": [],
-                "links": {"next": {"href": "/backend/api/v1/items/49?page[number]=2"}},
-            }
-        return {"data": [], "included": []}
+            return BackendSuccess(
+                {
+                    "data": [{"type": "item", "id": "1"}],
+                    "included": [],
+                    "links": {"next": {"href": "/backend/api/v1/items/49?page[number]=2"}},
+                }
+            )
+        return BackendSuccess({"data": [], "included": []})
 
     result = fetch_paginated_jsonapi_collection(
         url_template=URL_TEMPLATE,
@@ -28,7 +31,7 @@ def test_jsonapi_pagination_follows_next_link_against_explicit_origin():
         fetch_page=fetch_page,
     )
 
-    assert [item["id"] for item in result["data"]] == ["1"]
+    assert [item["id"] for item in result.value["data"]] == ["1"]
     assert requested_urls[1] == "https://sms.example/backend/api/v1/items/49?page[number]=2"
 
 
@@ -41,8 +44,8 @@ def test_jsonapi_pagination_stops_repeated_pages():
         object_id="49",
         page_size=1,
         max_pages=10,
-        fetch_page=lambda _url: repeated_page,
+        fetch_page=lambda _url: BackendSuccess(repeated_page),
         error_label="SMS",
     )
 
-    assert result == {"errors": ["SMS collection pagination returned the same page more than once."]}
+    assert result == BackendFailure(("SMS collection pagination returned the same page more than once.",))
